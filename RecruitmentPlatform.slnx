@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="RecruitmentPlatform.API/RecruitmentPlatform.API.csproj" />
+  <Project Path="RecruitmentPlatform.Core/RecruitmentPlatform.Core.csproj" />
+  <Project Path="RecruitmentPlatform.Infrastructure/RecruitmentPlatform.Infrastructure.csproj" />
+</Solution>
