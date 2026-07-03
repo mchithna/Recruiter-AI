@@ -85,6 +85,7 @@ ScaffoldingReadMe.txt
 .env
 
 # Others
+.agents
 ~$*
 *~
 CodeCoverage/
