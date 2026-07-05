@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
+import StyleGuide from './pages/StyleGuide';
 
 // Dummy components
 const Login = () => (
@@ -73,6 +74,9 @@ function App() {
         
         {/* Fallback routes */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+
+        {/* Dev-only: design system showcase — no auth required */}
+        <Route path="/style-guide" element={<StyleGuide />} />
       </Routes>
     </BrowserRouter>
   );
