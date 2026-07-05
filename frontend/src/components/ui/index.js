@@ -1,8 +1,8 @@
 /**
- * Barrel export for all UI form & input components.
+ * Barrel export for the full UI component library.
  *
  * Usage:
- *   import { Button, Input, Select } from '@/components/ui';
+ *   import { Button, Input, Modal, useToast } from '@/components/ui';
  */
 
 export { Button } from './Button';
@@ -29,3 +29,11 @@ export { StatCard } from './StatCard';
 export { EmptyState } from './EmptyState';
 export { Skeleton } from './Skeleton';
 
+// ── Overlays, navigation & feedback ─────────────────────────────────────────
+export { Spinner } from './Spinner';
+export { Modal } from './Modal';
+export { ToastContainer } from './Toast';
+export { Tooltip } from './Tooltip';
+export { DropdownMenu, DropdownMenuItem } from './DropdownMenu';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export { Pagination } from './Pagination';
