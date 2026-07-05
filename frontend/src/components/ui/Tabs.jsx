@@ -117,8 +117,8 @@ TabsList.propTypes = { className: PropTypes.string, children: PropTypes.node };
 export function TabsTrigger({ value, children, className = '' }) {
   const { active, setActive } = useTabsContext();
   const isActive = active === value;
-  const panelId = `tabpanel-${useId()}`;
-  const tabId = `tab-${useId()}`;
+  const panelId = `tabpanel-${value}`;
+  const tabId = `tab-${value}`;
 
   return (
     <button

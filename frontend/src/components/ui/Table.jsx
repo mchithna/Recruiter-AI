@@ -73,7 +73,7 @@ export function TableRow({ isHeader = false, className = '', children }) {
           'border-b border-secondary-100 last:border-b-0 ' +
           'hover:bg-secondary-50 hover:shadow-row-hover ' +
           'transition-colors duration-fast',
-        density === 'compact' ? 'align-middle' : 'align-middle',
+        'align-middle',
         className,
       ]
         .filter(Boolean)

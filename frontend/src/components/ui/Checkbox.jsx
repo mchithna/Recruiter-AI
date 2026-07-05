@@ -56,7 +56,7 @@ export function Checkbox({
         checked={checked}
         onChange={onChange}
         disabled={disabled}
-        className="sr-only"
+        className="sr-only peer"
       />
 
       {/* Visual box */}
@@ -68,7 +68,7 @@ export function Checkbox({
           isActive
             ? 'border-primary-500 bg-primary-500'
             : 'border-secondary-300 bg-white group-hover:border-primary-400',
-          'focus-ring',
+          'peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2',
         ].join(' ')}
       >
         {/* Icon overlay — scale in on active */}
