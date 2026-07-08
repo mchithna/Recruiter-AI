@@ -1,4 +1,5 @@
 using System.Text;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,11 +12,28 @@ using RecruitmentPlatform.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var dotenvPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+if (File.Exists(dotenvPath))
+{
+    Env.Load(dotenvPath);
+    builder.Configuration.AddEnvironmentVariables();
+}
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found. Configure it in .env, user secrets, or environment variables.");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' is empty. Configure it in .env, user secrets, or environment variables.");
+}
 
 var supabaseJwtSecret = builder.Configuration["JwtSettings:SupabaseJwtSecret"]
-    ?? throw new InvalidOperationException("JWT secret 'JwtSettings:SupabaseJwtSecret' was not found.");
+    ?? throw new InvalidOperationException("JWT secret 'JwtSettings:SupabaseJwtSecret' was not found. Configure it in .env, user secrets, or environment variables.");
+
+if (string.IsNullOrWhiteSpace(supabaseJwtSecret))
+{
+    throw new InvalidOperationException("JWT secret 'JwtSettings:SupabaseJwtSecret' is empty. Configure it in .env, user secrets, or environment variables.");
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -97,6 +115,15 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/health", () => Results.Ok(new
+{
+    status = "ok",
+    service = "RecruitmentPlatform API",
+    utcTime = DateTime.UtcNow
+}))
+    .WithName("GetHealth")
+    .WithTags("Health");
 
 app.MapControllers();
 
