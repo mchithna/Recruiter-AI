@@ -180,9 +180,13 @@ export default function Home() {
                 <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:border-white/40" onClick={() => window.location.href = '/register/candidate'}>
                   Find a Job
                 </Button>
-                <Button variant="primary" className="bg-white text-indigo-950 hover:bg-indigo-50 hover:scale-105 transition-transform" onClick={() => window.location.href = '/register/company'}>
+                <button
+                  onClick={() => window.location.href = '/register/company'}
+                  style={{ background: '#ffffff', color: '#1e1b4b' }}
+                  className="inline-flex items-center justify-center gap-2 font-semibold rounded-button px-4 h-10 text-body-lg hover:bg-indigo-50 hover:scale-105 transition-all duration-200 active:scale-95"
+                >
                   Hire Talent
-                </Button>
+                </button>
               </div>
             </nav>
           </div>
@@ -537,9 +541,13 @@ export default function Home() {
                 </h2>
                 
                 <div className="flex flex-col sm:flex-row justify-center gap-6 relative z-10">
-                  <Button size="lg" className="text-xl px-12 py-8 bg-white text-indigo-950 hover:bg-indigo-50 rounded-2xl shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                  <button
+                    onClick={() => window.location.href = '/register/company'}
+                    style={{ background: '#ffffff', color: '#1e1b4b' }}
+                    className="inline-flex items-center justify-center gap-2 font-semibold rounded-2xl text-xl px-12 py-5 shadow-2xl hover:bg-indigo-50 hover:-translate-y-1 transition-all duration-300 active:scale-95"
+                  >
                     Start Hiring Now
-                  </Button>
+                  </button>
                   <Button size="lg" className="text-xl px-12 py-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-2xl shadow-indigo-600/20 hover:-translate-y-1 transition-all duration-300" leftIcon={<PlayCircle size={24} />}>
                     Watch Demo
                   </Button>
