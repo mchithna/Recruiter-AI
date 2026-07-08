@@ -1,19 +1,16 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import StyleGuide from './pages/StyleGuide';
+import Login from './pages/Login';
+import RegisterCandidate from './pages/RegisterCandidate';
+import RegisterCompany from './pages/RegisterCompany';
+import AcceptInvite from './pages/AcceptInvite';
 
 // Dummy components
-const Login = () => (
-  <div className="text-center">
-    <h2 className="text-2xl font-bold mb-4">Welcome Back</h2>
-    <p className="text-slate-500 mb-8">Please login to continue.</p>
-    <div className="p-4 bg-indigo-50 text-indigo-700 rounded-lg">Login Form Placeholder</div>
-  </div>
-);
-
 const CandidateDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
     <h2 className="text-xl font-bold mb-2">Candidate Dashboard</h2>
@@ -44,41 +41,45 @@ const Unauthorized = () => (
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Guest Routes */}
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Guest Routes */}
         <Route element={<GuestLayout />}>
           <Route path="/login" element={<Login />} />
-          {/* add /register here later */}
+          <Route path="/register/candidate" element={<RegisterCandidate />} />
+          <Route path="/register/company" element={<RegisterCompany />} />
+          <Route path="/invite/accept" element={<AcceptInvite />} />
         </Route>
 
-        {/* Protected Dashboard Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
-            
-            {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
-            <Route element={<ProtectedRoute allowedRoles={['candidate', 'admin', 'user']} />}>
-              <Route path="/candidate" element={<CandidateDashboard />} />
-            </Route>
-            
-            <Route element={<ProtectedRoute allowedRoles={['recruiter', 'admin']} />}>
-              <Route path="/recruiter" element={<RecruiterDashboard />} />
-            </Route>
-            
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
+          {/* Protected Dashboard Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
+              
+              {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
+              <Route element={<ProtectedRoute allowedRoles={['Candidate', 'Admin']} />}>
+                <Route path="/candidate" element={<CandidateDashboard />} />
+              </Route>
+              
+              <Route element={<ProtectedRoute allowedRoles={['Recruiter', 'Admin']} />}>
+                <Route path="/recruiter" element={<RecruiterDashboard />} />
+              </Route>
+              
+              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
-        
-        {/* Fallback routes */}
-        <Route path="/unauthorized" element={<Unauthorized />} />
+          
+          {/* Fallback routes */}
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Dev-only: design system showcase — no auth required */}
-        <Route path="/style-guide" element={<StyleGuide />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Dev-only: design system showcase — no auth required */}
+          <Route path="/style-guide" element={<StyleGuide />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
