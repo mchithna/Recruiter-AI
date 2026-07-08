@@ -1,9 +1,11 @@
 using System.Text;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using RecruitmentPlatform.API.Authentication;
 using RecruitmentPlatform.Core.Factories;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -63,6 +65,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
+
+builder.Services.AddTransient<IClaimsTransformation, SupabaseClaimsTransformation>();
 
 builder.Services.AddAuthorization();
 
