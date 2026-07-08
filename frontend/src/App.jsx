@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import StyleGuide from './pages/StyleGuide';
+import Home from './pages/Home/index'; // DEV PREVIEW ONLY
 
 // Dummy components
 const Login = () => (
@@ -77,6 +78,8 @@ function App() {
 
         {/* Dev-only: design system showcase — no auth required */}
         <Route path="/style-guide" element={<StyleGuide />} />
+        {/* DEV PREVIEW — remove before final merge */}
+        <Route path="/home" element={<Home />} />
       </Routes>
     </BrowserRouter>
   );
