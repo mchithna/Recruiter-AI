@@ -5,8 +5,19 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    width: 100%;
+    overflow-x: hidden;
+  }
   body {
     @apply bg-secondary-50 text-secondary-900 font-sans;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 }
 
