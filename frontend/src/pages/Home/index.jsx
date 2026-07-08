@@ -8,20 +8,20 @@ import {
   Sparkles, Building2, Search, ArrowRight,
   Zap, Target, Users, Briefcase, TrendingUp, Clock,
   Brain, MessageSquare, Video, BarChart2, Layers,
-  Mail,
+  Mail, PlayCircle
 } from 'lucide-react';
 
 /* ─── Scroll-aware header opacity ─────────────────────────────────────────── */
-
 function useScrollGlass(ref) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const onScroll = () => {
       const y = window.scrollY;
-      // Ramp from bg-white/50 → bg-white/85 over the first 200 px
-      const opacity = Math.min(0.5 + (y / 200) * 0.35, 0.85);
+      const opacity = Math.min((y / 300) * 0.8, 0.8);
+      const blur = Math.min((y / 300) * 24, 24);
       el.style.setProperty('--header-bg-opacity', opacity.toString());
+      el.style.setProperty('--header-blur', `${blur}px`);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -29,7 +29,6 @@ function useScrollGlass(ref) {
 }
 
 /* ─── Intersection-observer entrance animation ─────────────────────────────── */
-
 function useFadeIn(ref) {
   useEffect(() => {
     const el = ref.current;
@@ -48,564 +47,560 @@ function useFadeIn(ref) {
   }, [ref]);
 }
 
-/* ─── Reusable fade-in wrapper ─────────────────────────────────────────────── */
-
 function FadeSection({ children, className = '', delay = 0 }) {
   const ref = useRef(null);
   useFadeIn(ref);
   return (
-    <div
-      ref={ref}
-      className={`section-fade ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
+    <div ref={ref} className={`section-fade ${className}`} style={{ transitionDelay: `${delay}ms` }}>
       {children}
     </div>
   );
 }
 
-/* ─── Data ─────────────────────────────────────────────────────────────────── */
-
-const MOCK_JOBS = [
-  { id: 101, title: 'Senior UX Researcher',  company: 'DesignWorks',   location: 'Remote',     type: 'Full-time' },
-  { id: 102, title: 'Data Scientist',         company: 'AnalyticsPro',  location: 'London, UK', type: 'Hybrid'    },
-  { id: 103, title: 'Frontend Developer',     company: 'WebSolutions',  location: 'Berlin, DE', type: 'Contract'  },
-];
-
-const AI_FEATURES = [
-  { icon: Brain,        title: 'AI Candidate Matching',       description: 'Instantly score and rank applicants using multi-dimensional skill and culture fit analysis.', variant: 'ai', span: 'md:col-span-2' },
-  { icon: MessageSquare, title: 'Interview Question Generator', description: 'Auto-generate role-specific interview sets from the job description in seconds.',               variant: 'ai', span: '' },
-  { icon: Video,        title: 'Video Interview Analysis',    description: 'Transcribe, score, and flag key moments from async video responses automatically.',              variant: 'info', span: '' },
-  { icon: BarChart2,    title: 'Sentiment Analysis',          description: 'Surface candidate communication patterns and engagement signals from written responses.',         variant: 'info', span: '' },
-  { icon: Layers,       title: 'Skill-Gap Identification',    description: 'Benchmark applicants against your benchmark profile and surface training gaps upfront.',          variant: 'success', span: '' },
-];
-
-const STATS = [
-  { label: 'Roles Filled Monthly', value: '2,400+', icon: Briefcase, trend: { direction: 'up', value: '+12% MoM' } },
-  { label: 'Active Candidates',    value: '95,000', icon: Users,     trend: { direction: 'up', value: '+8.3%'    } },
-  { label: 'Avg. Days to Hire',    value: '14.2',   icon: Clock,     trend: { direction: 'down', value: '−3.1 days' }, trendUpIsGood: false },
-  { label: 'Offer Acceptance',     value: '93%',    icon: TrendingUp, trend: { direction: 'up', value: '+5% YoY' } },
-];
-
-const FOOTER_LINKS = {
-  Product:  ['Job Search', 'AI Matching', 'Analytics', 'Integrations'],
-  Company:  ['About Us', 'Careers', 'Blog', 'Press'],
-  Resources:['Documentation', 'Status', 'Community', 'Changelog'],
-  Legal:    ['Privacy', 'Terms', 'Cookie Policy', 'GDPR'],
-};
-
 /* ─── Main Component ───────────────────────────────────────────────────────── */
-
 export default function Home() {
   const headerRef = useRef(null);
   useScrollGlass(headerRef);
 
   return (
     <>
-      {/* ── Inline styles: glass utilities, fade animation, accessibility ── */}
       <style>{`
-        /* Layer 1 glass — the single source of truth for glass styling */
-        .glass-layer-1 {
-          background-color: rgba(255,255,255, var(--header-bg-opacity, 0.7));
-          backdrop-filter: blur(20px) saturate(1.5);
-          -webkit-backdrop-filter: blur(20px) saturate(1.5);
-          border-bottom: 1px solid rgba(255,255,255,0.35);
+        /* Global Background Mesh Animation */
+        @keyframes aurora {
+          0% { background-position: 50% 50%, 50% 50%; }
+          50% { background-position: 100% 50%, 0% 50%; }
+          100% { background-position: 50% 50%, 50% 50%; }
+        }
+        
+        .mesh-bg {
+          background-color: #020617; /* slate-950 */
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.4) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.4) 0px, transparent 50%);
+          background-size: 200% 200%;
+          animation: aurora 20s ease infinite;
         }
 
-        /* Stats strip glass */
-        .glass-stats-strip {
-          background: rgba(255,255,255,0.60);
-          backdrop-filter: blur(16px) saturate(1.4);
-          -webkit-backdrop-filter: blur(16px) saturate(1.4);
-          border: 1px solid rgba(255,255,255,0.40);
+        /* Floating elements animation */
+        @keyframes float-up {
+          0% { transform: translateY(100vh) rotate(0deg) scale(0.8); opacity: 0; }
+          20% { opacity: 0.8; }
+          80% { opacity: 0.8; }
+          100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; }
         }
 
-        /* Icon chip glass accent */
-        .glass-icon-chip {
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+        .particle {
+          position: fixed;
+          z-index: 0;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(8px);
+          border-radius: 20%;
+          animation: float-up 25s linear infinite;
         }
 
-        /* Accessibility: prefers-reduced-transparency — drop to near-solid frost */
-        @media (prefers-reduced-transparency: reduce) {
-          .glass-layer-1 {
-            background-color: rgba(255,255,255,0.95) !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            border-bottom: 1px solid rgba(0,0,0,0.12);
-          }
-          .glass-stats-strip {
-            background: rgba(255,255,255,0.96) !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            border: 1px solid rgba(0,0,0,0.12);
-          }
-          .glass-icon-chip {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-          }
+        /* V4 Heavy Glass for Cards */
+        .glass-card-heavy {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(24px) saturate(1.5);
+          -webkit-backdrop-filter: blur(24px) saturate(1.5);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
+        }
+        
+        .glass-card-heavy:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 32px 80px rgba(99, 102, 241, 0.2);
         }
 
-        /* Accessibility: forced-colors / high contrast */
-        @media (forced-colors: active) {
-          .glass-layer-1, .glass-stats-strip {
-            border: 1px solid ButtonText;
-          }
+        /* Fixed Liquid Glass Header */
+        .glass-header-fixed {
+          background: rgba(2, 6, 23, 0.55);
+          backdrop-filter: blur(28px) saturate(1.8) brightness(1.1);
+          -webkit-backdrop-filter: blur(28px) saturate(1.8) brightness(1.1);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
-        /* Section entrance animation */
+        /* Entrance Animation */
         .section-fade {
           opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.55s ease, transform 0.55s ease;
+          transform: translateY(40px) scale(0.98);
+          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .section-fade.is-visible {
           opacity: 1;
           transform: none;
         }
 
-        /* Accessibility: prefers-reduced-motion — fade only, no translate */
-        @media (prefers-reduced-motion: reduce) {
-          .section-fade {
-            transform: none !important;
-            transition: opacity 0.3s ease !important;
-          }
-          .animate-pulse, .animate-bounce {
-            animation: none !important;
-          }
+        /* Text Gradients */
+        .text-gradient-vivid {
+          background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #e879f9 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        
+        /* Overrides for text legibility on dark glass */
+        .glass-card-heavy .text-secondary-900,
+        .glass-card-heavy .text-secondary-600,
+        .glass-card-heavy .text-secondary-500,
+        .glass-card-heavy .text-secondary-700 {
+          color: rgba(255, 255, 255, 0.9) !important;
+        }
+        .glass-card-heavy .bg-secondary-50 {
+          background: rgba(255, 255, 255, 0.1) !important;
         }
       `}</style>
 
-      <div className="min-h-screen flex flex-col bg-secondary-50">
+      <div className="min-h-screen w-full flex flex-col mesh-bg text-white font-sans relative overflow-hidden">
+        
+        {/* Floating Background Particles */}
+        <div className="particle w-24 h-24 left-[10%] animation-delay-[0s]" style={{ animationDuration: '20s' }}></div>
+        <div className="particle w-40 h-40 left-[40%] animation-delay-[5s]" style={{ animationDuration: '30s' }}></div>
+        <div className="particle w-16 h-16 left-[80%] animation-delay-[2s]" style={{ animationDuration: '15s' }}></div>
+        <div className="particle w-32 h-32 left-[60%] animation-delay-[12s]" style={{ animationDuration: '25s' }}></div>
 
-        {/* ── LAYER 1: Sticky Glass Header ────────────────────────────────── */}
-        <header
-          ref={headerRef}
-          className="glass-layer-1 sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-300"
-          style={{ '--header-bg-opacity': 0.7 }}
-        >
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="bg-primary-500 p-2 rounded-xl">
-              <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
+        {/* ── LAYER 1: Fixed Liquid Glass Header ──────────────────────────── */}
+        <header className="glass-header-fixed fixed top-0 left-0 right-0 z-50 flex justify-center">
+          <div className="w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30">
+                <Sparkles className="text-white w-6 h-6" aria-hidden="true" />
+              </div>
+              <span className="text-2xl font-black tracking-tighter text-white drop-shadow-md">
+                RecruiterAI
+              </span>
             </div>
-            <span className="text-h3 text-secondary-900 font-extrabold tracking-tight select-none">
-              RecruiterAI
-            </span>
+            <nav className="flex items-center gap-4">
+              <Button variant="ghost" className="text-white hover:bg-white/10" onClick={() => window.location.href = '/login'}>
+                Log In
+              </Button>
+              <div className="hidden sm:flex gap-3">
+                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:border-white/40" onClick={() => window.location.href = '/register/candidate'}>
+                  Find a Job
+                </Button>
+                <Button variant="primary" className="bg-white text-indigo-950 hover:bg-indigo-50 hover:scale-105 transition-transform" onClick={() => window.location.href = '/register/company'}>
+                  Hire Talent
+                </Button>
+              </div>
+            </nav>
           </div>
-
-          {/* Nav Actions — always solid text, only background is glass */}
-          <nav className="flex items-center gap-3" aria-label="Main navigation">
-            <Button variant="ghost" onClick={() => window.location.href = '/login'}>
-              Log In
-            </Button>
-            <div className="hidden sm:flex gap-3">
-              <Button variant="outline" onClick={() => window.location.href = '/register/candidate'}>
-                Find a Job
-              </Button>
-              <Button variant="primary" onClick={() => window.location.href = '/register/company'}>
-                Hire Talent
-              </Button>
-            </div>
-          </nav>
         </header>
 
-        <main>
+        {/* Push content below the fixed header (header height ~72px) */}
+        <main className="relative z-10 flex-grow flex flex-col items-center pt-[72px]">
 
-          {/* ── SECTION 2: Hero — Layer 0 (ambient) + Layer 2 (content) ──── */}
-          <section
-            className="relative overflow-hidden bg-secondary-900 text-white py-32 px-6"
-            aria-labelledby="hero-heading"
-          >
-            {/* Layer 0 — decorative orbs, no text, safe glass use */}
-            <div aria-hidden="true" className="pointer-events-none">
-              <div className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-primary-500/30 blur-[140px] animate-pulse" />
-              <div className="absolute -bottom-32 -right-24 w-[480px] h-[480px] rounded-full bg-ai-500/25 blur-[140px] animate-pulse" style={{ animationDelay: '2.2s' }} />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-primary-300/10 blur-[80px]" />
-            </div>
-
-            {/* Layer 2 — solid content, protected from ambient translucency */}
-            <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
-              <Badge variant="ai" className="inline-flex gap-1.5 uppercase tracking-widest text-caption">
-                <Sparkles size={12} aria-hidden="true" />
-                AI-Powered Recruitment
-              </Badge>
-
-              {/* text-display on dark solid background — contrast guaranteed */}
-              <h1 id="hero-heading" className="text-display font-black leading-tight tracking-tighter text-white">
-                Connect Talent With Opportunity,{' '}
-                <span className="text-primary-300">Intelligently.</span>
-              </h1>
-
-              <p className="text-body-lg text-secondary-300 max-w-2xl mx-auto leading-relaxed">
-                Whether you're hunting for your dream role or sourcing top-tier professionals,
-                our AI platform delivers precision matches — not noise.
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                <Button
-                  size="lg"
-                  variant="primary"
-                  leftIcon={<Search size={18} aria-hidden="true" />}
-                  onClick={() => window.location.href = '/register/candidate'}
-                >
-                  I'm a Candidate
-                </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  leftIcon={<Building2 size={18} aria-hidden="true" />}
-                  className="bg-white text-secondary-900 hover:bg-secondary-50"
-                  onClick={() => window.location.href = '/register/company'}
-                >
-                  I'm a Company
-                </Button>
-              </div>
-            </div>
-          </section>
-
-          {/* ── SECTION 3: Split Pathways — Layer 2 solid cards ─────────── */}
-          <section
-            className="py-24 px-6 bg-secondary-50 relative -mt-8 rounded-t-[2.5rem] z-10 shadow-[0_-8px_40px_rgba(0,0,0,0.08)]"
-            aria-labelledby="pathways-heading"
-          >
-            <div className="max-w-6xl mx-auto">
-              <FadeSection className="text-center mb-12">
-                <h2 id="pathways-heading" className="text-h1 text-secondary-900 tracking-tight">
-                  Two paths. One platform.
-                </h2>
-                <p className="text-body-lg text-secondary-500 mt-3 max-w-xl mx-auto">
-                  Choose your journey and get started in minutes.
-                </p>
-              </FadeSection>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                {/* Candidate Card — solid Layer 2, glass only on icon chip */}
-                <FadeSection delay={80}>
-                  <Card hoverable className="group bg-white border border-secondary-200 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden h-full">
-                    <CardHeader className="pt-10 pb-2">
-                      {/* Icon chip — the ONE glass accent allowed inside content cards (plan §3) */}
-                      <div className="glass-icon-chip bg-primary-50/60 border border-white/50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <Target className="text-primary-600 w-8 h-8" aria-hidden="true" />
-                      </div>
-                      <CardTitle className="text-h2">For Candidates</CardTitle>
-                      <CardDescription className="text-body-lg text-secondary-600 mt-2">
-                        Elevate your career trajectory with precision AI matching.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-4 text-secondary-700">
-                        {[
-                          ['AI-Driven Matches', 'Stop searching. Let our algorithm surface roles tailored exactly to your unique skillset.'],
-                          ['Unified Dashboard', 'Track every application, interview, and offer in one streamlined interface.'],
-                          ['Instant Notifications', 'Get real-time alerts the moment a recruiter views your profile or advances your application.'],
-                        ].map(([title, desc]) => (
-                          <li key={title} className="flex items-start gap-3">
-                            <div className="mt-1 bg-primary-100 p-1 rounded-full shrink-0">
-                              <Zap size={13} className="text-primary-600" aria-hidden="true" />
-                            </div>
-                            <span className="text-body-sm"><strong>{title}:</strong> {desc}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter className="pt-6 pb-8">
-                      <Button
-                        variant="ghost"
-                        className="text-primary-600 hover:text-primary-700 p-0"
-                        rightIcon={<ArrowRight size={16} aria-hidden="true" />}
-                        onClick={() => window.location.href = '/register/candidate'}
-                      >
-                        Create your profile
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </FadeSection>
-
-                {/* Company Card — same pattern */}
-                <FadeSection delay={160}>
-                  <Card hoverable className="group bg-white border border-secondary-200 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden h-full">
-                    <CardHeader className="pt-10 pb-2">
-                      <div className="glass-icon-chip bg-ai-50/60 border border-white/50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <Building2 className="text-ai-600 w-8 h-8" aria-hidden="true" />
-                      </div>
-                      <CardTitle className="text-h2">For Companies</CardTitle>
-                      <CardDescription className="text-body-lg text-secondary-600 mt-2">
-                        Build world-class teams with intelligent automation.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-4 text-secondary-700">
-                        {[
-                          ['Automated Screening', 'Instantly filter top candidates with AI-powered skill assessments and scoring.'],
-                          ['Structured Pipelines', 'Gain org-wide visibility into every hiring stage to reduce time-to-hire.'],
-                          ['Collaborative Reviews', 'Invite your team, leave structured feedback, and reach consensus faster.'],
-                        ].map(([title, desc]) => (
-                          <li key={title} className="flex items-start gap-3">
-                            <div className="mt-1 bg-ai-100 p-1 rounded-full shrink-0">
-                              <Zap size={13} className="text-ai-600" aria-hidden="true" />
-                            </div>
-                            <span className="text-body-sm"><strong>{title}:</strong> {desc}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter className="pt-6 pb-8">
-                      <Button
-                        variant="ghost"
-                        className="text-ai-600 hover:text-ai-700 p-0"
-                        rightIcon={<ArrowRight size={16} aria-hidden="true" />}
-                        onClick={() => window.location.href = '/register/company'}
-                      >
-                        Start hiring today
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </FadeSection>
-
-              </div>
-            </div>
-          </section>
-
-          {/* ── SECTION 5: AI Features Bento Grid — Layer 2 solid cards ─── */}
-          <section
-            className="py-24 px-6 bg-white border-t border-secondary-100"
-            aria-labelledby="ai-heading"
-          >
-            <div className="max-w-6xl mx-auto">
-              <FadeSection className="text-center mb-14">
-                <Badge variant="ai" className="mb-4 uppercase tracking-widest text-caption">
-                  AI-Powered
+          {/* ── SECTION 1: Massive Hero ────────────────────────────────────── */}
+          <section className="w-full max-w-7xl mx-auto px-6 pt-10 pb-24 lg:pt-16 lg:pb-32 flex flex-col lg:flex-row items-center gap-16">
+            <div className="lg:w-1/2 space-y-10 text-center lg:text-left z-20">
+              <FadeSection delay={0}>
+                <Badge variant="ai" className="inline-flex items-center gap-2 uppercase tracking-widest text-sm py-2 px-4 bg-indigo-500/20 border-indigo-400/30 backdrop-blur-md rounded-full shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                  <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></div>
+                  Next-Gen Recruitment
                 </Badge>
-                <h2 id="ai-heading" className="text-h1 text-secondary-900 tracking-tight">
-                  Intelligence at every step
-                </h2>
-                <p className="text-body-lg text-secondary-500 mt-3 max-w-xl mx-auto">
-                  Five AI capabilities, built natively into the hiring workflow.
+              </FadeSection>
+              
+              <FadeSection delay={100}>
+                {/* Breaking StyleGuide constraints with raw tailwind sizes for massive impact */}
+                <h1 className="text-6xl md:text-7xl lg:text-[5.5rem] font-black leading-[1.05] tracking-tighter drop-shadow-2xl">
+                  Hire the <span className="text-gradient-vivid italic">Future,</span><br />
+                  Faster.
+                </h1>
+              </FadeSection>
+
+              <FadeSection delay={200}>
+                <p className="text-xl md:text-2xl text-indigo-100/80 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light">
+                  A deeply immersive, AI-native talent platform that connects brilliant minds with visionary companies in milliseconds.
                 </p>
               </FadeSection>
 
-              {/* Bento grid — anchor card spans 2 cols per plan §5 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {AI_FEATURES.map(({ icon: Icon, title, description, variant, span }, i) => (
-                  <FadeSection key={title} delay={i * 80} className={span}>
-                    <Card className={`bg-secondary-50 border border-secondary-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full ${span}`}>
-                      <CardHeader>
-                        {/* Icon chip glass accent — same pattern as §3 */}
-                        <div className={`glass-icon-chip bg-${variant}-50/60 border border-white/50 w-12 h-12 rounded-xl flex items-center justify-center mb-4`}>
-                          <Icon className={`text-${variant}-600 w-6 h-6`} aria-hidden="true" />
-                        </div>
-                        <CardTitle className="text-h4">{title}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-body-sm text-secondary-600">{description}</p>
-                      </CardContent>
-                      <CardFooter>
-                        <Badge variant={variant} size="sm">AI-Powered</Badge>
-                      </CardFooter>
-                    </Card>
-                  </FadeSection>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ── SECTION 4: Featured Jobs — Layer 2, no glass ─────────────── */}
-          <section
-            className="py-24 px-6 bg-secondary-50 border-t border-secondary-100 relative"
-            aria-labelledby="jobs-heading"
-          >
-            {/* Subtle dot-grid decoration (Layer 0, purely visual) */}
-            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] opacity-40 pointer-events-none" />
-
-            <div className="max-w-6xl mx-auto relative z-10">
-              <FadeSection className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
-                <div>
-                  <h2 id="jobs-heading" className="text-h1 text-secondary-900 tracking-tight">Featured Open Roles</h2>
-                  <p className="text-body-lg text-secondary-500 mt-2">Discover high-impact positions hiring right now.</p>
-                </div>
-                <Button variant="outline" rightIcon={<ArrowRight size={16} aria-hidden="true" />} onClick={() => window.location.href = '/register/candidate'}>
-                  View all roles
+              <FadeSection delay={300} className="flex flex-col sm:flex-row items-center gap-5 justify-center lg:justify-start">
+                <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-xl shadow-indigo-600/30 hover:shadow-2xl hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all duration-300" leftIcon={<Building2 size={22} />} onClick={() => window.location.href = '/register/company'}>
+                  Start Hiring
+                </Button>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-6 border-white/20 text-white bg-white/5 backdrop-blur-md rounded-2xl hover:bg-white/10 hover:-translate-y-1 transition-all duration-300" leftIcon={<Search size={22} />} onClick={() => window.location.href = '/register/candidate'}>
+                  Find a Job
                 </Button>
               </FadeSection>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {MOCK_JOBS.map(({ id, title, company, location, type }, i) => (
-                  <FadeSection key={id} delay={i * 90}>
-                    <Card hoverable className="bg-white border border-secondary-200 shadow-sm hover:shadow-lg transition-shadow duration-300 h-full">
-                      <CardHeader>
-                        <div className="flex justify-between items-start mb-3">
-                          <Tooltip content={company} position="top">
-                            <div className="bg-primary-50 text-primary-700 font-extrabold text-xl w-12 h-12 rounded-xl flex items-center justify-center select-none">
-                              {company.charAt(0)}
-                            </div>
-                          </Tooltip>
-                          <Badge variant={type === 'Full-time' ? 'success' : type === 'Hybrid' ? 'info' : 'warning'} size="sm">
-                            {type}
-                          </Badge>
-                        </div>
-                        <CardTitle className="text-h4 mt-2">{title}</CardTitle>
-                        <CardDescription className="text-secondary-500">{company} · {location}</CardDescription>
-                      </CardHeader>
-                      <CardFooter className="border-t border-secondary-100 pt-4">
-                        <Button variant="outline" className="w-full" size="sm" onClick={() => window.location.href = '/login'}>
-                          Log In to Apply
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </FadeSection>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ── SECTION 6: Trust & Stats Strip — Layer 1 glass container ─── */}
-          <section
-            className="py-20 px-6 bg-secondary-900 relative overflow-hidden"
-            aria-labelledby="stats-heading"
-          >
-            {/* Layer 0 ambient orbs */}
-            <div aria-hidden="true" className="pointer-events-none">
-              <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary-500/20 blur-[100px]" />
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-ai-500/15 blur-[100px]" />
             </div>
 
-            <div className="max-w-6xl mx-auto relative z-10">
-              <FadeSection className="text-center mb-12">
-                <h2 id="stats-heading" className="text-h1 text-white tracking-tight">
-                  Trusted by thousands of teams
-                </h2>
-                <p className="text-body-lg text-secondary-300 mt-3">Real numbers, real results.</p>
-              </FadeSection>
-
-              {/* The glass container — bold numerals, predictable contrast (plan §6) */}
-              <FadeSection delay={100}>
-                <div className="glass-stats-strip rounded-2xl p-8">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {STATS.map((stat, i) => (
-                      <div key={stat.label}>
-                        <StatCard
-                          label={stat.label}
-                          value={stat.value}
-                          icon={stat.icon}
-                          trend={stat.trend}
-                          trendUpIsGood={stat.trendUpIsGood}
-                        />
+            {/* Creative Hero Imagery Layout */}
+            <div className="lg:w-1/2 relative z-10 w-full max-w-2xl mt-12 lg:mt-0">
+              <FadeSection delay={400} className="relative w-full aspect-square md:aspect-[4/3] lg:aspect-square">
+                {/* Abstract decorative rings */}
+                <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full animate-ping" style={{ animationDuration: '8s' }}></div>
+                <div className="absolute inset-8 border border-purple-500/30 rounded-full animate-spin" style={{ animationDuration: '30s' }}></div>
+                
+                {/* Main Hero Image */}
+                <div className="absolute inset-4 rounded-[3rem] overflow-hidden shadow-2xl ring-1 ring-white/20 transform rotate-3 hover:rotate-0 transition-transform duration-700 glass-card-heavy p-2">
+                  <div className="w-full h-full rounded-[2.5rem] overflow-hidden relative">
+                    <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Modern recruitment meeting" className="w-full h-full object-cover mix-blend-overlay opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                    
+                    {/* Floating stats card over image */}
+                    <div className="absolute bottom-8 left-8 right-8 glass-card-heavy rounded-2xl p-6 flex items-center justify-between">
+                      <div>
+                        <p className="text-indigo-200 text-sm font-semibold uppercase tracking-wider mb-1">Time to hire</p>
+                        <p className="text-4xl font-black text-white">-45%</p>
                       </div>
-                    ))}
+                      <div className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/40">
+                        <TrendingUp className="text-white w-7 h-7" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </FadeSection>
-
-              {/* Testimonial row — fully solid per plan §6 note */}
-              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { name: 'Priya Sharma',    role: 'Engineering Lead @ FinTech Corp',  quote: 'RecruiterAI cut our time-to-hire by 40% in the first quarter. The AI scoring is eerily accurate.' },
-                  { name: 'Marcus Chen',     role: 'Head of Talent @ Innovate.io',     quote: 'The structured pipelines finally gave our distributed team a single source of truth for every candidate.' },
-                  { name: 'Sophie Müller',   role: 'CTO @ WebSolutions GmbH',          quote: 'I was skeptical about AI screening — but the skill-gap reports surfaced things we missed in manual review.' },
-                ].map(({ name, role, quote }, i) => (
-                  <FadeSection key={name} delay={i * 100}>
-                    <Card className="bg-white border border-secondary-100 shadow-sm h-full">
-                      <CardContent className="pt-6">
-                        <p className="text-body-sm text-secondary-700 italic leading-relaxed">"{quote}"</p>
-                      </CardContent>
-                      <CardFooter className="gap-3 border-t border-secondary-100 pt-4">
-                        <Avatar name={name} size="sm" />
-                        <div>
-                          <p className="text-caption font-semibold text-secondary-900">{name}</p>
-                          <p className="text-caption text-secondary-500">{role}</p>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  </FadeSection>
-                ))}
-              </div>
             </div>
           </section>
 
-          {/* ── SECTION 7: Final CTA Banner — Layer 0 + Layer 2 ─────────── */}
-          <section
-            className="relative overflow-hidden bg-secondary-900 py-28 px-6 text-center"
-            aria-labelledby="cta-heading"
-          >
-            {/* Layer 0 ambient */}
-            <div aria-hidden="true" className="pointer-events-none">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-primary-500/25 blur-[120px]" />
-              <div className="absolute bottom-0 left-1/4 w-64 h-64 rounded-full bg-ai-400/20 blur-[80px]" />
-            </div>
-
-            {/* Layer 2 — scrim protects text contrast */}
-            <div className="relative z-10 max-w-3xl mx-auto space-y-6">
-              <h2 id="cta-heading" className="text-h1 text-white font-black tracking-tight">
-                Ready to transform the way you hire?
+          {/* ── SECTION 2: Fully Glass Bento Grid ──────────────────────────── */}
+          <section className="w-full max-w-7xl mx-auto px-6 py-32 z-20">
+            <FadeSection className="text-center mb-20">
+              <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg">
+                Supercharged by <span className="text-gradient-vivid">Intelligence</span>
               </h2>
-              <p className="text-body-lg text-secondary-300 max-w-xl mx-auto">
-                Join thousands of candidates and companies already using RecruiterAI to make smarter hiring decisions.
+              <p className="text-xl text-indigo-200/80 mt-6 max-w-2xl mx-auto">
+                Experience recruitment that feels like magic. Fluid, fast, and remarkably accurate.
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-                <Button
-                  size="lg"
-                  variant="primary"
-                  leftIcon={<Search size={18} aria-hidden="true" />}
-                  onClick={() => window.location.href = '/register/candidate'}
-                >
-                  Find a Job
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/40 text-white hover:bg-white/10"
-                  leftIcon={<Building2 size={18} aria-hidden="true" />}
-                  onClick={() => window.location.href = '/register/company'}
-                >
-                  Start Hiring
-                </Button>
-              </div>
+            </FadeSection>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              {/* Massive Glass Card 1 */}
+              <FadeSection delay={100} className="md:col-span-2">
+                <Card hoverable className="glass-card-heavy h-[400px] border-none rounded-[2rem] overflow-hidden group">
+                  <div className="absolute inset-0 z-0">
+                    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Team collaboration" className="w-full h-full object-cover opacity-20 group-hover:scale-105 transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 to-transparent"></div>
+                  </div>
+                  <CardContent className="relative z-10 h-full flex flex-col justify-center p-12">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 backdrop-blur-md border border-indigo-400/30 flex items-center justify-center mb-8">
+                      <Target className="text-indigo-300 w-8 h-8" />
+                    </div>
+                    <h3 className="text-4xl font-bold text-white mb-4">Precision Matching</h3>
+                    <p className="text-lg text-indigo-200/80 max-w-md">Our neural networks analyze thousands of data points to find the absolute perfect fit between candidate skills and company culture.</p>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+
+              {/* Massive Glass Card 2 */}
+              <FadeSection delay={200} className="md:col-span-1">
+                <Card hoverable className="glass-card-heavy h-[400px] border-none rounded-[2rem] overflow-hidden flex flex-col">
+                  <CardContent className="p-10 flex-grow flex flex-col justify-between relative">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/20 rounded-full blur-[60px]"></div>
+                    <div className="w-16 h-16 rounded-2xl bg-purple-500/20 backdrop-blur-md border border-purple-400/30 flex items-center justify-center">
+                      <Video className="text-purple-300 w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-white mb-3">Video AI</h3>
+                      <p className="text-indigo-200/80">Automatically transcribe, score, and analyze candidate async video interviews in real-time.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+
+              {/* Massive Glass Card 3 */}
+              <FadeSection delay={300} className="md:col-span-1">
+                <Card hoverable className="glass-card-heavy h-[400px] border-none rounded-[2rem] overflow-hidden flex flex-col">
+                  <CardContent className="p-10 flex-grow flex flex-col justify-between relative">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/20 rounded-full blur-[60px]"></div>
+                    <div className="w-16 h-16 rounded-2xl bg-teal-500/20 backdrop-blur-md border border-teal-400/30 flex items-center justify-center">
+                      <BarChart2 className="text-teal-300 w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-white mb-3">Live Insights</h3>
+                      <p className="text-indigo-200/80">Monitor pipeline health, drop-off rates, and diversity metrics through beautiful, interactive dashboards.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+
+              {/* Massive Glass Card 4 */}
+              <FadeSection delay={400} className="md:col-span-2">
+                <Card hoverable className="glass-card-heavy h-[400px] border-none rounded-[2rem] overflow-hidden group">
+                  <div className="absolute inset-0 z-0">
+                    <img src="https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Tech professionals" className="w-full h-full object-cover opacity-20 group-hover:scale-105 transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-l from-purple-950/90 to-transparent"></div>
+                  </div>
+                  <CardContent className="relative z-10 h-full flex flex-col justify-center items-end text-right p-12">
+                    <div className="w-16 h-16 rounded-2xl bg-purple-500/20 backdrop-blur-md border border-purple-400/30 flex items-center justify-center mb-8">
+                      <Users className="text-purple-300 w-8 h-8" />
+                    </div>
+                    <h3 className="text-4xl font-bold text-white mb-4">Collaborative Hiring</h3>
+                    <p className="text-lg text-indigo-200/80 max-w-md">Bring your entire team into the loop. Leave structured feedback, share scorecards, and reach consensus faster than ever.</p>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+
             </div>
+          </section>
+
+          {/* ── SECTION 3: Split Pathways (Candidate vs Company) ─────────── */}
+          <section className="w-full max-w-7xl mx-auto px-6 pb-24 z-20">
+            <FadeSection className="text-center mb-14">
+              <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
+                Two paths. <span className="text-gradient-vivid">One platform.</span>
+              </h2>
+              <p className="text-xl text-indigo-200/70 mt-4 max-w-xl mx-auto">
+                Choose your journey and get started in minutes.
+              </p>
+            </FadeSection>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Candidate Card */}
+              <FadeSection delay={80}>
+                <Card hoverable className="glass-card-heavy border-none rounded-[2rem] overflow-hidden group h-full">
+                  <CardContent className="p-10 flex flex-col h-full relative">
+                    <div className="absolute -top-10 -right-10 w-64 h-64 bg-indigo-500/15 rounded-full blur-[80px]" />
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 backdrop-blur-md border border-indigo-400/30 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+                      <Target className="text-indigo-300 w-8 h-8" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-4">For Candidates</h3>
+                    <p className="text-indigo-200/70 mb-8 text-lg leading-relaxed">
+                      Elevate your career trajectory with precision AI matching. Stop searching — let us find your dream role.
+                    </p>
+                    <ul className="space-y-4 mb-10 flex-grow">
+                      {[
+                        'AI-Driven Role Matching to your exact skillset',
+                        'Unified dashboard for all applications & interviews',
+                        'Real-time notifications when recruiters engage',
+                      ].map(item => (
+                        <li key={item} className="flex items-start gap-3">
+                          <div className="mt-1 bg-indigo-500/20 p-1 rounded-full shrink-0">
+                            <Zap size={13} className="text-indigo-300" />
+                          </div>
+                          <span className="text-indigo-200/80 text-sm">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button variant="outline" className="border-indigo-400/40 text-indigo-300 hover:bg-indigo-500/20 rounded-xl self-start" rightIcon={<ArrowRight size={16} />} onClick={() => window.location.href = '/register/candidate'}>
+                      Create your profile
+                    </Button>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+
+              {/* Company Card */}
+              <FadeSection delay={160}>
+                <Card hoverable className="glass-card-heavy border-none rounded-[2rem] overflow-hidden group h-full">
+                  <CardContent className="p-10 flex flex-col h-full relative">
+                    <div className="absolute -top-10 -right-10 w-64 h-64 bg-purple-500/15 rounded-full blur-[80px]" />
+                    <div className="w-16 h-16 rounded-2xl bg-purple-500/20 backdrop-blur-md border border-purple-400/30 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+                      <Building2 className="text-purple-300 w-8 h-8" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-4">For Companies</h3>
+                    <p className="text-indigo-200/70 mb-8 text-lg leading-relaxed">
+                      Build world-class teams with intelligent automation. Reduce time-to-hire without sacrificing quality.
+                    </p>
+                    <ul className="space-y-4 mb-10 flex-grow">
+                      {[
+                        'Automated AI screening & candidate scoring',
+                        'Org-wide structured hiring pipelines',
+                        'Collaborative team reviews with scorecard sharing',
+                      ].map(item => (
+                        <li key={item} className="flex items-start gap-3">
+                          <div className="mt-1 bg-purple-500/20 p-1 rounded-full shrink-0">
+                            <Zap size={13} className="text-purple-300" />
+                          </div>
+                          <span className="text-indigo-200/80 text-sm">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button variant="outline" className="border-purple-400/40 text-purple-300 hover:bg-purple-500/20 rounded-xl self-start" rightIcon={<ArrowRight size={16} />} onClick={() => window.location.href = '/register/company'}>
+                      Start hiring today
+                    </Button>
+                  </CardContent>
+                </Card>
+              </FadeSection>
+            </div>
+          </section>
+
+          {/* ── SECTION 4: Featured Open Roles ────────────────────────────── */}
+          <section className="w-full max-w-7xl mx-auto px-6 pb-24 z-20">
+            <FadeSection className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Featured Open Roles</h2>
+                <p className="text-lg text-indigo-200/70 mt-3">Discover high-impact positions hiring right now.</p>
+              </div>
+              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-xl shrink-0" rightIcon={<ArrowRight size={16} />} onClick={() => window.location.href = '/register/candidate'}>
+                View all roles
+              </Button>
+            </FadeSection>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { id: 101, title: 'Senior UX Researcher',  company: 'DesignWorks',  location: 'Remote',     type: 'Full-time', typeVariant: 'success', initial: 'D', color: 'indigo' },
+                { id: 102, title: 'Data Scientist',         company: 'AnalyticsPro', location: 'London, UK', type: 'Hybrid',    typeVariant: 'info',    initial: 'A', color: 'purple' },
+                { id: 103, title: 'Frontend Developer',     company: 'WebSolutions', location: 'Berlin, DE', type: 'Contract',  typeVariant: 'warning', initial: 'W', color: 'teal'   },
+              ].map(({ id, title, company, location, type, typeVariant, initial, color }, i) => (
+                <FadeSection key={id} delay={i * 90}>
+                  <div className="glass-card-heavy rounded-[1.5rem] overflow-hidden h-full flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
+                    {/* Card top strip */}
+                    <div className="h-1 w-full" style={{ background: color === 'indigo' ? 'linear-gradient(90deg,#6366f1,#818cf8)' : color === 'purple' ? 'linear-gradient(90deg,#a855f7,#c084fc)' : 'linear-gradient(90deg,#14b8a6,#2dd4bf)' }} />
+                    <div className="p-7 flex flex-col flex-grow">
+                      {/* Header row */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black border shrink-0`}
+                          style={{ background: color === 'indigo' ? 'rgba(99,102,241,0.2)' : color === 'purple' ? 'rgba(168,85,247,0.2)' : 'rgba(20,184,166,0.2)', color: color === 'indigo' ? '#a5b4fc' : color === 'purple' ? '#d8b4fe' : '#5eead4', borderColor: color === 'indigo' ? 'rgba(99,102,241,0.35)' : color === 'purple' ? 'rgba(168,85,247,0.35)' : 'rgba(20,184,166,0.35)' }}>
+                          {initial}
+                        </div>
+                        <Badge variant={typeVariant} size="sm" className="mt-1">{type}</Badge>
+                      </div>
+                      {/* Job details */}
+                      <div className="flex-grow">
+                        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-indigo-200 transition-colors">{title}</h3>
+                        <p className="text-indigo-300/70 text-sm">{company}</p>
+                        <div className="flex items-center gap-1.5 mt-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400/60" />
+                          <span className="text-indigo-300/50 text-xs">{location}</span>
+                        </div>
+                      </div>
+                      {/* CTA */}
+                      <button
+                        onClick={() => window.location.href = '/login'}
+                        className="mt-6 w-full py-3 rounded-xl border border-white/15 text-white/80 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-all duration-200"
+                      >
+                        Log In to Apply
+                      </button>
+                    </div>
+                  </div>
+                </FadeSection>
+              ))}
+            </div>
+          </section>
+
+          {/* ── SECTION 5: Stats & Social Proof ──────────────────────────── */}
+          <section className="w-full max-w-7xl mx-auto px-6 pb-24 z-20">
+            <FadeSection className="text-center mb-14">
+              <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
+                Trusted by <span className="text-gradient-vivid">thousands of teams</span>
+              </h2>
+            </FadeSection>
+
+            {/* Inline dark glass stat tiles — avoid StatCard's white Card bg */}
+            <FadeSection delay={100}>
+              <div className="glass-card-heavy rounded-[2rem] p-8 mb-10">
+                <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/10">
+                  {[
+                    { label: 'Roles Filled Monthly', value: '2,400+', Icon: Briefcase,  trend: '+12% MoM',  up: true  },
+                    { label: 'Active Candidates',    value: '95,000', Icon: Users,      trend: '+8.3%',     up: true  },
+                    { label: 'Avg. Days to Hire',    value: '14.2',   Icon: Clock,      trend: '−3.1 days', up: false },
+                    { label: 'Offer Acceptance',     value: '93%',    Icon: TrendingUp, trend: '+5% YoY',   up: true  },
+                  ].map(({ label, value, Icon, trend, up }) => (
+                    <div key={label} className="flex flex-col items-center text-center px-6 py-6 gap-3">
+                      <div className="w-12 h-12 rounded-full bg-indigo-500/20 border border-indigo-400/25 flex items-center justify-center mb-1">
+                        <Icon size={20} className="text-indigo-300" />
+                      </div>
+                      <p className="text-4xl font-black text-white tabular-nums">{value}</p>
+                      <p className="text-sm text-indigo-300/70 leading-snug max-w-[120px]">{label}</p>
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${ up ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400' }`}>
+                        {up ? '↗' : '↘'} {trend}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeSection>
+
+            {/* Testimonials */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { name: 'Priya Sharma',  role: 'Engineering Lead @ FinTech Corp',  quote: 'RecruiterAI cut our time-to-hire by 40% in the first quarter. The AI scoring is eerily accurate.' },
+                { name: 'Marcus Chen',   role: 'Head of Talent @ Innovate.io',     quote: 'The structured pipelines finally gave our distributed team a single source of truth for every candidate.' },
+                { name: 'Sophie Müller', role: 'CTO @ WebSolutions GmbH',          quote: "I was skeptical about AI screening — but the skill-gap reports surfaced things we missed in manual review." },
+              ].map(({ name, role, quote }, i) => (
+                <FadeSection key={name} delay={i * 100}>
+                  <div className="glass-card-heavy rounded-[1.5rem] p-8 h-full flex flex-col justify-between">
+                    {/* Quote marks */}
+                    <div className="text-5xl text-indigo-400/30 font-serif leading-none mb-3">&ldquo;</div>
+                    <p className="text-indigo-100/80 italic leading-relaxed text-sm flex-grow">{quote}</p>
+                    <div className="flex items-center gap-3 mt-6 pt-5 border-t border-white/10">
+                      <Avatar name={name} size="sm" />
+                      <div>
+                        <p className="text-sm font-semibold text-white">{name}</p>
+                        <p className="text-xs text-indigo-300/60">{role}</p>
+                      </div>
+                    </div>
+                  </div>
+                </FadeSection>
+              ))}
+            </div>
+          </section>
+
+          {/* ── SECTION 6: Deep Glass CTA ──────────────────────────────────── */}
+          <section className="w-full max-w-5xl mx-auto px-6 pb-32 z-20">
+            <FadeSection>
+              <div className="glass-card-heavy rounded-[3rem] p-16 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent"></div>
+                
+                <h2 className="text-5xl font-black text-white mb-8 relative z-10 drop-shadow-lg">
+                  Join the Hiring Revolution
+                </h2>
+                
+                <div className="flex flex-col sm:flex-row justify-center gap-6 relative z-10">
+                  <Button size="lg" className="text-xl px-12 py-8 bg-white text-indigo-950 hover:bg-indigo-50 rounded-2xl shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    Start Hiring Now
+                  </Button>
+                  <Button size="lg" className="text-xl px-12 py-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-2xl shadow-indigo-600/20 hover:-translate-y-1 transition-all duration-300" leftIcon={<PlayCircle size={24} />}>
+                    Watch Demo
+                  </Button>
+                </div>
+              </div>
+            </FadeSection>
           </section>
 
         </main>
 
-        {/* ── SECTION 8: Footer — Layer 2, fully opaque (no glass) ─────── */}
-        <footer className="bg-secondary-900 border-t border-secondary-700 pt-16 pb-10 px-6" aria-label="Site footer">
-          <div className="max-w-6xl mx-auto">
-            {/* Brand row */}
-            <div className="flex items-center gap-2 mb-10">
-              <div className="bg-primary-500 p-2 rounded-xl">
-                <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
+        {/* ── SECTION 4: Translucent Footer ──────────────────────────────── */}
+        <footer className="relative z-20 border-t border-white/10 bg-black/40 backdrop-blur-xl pt-16 pb-10 px-6">
+          <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="text-indigo-400 w-6 h-6" />
+                <span className="text-2xl font-black text-white">RecruiterAI</span>
               </div>
-              <span className="text-h3 text-white font-extrabold tracking-tight">RecruiterAI</span>
-            </div>
-
-            {/* Link columns */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-              {Object.entries(FOOTER_LINKS).map(([group, links]) => (
-                <div key={group}>
-                  <p className="text-overline uppercase tracking-wide text-secondary-400 mb-4">{group}</p>
-                  <ul className="space-y-2">
-                    {links.map((link) => (
-                      <li key={link}>
-                        <a href="#" className="text-body-sm text-secondary-500 hover:text-primary-400 transition-colors duration-200">
-                          {link}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Bottom bar */}
-            <div className="border-t border-secondary-700 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-caption text-secondary-500">
-                &copy; {new Date().getFullYear()} RecruiterAI Inc. All rights reserved.
+              <p className="text-indigo-200/60 leading-relaxed">
+                Building the future of human capital through advanced artificial intelligence and breathtaking design.
               </p>
-              <div className="flex items-center gap-4">
-                <a href="#" aria-label="Email" className="text-secondary-500 hover:text-primary-400 transition-colors duration-200">
-                  <Mail size={18} aria-hidden="true" />
+            </div>
+            
+            <div>
+              <p className="text-white font-bold tracking-wider mb-6">PLATFORM</p>
+              <ul className="space-y-4">
+                {['For Candidates', 'For Companies', 'Pricing', 'AI Features'].map(link => (
+                  <li key={link}><a href="#" className="text-indigo-200/70 hover:text-white transition-colors">{link}</a></li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-white font-bold tracking-wider mb-6">COMPANY</p>
+              <ul className="space-y-4">
+                {['About Us', 'Careers', 'Blog', 'Contact'].map(link => (
+                  <li key={link}><a href="#" className="text-indigo-200/70 hover:text-white transition-colors">{link}</a></li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-white font-bold tracking-wider mb-6">LEGAL</p>
+              <ul className="space-y-4">
+                {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map(link => (
+                  <li key={link}><a href="#" className="text-indigo-200/70 hover:text-white transition-colors">{link}</a></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-indigo-200/50">
+              &copy; {new Date().getFullYear()} RecruiterAI Inc. Designed in the Future.
+            </p>
+            <div className="flex items-center gap-6">
+              {[Mail].map((Icon, i) => (
+                <a key={i} href="#" className="text-indigo-200/50 hover:text-white transition-colors">
+                  <Icon size={20} />
                 </a>
-              </div>
+              ))}
             </div>
           </div>
         </footer>
