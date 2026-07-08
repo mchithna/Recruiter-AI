@@ -15,7 +15,7 @@ export default function RegisterCandidate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, refreshProfile } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +45,8 @@ export default function RegisterCandidate() {
         firstName,
         lastName
       });
+      // Force a profile refresh so AuthContext knows about the new provisioned data
+      await refreshProfile();
       // 3. On success, redirect to /candidate
       navigate('/candidate', { replace: true });
     } catch (err) {

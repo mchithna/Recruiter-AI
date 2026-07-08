@@ -16,7 +16,7 @@ export default function RegisterCompany() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, refreshProfile } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,14 +40,16 @@ export default function RegisterCompany() {
       return;
     }
 
-    // 2. Provision internal company and admin profile
+    // 2. Provision internal company profile using the now-active session
     try {
       await api.post('/profile/provision-company-admin', {
-        companyName,
         firstName,
-        lastName
+        lastName,
+        companyName
       });
-      // 3. On success, redirect to /admin
+      // Force a profile refresh so AuthContext knows about the new provisioned data
+      await refreshProfile();
+      // 3. On success, redirect to /admin (Company Admin dashboard)
       navigate('/admin', { replace: true });
     } catch (err) {
       console.error(err);

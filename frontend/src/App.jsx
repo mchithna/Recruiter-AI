@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -11,12 +11,15 @@ import RegisterCompany from './pages/RegisterCompany';
 import AcceptInvite from './pages/AcceptInvite';
 
 // Dummy components
-const CandidateDashboard = () => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-    <h2 className="text-xl font-bold mb-2">Candidate Dashboard</h2>
-    <p className="text-slate-500">View your applications and profile here.</p>
-  </div>
-);
+const CandidateDashboard = () => {
+  const { profile } = useAuth();
+  return (
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+      <h2 className="text-xl font-bold mb-2">Welcome, {profile?.firstName} {profile?.lastName}!</h2>
+      <p className="text-slate-500">This is your blank candidate dashboard.</p>
+    </div>
+  );
+};
 
 const RecruiterDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
@@ -58,11 +61,11 @@ function App() {
               <Route path="/" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
               
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
-              <Route element={<ProtectedRoute allowedRoles={['Candidate', 'Admin']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<CandidateDashboard />} />
               </Route>
               
-              <Route element={<ProtectedRoute allowedRoles={['Recruiter', 'Admin']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
                 <Route path="/recruiter" element={<RecruiterDashboard />} />
               </Route>
               
