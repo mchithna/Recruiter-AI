@@ -5,14 +5,15 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import StyleGuide from './pages/StyleGuide';
-<<<<<<< HEAD
-import Home from './pages/Home/index'; // DEV PREVIEW ONLY
-=======
+import Home from './pages/Home/index';
 import Login from './pages/Login';
 import RegisterCandidate from './pages/RegisterCandidate';
 import RegisterCompany from './pages/RegisterCompany';
 import AcceptInvite from './pages/AcceptInvite';
->>>>>>> origin/minal
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
+import About from './pages/About';
+import Contact from './pages/Contact';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -20,7 +21,7 @@ const CandidateDashboard = () => {
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
       <h2 className="text-xl font-bold mb-2">Welcome, {profile?.firstName} {profile?.lastName}!</h2>
-      <p className="text-slate-500">This is your blank candidate dashboard.</p>
+      <p className="text-slate-500 dark:text-slate-400">This is your blank candidate dashboard.</p>
     </div>
   );
 };
@@ -28,14 +29,14 @@ const CandidateDashboard = () => {
 const RecruiterDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
     <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
-    <p className="text-slate-500">Manage candidates and job postings.</p>
+    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
   </div>
 );
 
 const AdminDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
     <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
-    <p className="text-slate-500">Platform overview and settings.</p>
+    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
   </div>
 );
 
@@ -51,18 +52,25 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Guest Routes */}
-        <Route element={<GuestLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/candidate" element={<RegisterCandidate />} />
-          <Route path="/register/company" element={<RegisterCompany />} />
-          <Route path="/invite/accept" element={<AcceptInvite />} />
-        </Route>
+          {/* Public pages — Home + marketing */}
+          <Route path="/" element={<Home />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+
+          {/* Guest Routes (auth forms) */}
+          <Route element={<GuestLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register/candidate" element={<RegisterCandidate />} />
+            <Route path="/register/company" element={<RegisterCompany />} />
+            <Route path="/invite/accept" element={<AcceptInvite />} />
+          </Route>
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
+              <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
               
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
@@ -82,20 +90,11 @@ function App() {
           {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-<<<<<<< HEAD
-        {/* Dev-only: design system showcase — no auth required */}
-        <Route path="/style-guide" element={<StyleGuide />} />
-        {/* DEV PREVIEW — remove before final merge */}
-        <Route path="/home" element={<Home />} />
-      </Routes>
-    </BrowserRouter>
-=======
           {/* Dev-only: design system showcase — no auth required */}
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
->>>>>>> origin/minal
   );
 }
 

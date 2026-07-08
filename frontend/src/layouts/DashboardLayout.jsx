@@ -18,7 +18,7 @@ const DashboardLayout = () => {
       <aside className="w-64 bg-white dark:bg-slate-800 shadow-md border-r border-slate-200 dark:border-slate-700">
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            RecruitAI
+            Hirely
           </h2>
         </div>
         <nav className="p-4 space-y-1">
