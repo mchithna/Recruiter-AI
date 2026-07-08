@@ -17,14 +17,16 @@ function useScrollGlass(ref) {
     const el = ref.current;
     if (!el) return;
     const onScroll = () => {
-      const y = window.scrollY;
+      const rootEl = document.getElementById('root') || window;
+      const y = rootEl.scrollTop ?? window.scrollY;
       const opacity = Math.min((y / 300) * 0.8, 0.8);
       const blur = Math.min((y / 300) * 24, 24);
       el.style.setProperty('--header-bg-opacity', opacity.toString());
       el.style.setProperty('--header-blur', `${blur}px`);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const target = document.getElementById('root') || window;
+    target.addEventListener('scroll', onScroll, { passive: true });
+    return () => target.removeEventListener('scroll', onScroll);
   }, [ref]);
 }
 

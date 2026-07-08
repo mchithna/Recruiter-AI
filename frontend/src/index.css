@@ -6,19 +6,30 @@
 
 @layer base {
   html {
+    height: 100%;
     width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Lock viewport entirely */
+    overscroll-behavior: none;
   }
   body {
     @apply bg-secondary-50 text-secondary-900 font-sans;
+    height: 100%;
     width: 100%;
-    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Lock viewport entirely */
+    overscroll-behavior: none;
   }
   #root {
+    height: 100%;
     width: 100%;
-    min-height: 100vh;
+    overflow-y: auto;  /* #root becomes the ONLY scroll container */
     overflow-x: hidden;
   }
 }
+
 
 @layer utilities {
   .focus-ring:focus-visible {
