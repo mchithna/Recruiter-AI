@@ -125,6 +125,15 @@ export default function Home() {
           box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
+        /* Liquid Glass Footer */
+        .glass-footer {
+          background: rgba(2, 6, 23, 0.45);
+          backdrop-filter: blur(32px) saturate(2);
+          -webkit-backdrop-filter: blur(32px) saturate(2);
+          border-top: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
         /* Entrance Animation */
         .section-fade {
           opacity: 0;
@@ -561,7 +570,7 @@ export default function Home() {
         </main>
 
         {/* ── SECTION 4: Translucent Footer ──────────────────────────────── */}
-        <footer className="relative z-20 border-t border-white/10 bg-black/40 backdrop-blur-xl pt-16 pb-10 px-6">
+        <footer className="glass-footer relative z-20 pt-16 pb-10 px-6">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
