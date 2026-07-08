@@ -81,6 +81,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signIn: authService.signInWithPassword,
     signUp: authService.signUp,
+    signInWithGoogle: authService.signInWithGoogle,
     signOut: authService.signOut,
     refreshProfile: () => fetchProfile(session),
   };
