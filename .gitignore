@@ -33,6 +33,7 @@ packages/
 # Environment and secrets
 .env
 .env.*
+!**/.env.example
 appsettings.Development.json
 secrets.json
 
@@ -85,6 +86,7 @@ ScaffoldingReadMe.txt
 .env
 
 # Others
+.agents
 ~$*
 *~
 CodeCoverage/
