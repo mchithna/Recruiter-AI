@@ -13,6 +13,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<CandidateProfile>? _candidateProfiles;
     private IRepository<Role>? _roles;
     private IRepository<Company>? _companies;
+    private IRepository<UserInvitation>? _userInvitations;
     private bool _disposed;
 
     public UnitOfWork(ApplicationDbContext context)
@@ -31,6 +32,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
 
     public IRepository<Company> Companies => _companies ??= new Repository<Company>(_context);
+
+    public IRepository<UserInvitation> UserInvitations => _userInvitations ??= new Repository<UserInvitation>(_context);
 
     public Task<int> SaveChangesAsync()
     {
