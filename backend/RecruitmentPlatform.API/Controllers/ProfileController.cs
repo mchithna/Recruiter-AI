@@ -117,7 +117,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("me")]
-    public IActionResult GetMyProfile()
+    public async Task<IActionResult> GetMyProfile()
     {
         var appUserIdClaim = User.FindFirst("app_user_id")?.Value;
         if (string.IsNullOrEmpty(appUserIdClaim) || !int.TryParse(appUserIdClaim, out var appUserId))
@@ -125,21 +125,14 @@ public class ProfileController : ControllerBase
             return NotFound(new { message = "profile not provisioned" });
         }
 
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
-        
-        int? companyId = null;
-        if (int.TryParse(User.FindFirst("company_id")?.Value, out var cId)) companyId = cId;
-
-        int? departmentId = null;
-        if (int.TryParse(User.FindFirst("department_id")?.Value, out var dId)) departmentId = dId;
-
-        return Ok(new ProfileResponse
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == appUserId, u => u.Role);
+        if (user == null)
         {
-            AppUserId = appUserId,
-            Role = role,
-            CompanyId = companyId,
-            DepartmentId = departmentId
-        });
+            return NotFound(new { message = "User not found in database" });
+        }
+
+        // Use the same helper method that provisioning uses to ensure consistent responses
+        return Ok(MapToResponse(user));
     }
 
     private ProfileResponse MapToResponse(User user)
