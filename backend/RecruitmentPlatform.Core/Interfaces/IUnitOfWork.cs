@@ -10,5 +10,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<Company> Companies { get; }
     IRepository<Department> Departments { get; }
     IRepository<CandidateProfile> CandidateProfiles { get; }
+    IRepository<Role> Roles { get; }
+    IRepository<Company> Companies { get; }
+    IRepository<UserInvitation> UserInvitations { get; }
     Task<int> SaveChangesAsync();
 }

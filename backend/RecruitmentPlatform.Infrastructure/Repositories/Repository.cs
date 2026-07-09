@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -19,6 +20,18 @@ public class Repository<T> : IRepository<T>
     public async Task<T?> GetByIdAsync(params object[] keyValues)
     {
         return await DbSet.FindAsync(keyValues);
+    }
+
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = DbSet;
+        
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+        
+        return await query.FirstOrDefaultAsync(predicate);
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()
