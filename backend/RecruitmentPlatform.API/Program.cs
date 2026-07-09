@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using RecruitmentPlatform.Core.Factories;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
 using RecruitmentPlatform.Infrastructure.Repositories;
@@ -27,10 +26,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<EmailNotificationService>();
 builder.Services.AddScoped<SmsNotificationService>();
-builder.Services.AddScoped<NotificationFactory>(serviceProvider =>
-    new NotificationFactory(
-        serviceProvider.GetRequiredService<EmailNotificationService>(),
-        serviceProvider.GetRequiredService<SmsNotificationService>()));
+builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
