@@ -65,6 +65,13 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Name)
                 .IsUnique();
+
+            entity.HasData(
+                new Role { Id = 1, Name = "Admin" },
+                new Role { Id = 2, Name = "Recruiter" },
+                new Role { Id = 3, Name = "HiringManager" },
+                new Role { Id = 4, Name = "Candidate" }
+            );
         });
 
         modelBuilder.Entity<Permission>(entity =>
@@ -219,9 +226,8 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(255)
                 .IsRequired();
 
-            entity.Property(e => e.PasswordHash)
-                .HasColumnName("password_hash")
-                .HasMaxLength(255)
+            entity.Property(e => e.SupabaseUserId)
+                .HasColumnName("supabase_user_id")
                 .IsRequired();
 
             entity.Property(e => e.FirstName)
@@ -261,6 +267,9 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("last_login_at");
 
             entity.HasIndex(e => e.Email)
+                .IsUnique();
+
+            entity.HasIndex(e => e.SupabaseUserId)
                 .IsUnique();
 
             entity.HasOne(e => e.Role)
