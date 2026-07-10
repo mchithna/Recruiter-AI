@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RecruitmentPlatform.API.Authentication;
-using RecruitmentPlatform.Core.Factories;
+
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
 using RecruitmentPlatform.Infrastructure.Repositories;
