@@ -14,7 +14,6 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import AdminDashboard from './pages/admin/Dashboard';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -34,7 +33,12 @@ const RecruiterDashboard = () => (
   </div>
 );
 
-
+const AdminDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
+  </div>
+);
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -67,22 +71,22 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
-
+              
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<CandidateDashboard />} />
               </Route>
-
+              
               <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
                 <Route path="/recruiter" element={<RecruiterDashboard />} />
               </Route>
-
+              
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
               </Route>
             </Route>
           </Route>
-
+          
           {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
