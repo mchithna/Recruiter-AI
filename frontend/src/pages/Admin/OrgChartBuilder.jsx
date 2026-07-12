@@ -6,6 +6,7 @@ import Modal from '../../components/ui/Modal';
 import { useToast } from '../../lib/ToastContext';
 import api from '../../api';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
+import DepartmentDetailModal from './DepartmentDetailModal';
 
 const OrgChartBuilder = () => {
   const { showToast } = useToast();
@@ -20,6 +21,8 @@ const OrgChartBuilder = () => {
     name: ''
   });
   const [saving, setSaving] = useState(false);
+  
+  const [selectedDeptForDetail, setSelectedDeptForDetail] = useState(null);
 
   useEffect(() => {
     fetchDepartments();
@@ -107,8 +110,7 @@ const OrgChartBuilder = () => {
   };
 
   const handleNodeClick = (dept) => {
-    // Leave a clear onClick/selection hook here for Phase 8
-    console.log('Department selected for Detail Panel:', dept);
+    setSelectedDeptForDetail(dept);
   };
 
   const buildTree = (flatList, parentId = null) => {
@@ -224,6 +226,12 @@ const OrgChartBuilder = () => {
           </div>
         </form>
       </Modal>
+
+      <DepartmentDetailModal 
+        isOpen={!!selectedDeptForDetail}
+        onClose={() => setSelectedDeptForDetail(null)}
+        department={selectedDeptForDetail}
+      />
     </div>
   );
 };
