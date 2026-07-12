@@ -4,7 +4,7 @@ import { formatMessageTime } from '../utils/messageFormatting';
 
 export function MessagingThread({ application, messages, draftMessage, onDraftChange, onSendMessage }) {
   return (
-    <Card className="border border-secondary-100 bg-secondary-50/60 flex flex-col h-full">
+    <Card className="flex h-full flex-col border border-secondary-100 bg-white/70 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
       <CardHeader className="mb-3">
         <div>
           <CardTitle className="flex items-center gap-2 text-h4">
@@ -23,10 +23,10 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
               <article
                 key={message.id}
                 className={[
-                  'rounded-card border p-3',
+                  'rounded-2xl border px-4 py-3 shadow-sm transition-colors',
                   isRecruiter
-                    ? 'border-primary-100 bg-white'
-                    : 'border-secondary-100 bg-secondary-100/70',
+                    ? 'border-primary-100 bg-white text-secondary-800 dark:border-primary-400/20 dark:bg-primary-500/10 dark:text-white'
+                    : 'border-secondary-100 bg-secondary-50/90 text-secondary-800 dark:border-white/10 dark:bg-white/10 dark:text-white',
                 ].join(' ')}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -37,7 +37,7 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
                     {formatMessageTime(message.sentAt)}
                   </span>
                 </div>
-                <p className="mt-2 text-body-sm leading-relaxed text-secondary-700">
+                <p className="mt-2 text-body-sm leading-relaxed text-inherit">
                   {message.body}
                 </p>
               </article>
@@ -50,19 +50,20 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
           )}
         </div>
 
-        <form className="flex flex-col gap-3 border-t border-secondary-100 pt-4 mt-auto" onSubmit={onSendMessage}>
+        <form className="mt-auto flex items-end gap-3 border-t border-secondary-100 pt-4 dark:border-white/10" onSubmit={onSendMessage}>
           <Input
-            label="New Message"
             value={draftMessage}
             onChange={onDraftChange}
             placeholder={`Message ${application.candidateName}`}
+            className="flex-1 recruiter-compose-input"
           />
           <Button
             type="submit"
-            variant="primary"
-            size="sm"
+            variant={draftMessage.trim() ? 'primary' : 'outline'}
+            size="md"
             leftIcon={<Send size={14} strokeWidth={1.75} />}
             disabled={!draftMessage.trim()}
+            className="min-w-24 rounded-xl"
           >
             Send
           </Button>

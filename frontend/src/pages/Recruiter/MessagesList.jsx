@@ -5,9 +5,6 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   CardTitle,
   EmptyState,
   Input,
@@ -27,10 +24,6 @@ export default function MessagesList() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(() => {
     let isActive = true;
@@ -105,14 +98,8 @@ export default function MessagesList() {
   }, [selectedAppId]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const handleSelectConversation = (applicationId) => {
-    setSearchParams({ applicationId });
-  };
-
-  const handleDraftChange = (event) => setDraftMessage(event.target.value);
 
   const handleSendMessage = (event) => {
     event.preventDefault();
@@ -147,46 +134,38 @@ export default function MessagesList() {
 
   const filteredConversations = searchQuery
     ? conversations.filter(
-        (c) =>
-          c.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
+        (conversation) =>
+          conversation.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conversation.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : conversations;
 
   return (
     <div className="relative z-10 mx-auto flex h-[calc(100vh-12rem)] max-w-7xl flex-col animate-slide-up">
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Badge variant="ai" size="sm" icon={<Sparkles size={12} strokeWidth={1.75} />}>
+          <span className="inline-flex items-center gap-2 rounded-full border border-ai-200 bg-ai-50 px-3.5 py-1.5 text-caption font-semibold leading-none text-ai-700 shadow-sm dark:border-ai-400/20 dark:bg-ai-400/10 dark:text-ai-200">
+            <Sparkles size={12} strokeWidth={1.75} className="shrink-0" />
             Communication hub
-          </Badge>
-          <h1 className="mt-3 text-h1 text-secondary-900 dark:text-white">Messages</h1>
+          </span>
+          <h1 className="mt-4 text-h1 text-secondary-900 dark:text-white">Messages</h1>
           <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
             Manage candidate communications across all jobs.
           </p>
         </div>
       </div>
 
-      {/* Main Two-Pane */}
       <div className="glass-card-heavy flex min-h-0 flex-1 overflow-hidden rounded-2xl border-none p-0">
-        {/* Left Pane — Conversation List */}
         <div className="flex w-1/3 min-w-72 flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]">
           <div className="shrink-0 border-b border-secondary-100 p-4 dark:border-white/10">
             <CardTitle className="mb-3 text-h4">Conversations</CardTitle>
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400"
-              />
-              <input
-                type="text"
-                placeholder="Search candidates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-secondary-200 bg-white/70 py-2.5 pl-10 pr-4 text-body-sm text-secondary-900 placeholder:text-secondary-400 transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-secondary-500"
-              />
-            </div>
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search candidates..."
+              leftIcon={<Search size={16} strokeWidth={1.75} />}
+              className="recruiter-compact-input"
+            />
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -202,54 +181,57 @@ export default function MessagesList() {
                   const isSelected = conversation.applicationId === selectedAppId;
 
                   return (
-                    <button
+                    <Button
                       key={conversation.applicationId}
                       type="button"
-                      onClick={() => handleSelectConversation(conversation.applicationId)}
+                      variant="ghost"
+                      onClick={() => setSearchParams({ applicationId: conversation.applicationId })}
                       className={[
-                        'group flex w-full items-start gap-3 border-b px-4 py-4 text-left transition-all duration-base',
+                        'group h-auto w-full justify-start rounded-none border-b px-4 py-4 text-left transition-all duration-base',
                         isSelected
                           ? 'border-primary-100 bg-primary-50/80 dark:border-primary-500/20 dark:bg-primary-500/10'
                           : 'border-secondary-100 hover:bg-white/70 dark:border-white/5 dark:hover:bg-white/5',
                       ].join(' ')}
                     >
-                      <div className="relative shrink-0">
-                        <Avatar name={conversation.candidateName} size="md" />
-                        {conversation.unread && (
-                          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-primary-500 dark:border-secondary-900" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-0.5 flex items-baseline justify-between gap-2">
+                      <span className="flex min-w-0 items-start gap-3">
+                        <span className="relative shrink-0">
+                          <Avatar name={conversation.candidateName} size="md" />
+                          {conversation.unread && (
+                            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-primary-500 dark:border-secondary-900" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="mb-0.5 flex items-baseline justify-between gap-2">
+                            <span
+                              className={[
+                                'truncate text-body-sm font-semibold',
+                                conversation.unread
+                                  ? 'text-primary-700 dark:text-primary-300'
+                                  : 'text-secondary-900 dark:text-white',
+                              ].join(' ')}
+                            >
+                              {conversation.candidateName}
+                            </span>
+                            <span className="shrink-0 text-caption text-secondary-400">
+                              {formatMessageTime(conversation.sentAt)}
+                            </span>
+                          </span>
+                          <span className="mb-1.5 block truncate text-caption text-secondary-500 dark:text-secondary-400">
+                            {conversation.jobTitle}
+                          </span>
                           <span
                             className={[
-                              'truncate text-body-sm font-semibold',
+                              'block truncate text-body-sm',
                               conversation.unread
-                                ? 'text-primary-700 dark:text-primary-300'
-                                : 'text-secondary-900 dark:text-white',
+                                ? 'font-semibold text-secondary-800 dark:text-secondary-200'
+                                : 'text-secondary-500 dark:text-secondary-400',
                             ].join(' ')}
                           >
-                            {conversation.candidateName}
+                            {conversation.body}
                           </span>
-                          <span className="shrink-0 text-caption text-secondary-400">
-                            {formatMessageTime(conversation.sentAt)}
-                          </span>
-                        </div>
-                        <p className="mb-1.5 truncate text-caption text-secondary-500 dark:text-secondary-400">
-                          {conversation.jobTitle}
-                        </p>
-                        <p
-                          className={[
-                            'truncate text-body-sm',
-                            conversation.unread
-                              ? 'font-semibold text-secondary-800 dark:text-secondary-200'
-                              : 'text-secondary-500 dark:text-secondary-400',
-                          ].join(' ')}
-                        >
-                          {conversation.body}
-                        </p>
-                      </div>
-                    </button>
+                        </span>
+                      </span>
+                    </Button>
                   );
                 })}
               </div>
@@ -268,7 +250,6 @@ export default function MessagesList() {
           </div>
         </div>
 
-        {/* Right Pane — Thread */}
         <div className="flex w-2/3 flex-col bg-white/40 dark:bg-white/[0.01]">
           {loadingThread ? (
             <div className="flex-1 space-y-4 p-6">
@@ -277,7 +258,6 @@ export default function MessagesList() {
             </div>
           ) : selectedApplication ? (
             <>
-              {/* Thread Header */}
               <div className="flex shrink-0 items-center gap-4 border-b border-secondary-100 bg-white/60 px-6 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]">
                 <Avatar name={selectedApplication.candidateName} size="md" />
                 <div className="min-w-0 flex-1">
@@ -293,7 +273,6 @@ export default function MessagesList() {
                 </Badge>
               </div>
 
-              {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="mx-auto max-w-2xl space-y-4">
                   {messages.map((message) => {
@@ -302,16 +281,9 @@ export default function MessagesList() {
                     return (
                       <div
                         key={message.id}
-                        className={[
-                          'flex gap-3',
-                          isRecruiter ? 'flex-row-reverse' : 'flex-row',
-                        ].join(' ')}
+                        className={['flex gap-3', isRecruiter ? 'flex-row-reverse' : 'flex-row'].join(' ')}
                       >
-                        <Avatar
-                          name={message.sender}
-                          size="sm"
-                          className="shrink-0"
-                        />
+                        <Avatar name={message.sender} size="sm" className="shrink-0" />
                         <div
                           className={[
                             'max-w-[75%] rounded-2xl px-4 py-3 shadow-sm transition-all',
@@ -337,27 +309,23 @@ export default function MessagesList() {
                 </div>
               </div>
 
-              {/* Compose Area */}
               <form
                 className="flex shrink-0 items-end gap-3 border-t border-secondary-100 bg-white/60 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
                 onSubmit={handleSendMessage}
               >
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={draftMessage}
-                    onChange={handleDraftChange}
-                    placeholder={`Message ${selectedApplication.candidateName}...`}
-                    className="w-full rounded-xl border border-secondary-200 bg-white/70 px-4 py-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-secondary-500"
-                  />
-                </div>
+                <Input
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                  placeholder={`Message ${selectedApplication.candidateName}...`}
+                  className="flex-1 recruiter-compose-input"
+                />
                 <Button
                   type="submit"
-                  variant="glass"
+                  variant={draftMessage.trim() ? 'glass' : 'outline'}
                   size="md"
                   leftIcon={<Send size={16} strokeWidth={1.75} />}
                   disabled={!draftMessage.trim()}
-                  className="shrink-0"
+                  className="min-w-28 shrink-0 rounded-xl"
                 >
                   Send
                 </Button>

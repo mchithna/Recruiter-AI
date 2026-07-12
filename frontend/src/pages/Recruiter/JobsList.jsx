@@ -2,7 +2,6 @@ import {
   Briefcase,
   ChevronRight,
   Edit,
-  ExternalLink,
   MapPin,
   Plus,
   Sparkles,
@@ -10,14 +9,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Avatar,
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Skeleton,
   StatCard,
 } from '../../components/ui';

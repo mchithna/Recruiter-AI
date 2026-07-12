@@ -280,17 +280,90 @@ body {
     color: rgba(203, 213, 225, 0.86) !important;
   }
 
+  /* ── Form controls: inputs, textareas, selects ──────────────── */
   .dark .recruiter-shell input,
   .dark .recruiter-shell textarea,
   .dark .recruiter-shell select {
-    background: rgba(2, 6, 23, 0.55) !important;
-    color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.18) !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 0.75rem;
+  }
+
+  .dark .recruiter-shell input:focus,
+  .dark .recruiter-shell textarea:focus,
+  .dark .recruiter-shell select:focus {
+    border-color: rgba(99, 102, 241, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  .dark .recruiter-shell input:hover,
+  .dark .recruiter-shell textarea:hover,
+  .dark .recruiter-shell select:hover {
+    border-color: rgba(255, 255, 255, 0.25) !important;
   }
 
   .dark .recruiter-shell input::placeholder,
   .dark .recruiter-shell textarea::placeholder {
-    color: rgba(148, 163, 184, 0.9) !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+  }
+
+  /* ── Native select <option> elements (browser dropdown) ─────── */
+  .dark .recruiter-shell select option {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    padding: 8px 12px;
+  }
+
+  .dark .recruiter-shell select option:checked,
+  .dark .recruiter-shell select option:hover {
+    background: #334155 !important;
+  }
+
+  /* ── AI Screening Card overrides ────────────────────────────── */
+  .dark .recruiter-shell .border-ai-100 {
+    border-color: rgba(139, 92, 246, 0.25) !important;
+  }
+
+  .dark .recruiter-shell .bg-ai-50\/40,
+  .dark .recruiter-shell .bg-ai-50\/50 {
+    background: rgba(139, 92, 246, 0.08) !important;
+  }
+
+  .dark .recruiter-shell .text-ai-700 {
+    color: rgba(196, 167, 255, 0.9) !important;
+  }
+
+  .dark .recruiter-shell .rounded-card.bg-white {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Button outline overrides ───────────────────────────────── */
+  .dark .recruiter-shell button[class*="variant-outline"],
+  .dark .recruiter-shell [class*="border-secondary"] button {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* ── Progress bar track in dark mode ────────────────────────── */
+  .dark .recruiter-shell .bg-secondary-200 {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Divide colors ──────────────────────────────────────────── */
+  .dark .recruiter-shell .divide-secondary-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Card footer border ─────────────────────────────────────── */
+  .dark .recruiter-shell .border-t.border-secondary-100 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Chevron / icon overrides ───────────────────────────────── */
+  .dark .recruiter-shell .text-secondary-400 {
+    color: rgba(148, 163, 184, 0.7) !important;
   }
 
   /* Staggered card entrance */
@@ -349,6 +422,40 @@ body {
   /* Chat bubble subtle glow */
   .dark .recruiter-shell .bg-gradient-to-br.from-primary-500 {
     box-shadow: 0 4px 24px rgba(99, 102, 241, 0.25);
+  }
+
+  .recruiter-shell .recruiter-compact-input > div,
+  .recruiter-shell .recruiter-compose-input > div {
+    width: 100%;
+  }
+
+  .recruiter-shell .recruiter-compact-input input {
+    height: 44px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .recruiter-shell .recruiter-compose-input input {
+    min-height: 44px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  .recruiter-shell button {
+    letter-spacing: 0;
+  }
+
+  .recruiter-shell button:disabled {
+    opacity: 0.55;
+    box-shadow: none !important;
+  }
+
+  .recruiter-shell select {
+    min-height: 44px;
+    border-radius: 12px !important;
+    padding-left: 14px !important;
+    padding-right: 40px !important;
+    line-height: 1.35 !important;
   }
 
   /* Smooth scrollbar styling */

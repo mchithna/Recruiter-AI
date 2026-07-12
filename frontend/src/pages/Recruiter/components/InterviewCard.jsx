@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { CalendarClock, Clock, ExternalLink, User, Video } from 'lucide-react';
+import { CalendarClock, Clock, User, Video } from 'lucide-react';
 import {
   Avatar,
   Badge,

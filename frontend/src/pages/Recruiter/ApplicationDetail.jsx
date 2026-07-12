@@ -38,8 +38,8 @@ function ScoreRow({ label, value }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3">
-        <span className="text-body-sm font-semibold text-secondary-700">{label}</span>
-        <span className="text-body-sm font-semibold tabular-nums text-secondary-900">
+        <span className="text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">{label}</span>
+        <span className="text-body-sm font-semibold tabular-nums text-secondary-900 dark:text-white">
           {value}%
         </span>
       </div>
@@ -51,8 +51,8 @@ function ScoreRow({ label, value }) {
 function AiScreeningPanel({ result }) {
   if (!result) {
     return (
-      <Card className="border border-ai-100 bg-ai-50/40">
-        <CardContent className="text-body-md text-secondary-600">
+      <Card className="glass-card-heavy border-none">
+        <CardContent className="text-body-md text-secondary-600 dark:text-secondary-300">
           AI screening context is not available for this application.
         </CardContent>
       </Card>
@@ -60,12 +60,12 @@ function AiScreeningPanel({ result }) {
   }
 
   return (
-    <Card className="border border-ai-100 bg-ai-50/50 shadow-sm">
+    <Card className="glass-card-heavy overflow-hidden border-none">
       <CardHeader className="mb-5 flex-col gap-3 sm:flex-row">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant="ai" size="sm">AI Generated</Badge>
-            <span className="text-caption font-semibold uppercase tracking-wide text-ai-700">
+            <span className="text-caption font-semibold uppercase tracking-wide text-ai-700 dark:text-ai-300">
               Rank #{result.aiRank}
             </span>
           </div>
@@ -77,9 +77,9 @@ function AiScreeningPanel({ result }) {
             Assistive screening context for recruiter review.
           </CardDescription>
         </div>
-        <div className="rounded-card bg-white px-4 py-3 text-center shadow-sm">
-          <div className="text-h2 tabular-nums text-ai-700">{result.overallScore}%</div>
-          <div className="text-caption font-semibold uppercase tracking-wide text-secondary-500">
+        <div className="rounded-xl bg-secondary-50 px-5 py-3 text-center dark:bg-white/10">
+          <div className="text-h2 tabular-nums text-ai-700 dark:text-ai-300">{result.overallScore}%</div>
+          <div className="text-caption font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
             Overall
           </div>
         </div>
@@ -91,11 +91,11 @@ function AiScreeningPanel({ result }) {
         <ScoreRow label="Education" value={result.educationMatchScore} />
       </div>
 
-      <div className="mt-5 rounded-card border border-ai-100 bg-white p-4">
-        <h3 className="text-body-sm font-semibold uppercase tracking-wide text-ai-700">
+      <div className="mt-5 rounded-xl border border-secondary-100 bg-secondary-50 p-4 dark:border-white/10 dark:bg-white/5">
+        <h3 className="text-body-sm font-semibold uppercase tracking-wide text-ai-700 dark:text-ai-300">
           Screening Summary
         </h3>
-        <p className="mt-2 text-body-md leading-relaxed text-secondary-700">
+        <p className="mt-2 text-body-md leading-relaxed text-secondary-700 dark:text-secondary-200">
           {result.screeningSummary}
         </p>
       </div>
@@ -137,7 +137,7 @@ function StatusAndInterviews({
 
   return (
     <div className="relative z-10 space-y-6 animate-slide-up">
-      <Card className="border border-secondary-100 bg-secondary-50/60">
+      <Card className="glass-card-heavy border-none">
         <CardHeader className="mb-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-h4">
@@ -388,11 +388,11 @@ export function ApplicationDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative z-10 space-y-6 animate-slide-up">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-h2 text-secondary-900">{application.candidateName}</h1>
-          <p className="mt-1 text-body-sm text-secondary-500">
+          <h1 className="text-h2 text-secondary-900 dark:text-white">{application.candidateName}</h1>
+          <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
             {application.jobTitle}
           </p>
         </div>
@@ -407,7 +407,7 @@ export function ApplicationDetail() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="glass-card-heavy border-none">
         <CardHeader className="mb-0 flex-col gap-3 sm:flex-row">
           <div>
             <CardTitle>Application Status</CardTitle>
