@@ -1,4 +1,4 @@
-import { ArrowLeft, Bot, CalendarClock, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Bot, CalendarClock, MessageSquare, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -116,6 +116,41 @@ const emptyInterviewForm = {
   durationMinutes: '30',
   meetingLink: '',
 };
+
+const buildMockMessages = (application) => [
+  {
+    id: `${application.id}-msg-001`,
+    sender: 'Current Recruiter',
+    body: `Hi ${application.candidateName}, thanks for applying for ${application.jobTitle}. We are reviewing your profile now.`,
+    sentAt: '2026-07-08T09:20:00Z',
+  },
+  {
+    id: `${application.id}-msg-002`,
+    sender: application.candidateName,
+    body: 'Thank you. I am happy to answer any questions or share more examples of my work.',
+    sentAt: '2026-07-08T10:05:00Z',
+  },
+  {
+    id: `${application.id}-msg-003`,
+    sender: 'Current Recruiter',
+    body: 'Great. Could you confirm your availability for a short call later this week?',
+    sentAt: '2026-07-09T13:30:00Z',
+  },
+  {
+    id: `${application.id}-msg-004`,
+    sender: application.candidateName,
+    body: 'Thursday afternoon or Friday morning would work well for me.',
+    sentAt: '2026-07-09T14:12:00Z',
+  },
+];
+
+const formatMessageTime = (sentAt) =>
+  new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(sentAt));
 
 function StatusAndInterviews({
   application,
@@ -239,6 +274,71 @@ function StatusAndInterviews({
   );
 }
 
+function MessagingThread({ application, messages, draftMessage, onDraftChange, onSendMessage }) {
+  return (
+    <Card className="border border-secondary-100 bg-secondary-50/60">
+      <CardHeader className="mb-3">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-h4">
+            <MessageSquare size={18} strokeWidth={1.75} />
+            Messaging
+          </CardTitle>
+          <CardDescription>Phase R5 workspace</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+          {messages.map((message) => {
+            const isRecruiter = message.sender !== application.candidateName;
+
+            return (
+              <article
+                key={message.id}
+                className={[
+                  'rounded-card border p-3',
+                  isRecruiter
+                    ? 'border-primary-100 bg-white'
+                    : 'border-secondary-100 bg-secondary-100/70',
+                ].join(' ')}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-body-sm font-semibold text-secondary-900">
+                    {message.sender}
+                  </span>
+                  <span className="text-caption font-semibold text-secondary-500">
+                    {formatMessageTime(message.sentAt)}
+                  </span>
+                </div>
+                <p className="mt-2 text-body-sm leading-relaxed text-secondary-700">
+                  {message.body}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+
+        <form className="flex flex-col gap-3 border-t border-secondary-100 pt-4" onSubmit={onSendMessage}>
+          <Input
+            label="New Message"
+            value={draftMessage}
+            onChange={onDraftChange}
+            placeholder={`Message ${application.candidateName}`}
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            leftIcon={<Send size={14} strokeWidth={1.75} />}
+            disabled={!draftMessage.trim()}
+          >
+            Send
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ApplicationDetail() {
   const navigate = useNavigate();
   const { applicationId } = useParams();
@@ -247,6 +347,8 @@ export function ApplicationDetail() {
   const [interviews, setInterviews] = useState([]);
   const [isSchedulingOpen, setIsSchedulingOpen] = useState(false);
   const [interviewForm, setInterviewForm] = useState(emptyInterviewForm);
+  const [messages, setMessages] = useState([]);
+  const [draftMessage, setDraftMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -261,6 +363,8 @@ export function ApplicationDetail() {
       setApplication(mockApplication);
       setScreeningResult(mockScreeningResult);
       setInterviews([]);
+      setMessages(mockApplication ? buildMockMessages(mockApplication) : []);
+      setDraftMessage('');
       setIsSchedulingOpen(mockApplication?.status === 'Shortlisted');
       setInterviewForm(emptyInterviewForm);
       setIsLoading(false);
@@ -321,6 +425,28 @@ export function ApplicationDetail() {
     updateApplicationStatus('Interview Scheduled');
     setInterviewForm(emptyInterviewForm);
     setIsSchedulingOpen(false);
+  };
+
+  const handleDraftMessageChange = (event) => {
+    setDraftMessage(event.target.value);
+  };
+
+  const handleSendMessage = (event) => {
+    event.preventDefault();
+
+    const trimmedMessage = draftMessage.trim();
+    if (!trimmedMessage) return;
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        id: `msg-${Date.now()}`,
+        sender: 'Current Recruiter',
+        body: trimmedMessage,
+        sentAt: new Date().toISOString(),
+      },
+    ]);
+    setDraftMessage('');
   };
 
   if (isLoading) {
@@ -408,20 +534,13 @@ export function ApplicationDetail() {
             onSubmitInterview={handleSubmitInterview}
           />
 
-          <Card className="border border-secondary-100 bg-secondary-50/60">
-            <CardHeader className="mb-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-h4">
-                  <MessageSquare size={18} strokeWidth={1.75} />
-                  Messaging
-                </CardTitle>
-                <CardDescription>Phase R5 workspace</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="text-body-sm leading-relaxed text-secondary-600">
-              Candidate messaging and communication history will attach here.
-            </CardContent>
-          </Card>
+          <MessagingThread
+            application={application}
+            messages={messages}
+            draftMessage={draftMessage}
+            onDraftChange={handleDraftMessageChange}
+            onSendMessage={handleSendMessage}
+          />
         </div>
       </div>
     </div>
