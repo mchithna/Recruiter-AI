@@ -21,6 +21,7 @@ import JobApplicationsList from './pages/Recruiter/JobApplicationsList';
 import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
+import MessagesList from './pages/Recruiter/MessagesList';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -94,7 +95,7 @@ function App() {
                 <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
                 <Route path="applications/:applicationId" element={<ApplicationDetail />} />
                 <Route path="interviews" element={<InterviewsList />} />
-                <Route path="messages" element={<div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700"><h2 className="text-xl font-bold mb-2">Messages</h2><p className="text-slate-500 dark:text-slate-400">Messages page will be built in Phase R9.</p></div>} />
+                <Route path="messages" element={<MessagesList />} />
               </Route>
             </Route>
           </Route>
