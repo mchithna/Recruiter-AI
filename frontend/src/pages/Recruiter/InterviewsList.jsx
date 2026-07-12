@@ -181,13 +181,20 @@ export default function InterviewsList() {
         />
       </section>
 
-      {/* Filters */}
-      <section className="glass-card-heavy flex flex-col items-start gap-4 rounded-2xl border-none p-5 sm:flex-row sm:items-end">
-        <div className="flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
-          <Filter size={14} strokeWidth={1.75} />
+      {/* Filters UI */}
+      <section className="relative flex flex-col items-start gap-6 rounded-[20px] border border-white/5 bg-[#0b0e1e] p-6 sm:flex-row sm:items-end shadow-2xl">
+        {/* Background Decorative Shapes */}
+        <div className="absolute inset-0 overflow-hidden rounded-[20px] pointer-events-none">
+          <div className="absolute left-1/3 top-1/2 -translate-y-1/2 h-32 w-32 rotate-12 rounded-[2rem] border-[1.5px] border-white/5 bg-white/[0.01]" />
+          <div className="absolute left-[35%] top-1/2 -translate-y-[40%] h-24 w-24 -rotate-6 rounded-[1.5rem] border-[1.5px] border-white/5 bg-white/[0.01] mix-blend-overlay" />
+        </div>
+
+        <div className="relative z-10 flex h-[42px] items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#a3adc2]">
+          <Filter size={15} strokeWidth={2} />
           Filters
         </div>
-        <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
+        
+        <div className="relative z-10 grid w-full grid-cols-1 gap-4 sm:w-auto sm:grid-cols-2">
           <Select
             label="Date Range"
             value={timeFilter}
@@ -230,58 +237,74 @@ export default function InterviewsList() {
                 }}
                 role="link"
                 tabIndex={0}
-                className="glass-card-heavy group block h-full cursor-pointer overflow-hidden rounded-2xl border-none p-0 transition-all duration-base hover:-translate-y-1"
+                className="group relative block h-full cursor-pointer overflow-hidden rounded-[20px] bg-[#0f1225] border border-white/5 p-0 transition-all duration-base hover:-translate-y-1 shadow-xl"
                 style={{ animationDelay: `${index * 60}ms` }}
               >
                 {/* Gradient accent bar */}
-                <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-ai-500 to-primary-400" />
+                <div className="absolute top-0 left-0 right-0 h-[6px] bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#6366f1]" />
 
-                <div className="p-5">
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={interview.candidateName} size="md" />
-                      <div className="min-w-0">
-                        <h3 className="truncate text-body-lg font-semibold text-secondary-900 transition-colors group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
+                {/* Sublte glass shine in the background */}
+                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-40 w-40 rotate-12 rounded-[2rem] border-[1.5px] border-white/5 bg-white/[0.01] opacity-50 mix-blend-overlay" />
+
+                <div className="relative p-6 pt-7">
+                  <div className="mb-5 flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Avatar with specific style for dark UI */}
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold tracking-wide text-[#2563eb] shadow-sm">
+                        {interview.candidateName
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .substring(0, 2)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-[16px] font-bold text-white transition-colors group-hover:text-primary-300">
                           {interview.candidateName}
                         </h3>
-                        <p className="truncate text-body-sm text-secondary-500 dark:text-secondary-300">
+                        <p className="truncate text-[13px] font-medium text-[#94a3b8] mt-0.5">
                           {interview.jobTitle}
                         </p>
                       </div>
                     </div>
-                    <StatusBadge status={interview.status} />
+                    <div className="shrink-0">
+                      <StatusBadge status={interview.status} />
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 rounded-xl bg-secondary-50 p-3 dark:bg-white/5">
+                  <div className="space-y-4">
+                    {/* Inner Time Block */}
+                    <div className="flex items-center gap-3 rounded-2xl bg-[#191e36] p-4 border border-white/[0.03]">
                       <CalendarClock
-                        size={16}
-                        strokeWidth={1.75}
-                        className="shrink-0 text-primary-600 dark:text-primary-400"
+                        size={18}
+                        strokeWidth={2}
+                        className="shrink-0 text-[#8b5cf6]"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-body-sm font-semibold text-secondary-800 dark:text-white">
+                        <p className="text-[14px] font-bold text-white">
                           {formatScheduledTime(interview.scheduledTime)}
                         </p>
-                        <p className="text-caption text-secondary-500 dark:text-secondary-300">
+                        <p className="text-[12px] font-medium text-[#94a3b8] mt-0.5">
                           {interview.durationMinutes} min · {interview.interviewType}
                         </p>
                       </div>
                       {relDay && (
-                        <Badge variant="ai" size="sm">
+                        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-[#8b5cf6] shadow-sm">
                           {relDay}
-                        </Badge>
+                        </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-caption text-secondary-500 dark:text-secondary-400">
+                    {/* Bottom Row */}
+                    <div className="flex items-center justify-between pl-1">
+                      <p className="text-[13px] font-medium text-[#64748b]">
                         with {interview.interviewerName}
                       </p>
                       {interview.meetingLink && (
-                        <Badge variant="primary" size="sm" icon={<Video size={10} />}>
+                        <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
+                          <Video size={14} strokeWidth={2.5} />
                           Video
-                        </Badge>
+                        </div>
                       )}
                     </div>
                   </div>
