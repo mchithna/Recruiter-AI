@@ -141,7 +141,7 @@ export default function MessagesList() {
     : conversations;
 
   return (
-    <div className="relative z-10 mx-auto flex h-[calc(100vh-12rem)] max-w-7xl flex-col animate-slide-up">
+    <div className="relative z-10 mx-auto flex h-[calc(100vh-11rem)] max-w-7xl flex-col animate-slide-up">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-ai-200 bg-ai-50 px-3.5 py-1.5 text-caption font-semibold leading-none text-ai-700 shadow-sm dark:border-ai-400/20 dark:bg-ai-400/10 dark:text-ai-200">
@@ -156,7 +156,7 @@ export default function MessagesList() {
       </div>
 
       <div className="glass-card-heavy flex min-h-0 flex-1 overflow-hidden rounded-2xl border-none p-0">
-        <div className="flex w-1/3 min-w-72 flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]">
+        <div className="flex w-[22rem] min-w-[22rem] flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]">
           <div className="shrink-0 border-b border-secondary-100 p-4 dark:border-white/10">
             <CardTitle className="mb-3 text-h4">Conversations</CardTitle>
             <Input
@@ -187,7 +187,7 @@ export default function MessagesList() {
                       variant="ghost"
                       onClick={() => setSearchParams({ applicationId: conversation.applicationId })}
                       className={[
-                        'group h-auto w-full justify-start rounded-none border-b px-4 py-4 text-left transition-all duration-base',
+                        'group h-auto w-full justify-start rounded-none border-b px-4 py-3 text-left transition-all duration-base',
                         isSelected
                           ? 'border-primary-100 bg-primary-50/80 dark:border-primary-500/20 dark:bg-primary-500/10'
                           : 'border-secondary-100 hover:bg-white/70 dark:border-white/5 dark:hover:bg-white/5',
@@ -201,7 +201,7 @@ export default function MessagesList() {
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="mb-0.5 flex items-baseline justify-between gap-2">
+                          <span className="mb-1 flex items-baseline justify-between gap-2">
                             <span
                               className={[
                                 'truncate text-body-sm font-semibold',
@@ -216,12 +216,12 @@ export default function MessagesList() {
                               {formatMessageTime(conversation.sentAt)}
                             </span>
                           </span>
-                          <span className="mb-1.5 block truncate text-caption text-secondary-500 dark:text-secondary-400">
+                          <span className="mb-1 block line-clamp-1 text-caption text-secondary-500 dark:text-secondary-400">
                             {conversation.jobTitle}
                           </span>
                           <span
                             className={[
-                              'block truncate text-body-sm',
+                              'block line-clamp-2 text-body-sm leading-relaxed',
                               conversation.unread
                                 ? 'font-semibold text-secondary-800 dark:text-secondary-200'
                                 : 'text-secondary-500 dark:text-secondary-400',
@@ -250,15 +250,15 @@ export default function MessagesList() {
           </div>
         </div>
 
-        <div className="flex w-2/3 flex-col bg-white/40 dark:bg-white/[0.01]">
+        <div className="flex min-w-0 flex-1 flex-col bg-white/40 dark:bg-white/[0.01]">
           {loadingThread ? (
-            <div className="flex-1 space-y-4 p-6">
+            <div className="flex-1 space-y-4 p-5">
               <Skeleton height="5rem" />
-              <Skeleton height="18rem" />
+              <Skeleton height="14rem" />
             </div>
           ) : selectedApplication ? (
             <>
-              <div className="flex shrink-0 items-center gap-4 border-b border-secondary-100 bg-white/60 px-6 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="flex shrink-0 items-center gap-4 border-b border-secondary-100 bg-white/60 px-5 py-3.5 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]">
                 <Avatar name={selectedApplication.candidateName} size="md" />
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-body-lg font-semibold text-secondary-900 dark:text-white">
@@ -273,8 +273,8 @@ export default function MessagesList() {
                 </Badge>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="mx-auto max-w-2xl space-y-4">
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                <div className="mx-auto max-w-2xl space-y-3.5">
                   {messages.map((message) => {
                     const isRecruiter = message.sender !== selectedApplication.candidateName;
 
@@ -286,7 +286,7 @@ export default function MessagesList() {
                         <Avatar name={message.sender} size="sm" className="shrink-0" />
                         <div
                           className={[
-                            'max-w-[75%] rounded-2xl px-4 py-3 shadow-sm transition-all',
+                          'max-w-[68%] rounded-2xl px-3.5 py-2.5 shadow-sm transition-all',
                             isRecruiter
                               ? 'rounded-tr-md bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-500/20'
                               : 'rounded-tl-md border border-secondary-100 bg-white text-secondary-800 dark:border-white/10 dark:bg-white/5 dark:text-white',
@@ -310,14 +310,14 @@ export default function MessagesList() {
               </div>
 
               <form
-                className="flex shrink-0 items-end gap-3 border-t border-secondary-100 bg-white/60 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
+                className="flex shrink-0 items-end gap-3 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
                 onSubmit={handleSendMessage}
               >
                 <Input
                   value={draftMessage}
                   onChange={(event) => setDraftMessage(event.target.value)}
                   placeholder={`Message ${selectedApplication.candidateName}...`}
-                  className="flex-1 recruiter-compose-input"
+                  className="recruiter-compose-input flex-1"
                 />
                 <Button
                   type="submit"
@@ -325,7 +325,7 @@ export default function MessagesList() {
                   size="md"
                   leftIcon={<Send size={16} strokeWidth={1.75} />}
                   disabled={!draftMessage.trim()}
-                  className="min-w-28 shrink-0 rounded-xl"
+                  className="min-w-24 shrink-0 rounded-xl px-5"
                 >
                   Send
                 </Button>
