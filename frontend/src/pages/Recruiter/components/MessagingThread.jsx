@@ -1,14 +1,6 @@
-import React from 'react';
 import { MessageSquare, Send } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Input, Button } from '../../../components/ui';
-
-export const formatMessageTime = (sentAt) =>
-  new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(sentAt));
+import { formatMessageTime } from '../utils/messageFormatting';
 
 export function MessagingThread({ application, messages, draftMessage, onDraftChange, onSendMessage }) {
   return (

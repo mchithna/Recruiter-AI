@@ -1,176 +1,228 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { MessageSquare } from 'lucide-react';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Skeleton,
+} from '../../components/ui';
+import { MessagingThread } from './components/MessagingThread';
 import { getAllConversations, getApplication, getMessagesForApplication } from './services/mockData';
-import { MessagingThread, formatMessageTime } from './components/MessagingThread';
+import { formatMessageTime } from './utils/messageFormatting';
 
 export default function MessagesList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedAppId = searchParams.get('applicationId');
-
   const [conversations, setConversations] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
-
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draftMessage, setDraftMessage] = useState('');
   const [loadingThread, setLoadingThread] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
     async function loadConversations() {
       setLoadingList(true);
+
       try {
         const convos = await getAllConversations();
+        if (!isActive) return;
+
         setConversations(convos);
-        
-        // If no application is selected and we have conversations, select the first one automatically
         if (!searchParams.get('applicationId') && convos.length > 0) {
           setSearchParams({ applicationId: convos[0].applicationId }, { replace: true });
         }
       } catch (error) {
         console.error('Failed to load conversations:', error);
       } finally {
-        setLoadingList(false);
+        if (isActive) setLoadingList(false);
       }
     }
-    loadConversations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
 
-  // Watch for selectedAppId changes to load thread
+    loadConversations();
+
+    return () => {
+      isActive = false;
+    };
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     if (!selectedAppId) {
       setSelectedApplication(null);
       setMessages([]);
-      return;
+      return undefined;
     }
+
+    let isActive = true;
 
     async function loadThread() {
       setLoadingThread(true);
+
       try {
         const [app, msgs] = await Promise.all([
           getApplication(selectedAppId),
-          getMessagesForApplication(selectedAppId)
+          getMessagesForApplication(selectedAppId),
         ]);
-        
-        // Mark as read in our local state if it matches the selected app
-        setConversations(current => 
-          current.map(c => c.applicationId === selectedAppId ? { ...c, unread: false } : c)
-        );
 
+        if (!isActive) return;
+
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.applicationId === selectedAppId
+              ? { ...conversation, unread: false }
+              : conversation
+          )
+        );
         setSelectedApplication(app);
         setMessages(msgs || []);
         setDraftMessage('');
       } catch (error) {
         console.error('Failed to load thread:', error);
       } finally {
-        setLoadingThread(false);
+        if (isActive) setLoadingThread(false);
       }
     }
-    
+
     loadThread();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedAppId]);
 
   const handleSelectConversation = (applicationId) => {
     setSearchParams({ applicationId });
   };
 
-  const handleDraftChange = (e) => setDraftMessage(e.target.value);
+  const handleDraftChange = (event) => setDraftMessage(event.target.value);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
+  const handleSendMessage = (event) => {
+    event.preventDefault();
+
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
 
-    const newMsg = {
+    const newMessage = {
       id: `msg-${Date.now()}`,
       sender: 'Current Recruiter',
       body: trimmed,
-      sentAt: new Date().toISOString()
+      sentAt: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, newMsg]);
+    setMessages((current) => [...current, newMessage]);
     setDraftMessage('');
-    
-    // Update the conversation list with the new message preview
-    setConversations(current => {
-      const updated = current.map(c => {
-        if (c.applicationId === selectedAppId) {
-          return {
-            ...c,
-            body: newMsg.body,
-            sentAt: newMsg.sentAt,
-            unread: false
-          };
-        }
-        return c;
-      });
-      // Move updated to top
-      updated.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
-      return updated;
-    });
+    setConversations((current) =>
+      current
+        .map((conversation) =>
+          conversation.applicationId === selectedAppId
+            ? {
+                ...conversation,
+                body: newMessage.body,
+                sentAt: newMessage.sentAt,
+                unread: false,
+              }
+            : conversation
+        )
+        .sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt))
+    );
   };
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-12rem)] flex flex-col">
+    <div className="mx-auto flex h-[calc(100vh-12rem)] max-w-7xl flex-col animate-slide-up">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Messages</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage candidate communications across all jobs.</p>
+        <h1 className="text-h2 text-secondary-900">Messages</h1>
+        <p className="mt-1 text-body-sm text-secondary-500">
+          Manage candidate communications across all jobs.
+        </p>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex shadow-sm min-h-0">
-        {/* Left Pane - List */}
-        <div className="w-1/3 border-r border-slate-200 dark:border-slate-700 flex flex-col bg-slate-50/50 dark:bg-slate-800/20">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white">
-            Conversations
-          </div>
-          <div className="flex-1 overflow-y-auto min-h-0">
+      <Card className="flex min-h-0 flex-1 overflow-hidden p-0">
+        <div className="flex w-1/3 min-w-72 flex-col border-r border-secondary-100 bg-secondary-50/70">
+          <CardHeader className="mb-0 border-b border-secondary-100 p-4">
+            <CardTitle className="text-h4">Conversations</CardTitle>
+          </CardHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {loadingList ? (
-              <div className="flex justify-center p-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <div className="space-y-3 p-4">
+                <Skeleton height="4.5rem" />
+                <Skeleton height="4.5rem" />
+                <Skeleton height="4.5rem" />
               </div>
             ) : conversations.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {conversations.map(c => {
-                  const isSelected = c.applicationId === selectedAppId;
+              <div className="divide-y divide-secondary-100">
+                {conversations.map((conversation) => {
+                  const isSelected = conversation.applicationId === selectedAppId;
+
                   return (
-                    <button
-                      key={c.applicationId}
-                      onClick={() => handleSelectConversation(c.applicationId)}
-                      className={`w-full text-left p-4 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
+                    <Button
+                      key={conversation.applicationId}
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handleSelectConversation(conversation.applicationId)}
+                      className={[
+                        'h-auto w-full justify-start rounded-none px-4 py-4 text-left transition-colors',
+                        isSelected ? 'bg-primary-50 text-primary-700' : 'text-secondary-700',
+                      ].join(' ')}
                     >
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className={`font-semibold ${c.unread ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'}`}>
-                          {c.candidateName}
-                        </span>
-                        <span className="text-xs text-slate-500">{formatMessageTime(c.sentAt)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-baseline justify-between gap-2">
+                          <span
+                            className={[
+                              'truncate text-body-sm font-semibold',
+                              conversation.unread ? 'text-primary-700' : 'text-secondary-900',
+                            ].join(' ')}
+                          >
+                            {conversation.candidateName}
+                          </span>
+                          <span className="shrink-0 text-caption text-secondary-500">
+                            {formatMessageTime(conversation.sentAt)}
+                          </span>
+                        </div>
+                        <div className="mb-2 truncate text-caption text-secondary-500">
+                          {conversation.jobTitle}
+                        </div>
+                        <div
+                          className={[
+                            'truncate text-body-sm',
+                            conversation.unread
+                              ? 'font-semibold text-secondary-800'
+                              : 'text-secondary-500',
+                          ].join(' ')}
+                        >
+                          {conversation.body}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
-                        {c.jobTitle}
-                      </div>
-                      <div className={`text-sm truncate ${c.unread ? 'font-medium text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {c.body}
-                      </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
             ) : (
-              <div className="p-8 text-center text-slate-500 text-sm">
-                No conversations found.
-              </div>
+              <EmptyState
+                icon={MessageSquare}
+                title="No conversations yet"
+                description="Candidate conversations will appear here once outreach starts."
+                className="py-10"
+              />
             )}
           </div>
         </div>
 
-        {/* Right Pane - Thread */}
-        <div className="w-2/3 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-900/50">
+        <CardContent className="flex min-h-0 w-2/3 flex-col bg-white p-0">
           {loadingThread ? (
-            <div className="flex-1 flex justify-center items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="flex-1 space-y-4 p-6">
+              <Skeleton height="5rem" />
+              <Skeleton height="18rem" />
             </div>
           ) : selectedApplication ? (
-            <div className="flex-1 p-6 overflow-y-auto min-h-0">
-              <MessagingThread 
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <MessagingThread
                 application={selectedApplication}
                 messages={messages}
                 draftMessage={draftMessage}
@@ -179,12 +231,15 @@ export default function MessagesList() {
               />
             </div>
           ) : (
-            <div className="flex-1 flex justify-center items-center text-slate-500">
-              Select a conversation to view the thread.
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              title="Select a conversation"
+              description="Choose a candidate thread from the list to review the conversation."
+              className="h-full"
+            />
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

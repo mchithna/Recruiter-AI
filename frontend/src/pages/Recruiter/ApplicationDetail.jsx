@@ -1,4 +1,4 @@
-import { ArrowLeft, Bot, CalendarClock, MessageSquare, Send } from 'lucide-react';
+import { ArrowLeft, Bot, CalendarClock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
