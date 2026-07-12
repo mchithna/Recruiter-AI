@@ -166,18 +166,16 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <select 
-                        className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-1.5 px-2 outline-none focus:border-indigo-500"
-                        value="" 
-                        onChange={(e) => handleReassign(staff.id, e.target.value)}
-                      >
-                        <option value="" disabled>Reassign...</option>
-                        {allDepartments?.map(d => (
-                          <option key={d.id} value={d.id} disabled={d.id === department.id}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-36">
+                        <Select
+                          placeholder="Reassign..."
+                          value=""
+                          onChange={(e) => handleReassign(staff.id, e.target.value)}
+                          options={allDepartments
+                            ?.filter(d => d.id !== department.id)
+                            .map(d => ({ value: d.id, label: d.name })) || []}
+                        />
+                      </div>
                       <Button 
                         variant="secondary" 
                         size="sm" 
