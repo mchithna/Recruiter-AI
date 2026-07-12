@@ -1,7 +1,8 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -44,6 +45,12 @@ export function JobApplicationsList() {
     () => [...applications].sort((a, b) => b.aiMatchScore - a.aiMatchScore),
     [applications]
   );
+  const averageScore = applications.length
+    ? Math.round(
+        applications.reduce((total, application) => total + application.aiMatchScore, 0) /
+          applications.length
+      )
+    : 0;
 
   useEffect(() => {
     let isActive = true;
@@ -61,14 +68,39 @@ export function JobApplicationsList() {
   }, [jobId]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-h2 text-secondary-900">Applications</h1>
-          <p className="mt-1 text-body-sm text-secondary-500">
-            {job ? job.title : 'Review candidates for this role'}
-          </p>
+    <div className="relative z-10 space-y-6 animate-slide-up">
+      <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-6">
+        <img
+          src="/images/card-bg-candidate.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-15 dark:opacity-35 dark:mix-blend-screen"
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Badge variant="ai" size="sm" icon={<Sparkles size={12} strokeWidth={1.75} />}>
+              AI-ranked applicants
+            </Badge>
+            <h1 className="mt-3 text-h1 text-secondary-900 dark:text-white">Applications</h1>
+            <p className="mt-2 max-w-2xl text-body-sm text-secondary-500 dark:text-secondary-300">
+              {job ? job.title : 'Review candidates for this role'}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <span className="rounded-full bg-white/70 px-3 py-1 text-caption font-semibold text-primary-700 dark:bg-white/10 dark:text-primary-300">
+                {applications.length} candidates
+              </span>
+              <span className="rounded-full bg-white/70 px-3 py-1 text-caption font-semibold text-ai-700 dark:bg-white/10 dark:text-ai-300">
+                {averageScore}% avg AI match
+              </span>
+            </div>
+          </div>
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-ai-500 text-white shadow-glow-ai sm:flex">
+            <Users size={42} strokeWidth={1.5} />
+          </div>
         </div>
+      </section>
+
+      <div className="flex justify-end">
         <Button
           type="button"
           variant="outline"
@@ -80,7 +112,7 @@ export function JobApplicationsList() {
         </Button>
       </div>
 
-      <Card className="p-0 overflow-hidden">
+      <Card className="glass-card-heavy overflow-hidden border-none p-0">
         <CardHeader className="mb-0 p-6 pb-4">
           <div>
             <CardTitle>Applicants</CardTitle>

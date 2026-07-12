@@ -136,7 +136,7 @@ function StatusAndInterviews({
   const canSchedule = status === 'Shortlisted';
 
   return (
-    <div className="space-y-6">
+    <div className="relative z-10 space-y-6 animate-slide-up">
       <Card className="border border-secondary-100 bg-secondary-50/60">
         <CardHeader className="mb-3">
           <div>
@@ -364,7 +364,7 @@ export function ApplicationDetail() {
 
   if (!application) {
     return (
-      <Card>
+      <Card className="glass-card-heavy border-none">
         <CardHeader>
           <div>
             <CardTitle>Application not found</CardTitle>

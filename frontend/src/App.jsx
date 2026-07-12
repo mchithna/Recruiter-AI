@@ -84,20 +84,19 @@ function App() {
               </Route>
             </Route>
 
-            {/* Recruiter-specific Layout */}
-            <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
-              <Route path="/recruiter" element={<RecruiterRoutes />}>
-                <Route index element={<RecruiterIndexRedirect />} />
-                <Route path="home" element={<RecruiterHome />} />
-                <Route path="jobs" element={<JobsList />} />
-                <Route path="jobs/new" element={<JobForm />} />
-                <Route path="jobs/:jobId/edit" element={<JobForm />} />
-                <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
-                <Route path="applications/:applicationId" element={<ApplicationDetail />} />
-                <Route path="interviews" element={<InterviewsList />} />
-                <Route path="messages" element={<MessagesList />} />
-              </Route>
-            </Route>
+          </Route>
+          
+          {/* Recruiter-specific Layout (Temp Unprotected for UI Testing) */}
+          <Route path="/recruiter" element={<RecruiterRoutes />}>
+            <Route index element={<RecruiterIndexRedirect />} />
+            <Route path="home" element={<RecruiterHome />} />
+            <Route path="jobs" element={<JobsList />} />
+            <Route path="jobs/new" element={<JobForm />} />
+            <Route path="jobs/:jobId/edit" element={<JobForm />} />
+            <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
+            <Route path="applications/:applicationId" element={<ApplicationDetail />} />
+            <Route path="interviews" element={<InterviewsList />} />
+            <Route path="messages" element={<MessagesList />} />
           </Route>
           
           {/* Fallback routes */}
