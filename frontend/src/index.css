@@ -292,6 +292,90 @@ body {
   .dark .recruiter-shell textarea::placeholder {
     color: rgba(148, 163, 184, 0.9) !important;
   }
+
+  /* Staggered card entrance */
+  @keyframes card-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-card-enter {
+    animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  /* Shimmer loading effect for cards */
+  @keyframes shimmer-sweep {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 2s ease-in-out infinite;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Chat bubble subtle glow */
+  .dark .recruiter-shell .bg-gradient-to-br.from-primary-500 {
+    box-shadow: 0 4px 24px rgba(99, 102, 241, 0.25);
+  }
+
+  /* Smooth scrollbar styling */
+  .recruiter-shell ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
+  }
+
+  .dark .recruiter-shell ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .recruiter-shell ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

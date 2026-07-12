@@ -155,27 +155,24 @@ export default function RecruiterHome() {
 
   return (
     <div className="relative z-10 mx-auto max-w-7xl space-y-8 animate-slide-up">
-      <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-0">
-        <img
-          src="/images/image_01.jpg"
-          alt="AI recruitment dashboard"
-          className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-multiply dark:opacity-35 dark:mix-blend-screen"
-        />
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-500/20 blur-[80px]" />
-        <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-ai-500/20 blur-[90px]" />
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary-900 via-secondary-950 to-secondary-900 p-0 shadow-2xl dark:from-secondary-950 dark:via-[#0c1029] dark:to-secondary-950">
+        {/* Subtle gradient orbs instead of images */}
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-500/15 blur-[100px]" />
+        <div className="absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-ai-500/12 blur-[100px]" />
+        <div className="absolute left-0 top-0 h-full w-full bg-[radial-gradient(ellipse_at_top_left,rgba(99,102,241,0.08),transparent_50%)]" />
 
-        <div className="relative grid gap-8 p-8 lg:grid-cols-[minmax(0,1.2fr)_420px] lg:p-10">
+        <div className="relative grid gap-8 p-8 lg:grid-cols-[minmax(0,1.2fr)_380px] lg:p-10">
           <div className="flex flex-col justify-between gap-8">
             <div>
               <Badge variant="ai" className="inline-flex items-center gap-2 uppercase tracking-widest">
                 <span className="h-1.5 w-1.5 rounded-full bg-ai-500 animate-pulse" />
                 AI Hiring Command Center
               </Badge>
-              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight text-secondary-900 dark:text-white md:text-5xl">
+              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
                 Build your shortlist with{' '}
-                <span className="text-gradient-vivid">clarity and speed.</span>
+                <span className="bg-gradient-to-r from-primary-400 via-ai-400 to-primary-300 bg-clip-text text-transparent">clarity and speed.</span>
               </h1>
-              <p className="mt-5 max-w-2xl text-body-lg leading-relaxed text-secondary-600 dark:text-secondary-300">
+              <p className="mt-5 max-w-2xl text-body-lg leading-relaxed text-secondary-300">
                 Monitor candidate momentum, AI match quality, interviews, and priority actions from one polished recruiter workspace.
               </p>
             </div>
@@ -197,7 +194,7 @@ export default function RecruiterHome() {
                   type="button"
                   variant="outline"
                   size="lg"
-                  className="rounded-xl bg-white/60 dark:bg-white/10"
+                  className="rounded-xl border-white/20 text-white hover:bg-white/10"
                   leftIcon={<CalendarClock size={18} strokeWidth={1.75} />}
                 >
                   View Interviews
@@ -206,43 +203,31 @@ export default function RecruiterHome() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/50 bg-secondary-950 p-3 shadow-2xl dark:border-white/15">
-            <div className="relative min-h-80 overflow-hidden rounded-2xl bg-secondary-950">
-              <img
-                src="/images/card-bg-live-analytics.png"
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-screen"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-secondary-950 via-secondary-950/30 to-transparent" />
-              <div className="relative flex h-full min-h-80 flex-col justify-end p-6">
-                <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white shadow-glass backdrop-blur-xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-caption font-semibold uppercase tracking-wide text-primary-200">
-                        Avg. AI match
-                      </p>
-                      <p className="mt-1 text-5xl font-black tabular-nums">{stats.avgAiScore}%</p>
-                    </div>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-lg shadow-primary-500/40">
-                      <Bot size={28} strokeWidth={1.75} />
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-                    <div className="rounded-xl bg-white/10 p-3">
-                      <p className="text-2xl font-black tabular-nums">{stats.openJobs}</p>
-                      <p className="text-caption text-primary-100">Open</p>
-                    </div>
-                    <div className="rounded-xl bg-white/10 p-3">
-                      <p className="text-2xl font-black tabular-nums">{stats.positiveOutcomes}</p>
-                      <p className="text-caption text-primary-100">Progressing</p>
-                    </div>
-                    <div className="rounded-xl bg-white/10 p-3">
-                      <p className="text-2xl font-black tabular-nums">{stats.hiredCount}</p>
-                      <p className="text-caption text-primary-100">Hired</p>
-                    </div>
-                  </div>
-                </div>
+          {/* Stats panel — clean glass, no background image */}
+          <div className="flex flex-col justify-center gap-5 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-caption font-semibold uppercase tracking-wide text-primary-300">
+                  Avg. AI match
+                </p>
+                <p className="mt-1 text-5xl font-black tabular-nums text-white">{stats.avgAiScore}%</p>
+              </div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/20 text-primary-300 shadow-lg shadow-primary-500/10">
+                <Bot size={28} strokeWidth={1.75} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <p className="text-2xl font-black tabular-nums text-white">{stats.openJobs}</p>
+                <p className="text-caption text-secondary-400">Open</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <p className="text-2xl font-black tabular-nums text-white">{stats.positiveOutcomes}</p>
+                <p className="text-caption text-secondary-400">Progressing</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <p className="text-2xl font-black tabular-nums text-white">{stats.hiredCount}</p>
+                <p className="text-caption text-secondary-400">Hired</p>
               </div>
             </div>
           </div>
@@ -315,14 +300,8 @@ export default function RecruiterHome() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="glass-card-heavy relative overflow-hidden border-none">
-            <img
-              src="/images/card-bg-ai-matching.png"
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover opacity-15 dark:opacity-40 dark:mix-blend-screen"
-            />
-            <div className="relative">
+          <Card className="glass-card-heavy border-none">
+            <div>
               <div className="flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-ai-700 dark:text-ai-300">
                 <Sparkles size={14} strokeWidth={1.75} />
                 AI recommendation
