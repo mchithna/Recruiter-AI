@@ -569,3 +569,55 @@ export const getInterviewsByApplication = async (applicationId) =>
 
 export const getAllInterviews = async () => delay([...interviews]);
 export const getAllApplications = async () => delay([...applications]);
+
+export const buildMockMessages = (application) => [
+  {
+    id: `${application.id}-msg-001`,
+    sender: 'Current Recruiter',
+    body: `Hi ${application.candidateName}, thanks for applying for ${application.jobTitle}. We are reviewing your profile now.`,
+    sentAt: '2026-07-08T09:20:00Z',
+  },
+  {
+    id: `${application.id}-msg-002`,
+    sender: application.candidateName,
+    body: 'Thank you. I am happy to answer any questions or share more examples of my work.',
+    sentAt: '2026-07-08T10:05:00Z',
+  },
+  {
+    id: `${application.id}-msg-003`,
+    sender: 'Current Recruiter',
+    body: 'Great. Could you confirm your availability for a short call later this week?',
+    sentAt: '2026-07-09T13:30:00Z',
+  },
+  {
+    id: `${application.id}-msg-004`,
+    sender: application.candidateName,
+    body: 'Thursday afternoon or Friday morning would work well for me.',
+    sentAt: '2026-07-09T14:12:00Z',
+  },
+];
+
+export const getMessagesForApplication = async (applicationId) => {
+  const application = findApplication(applicationId);
+  if (!application) return delay([]);
+  return delay(buildMockMessages(application));
+};
+
+export const getAllConversations = async () => {
+  const conversations = applications.map((app) => {
+    const messages = buildMockMessages(app);
+    const lastMessage = messages[messages.length - 1];
+    return {
+      applicationId: app.id,
+      candidateName: app.candidateName,
+      jobTitle: app.jobTitle,
+      body: lastMessage.body,
+      sentAt: lastMessage.sentAt,
+      unread: lastMessage.sender === app.candidateName,
+    };
+  });
+  
+  // Sort by most recent first
+  conversations.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+  return delay(conversations);
+};
