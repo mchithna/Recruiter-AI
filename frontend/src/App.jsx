@@ -17,6 +17,8 @@ import Contact from './pages/Contact';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
 import JobsList from './pages/Recruiter/JobsList';
 import JobForm from './pages/Recruiter/JobForm';
+import JobApplicationsList from './pages/Recruiter/JobApplicationsList';
+import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -79,6 +81,8 @@ function App() {
                   <Route path="jobs" element={<JobsList />} />
                   <Route path="jobs/new" element={<JobForm />} />
                   <Route path="jobs/:jobId/edit" element={<JobForm />} />
+                  <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
+                  <Route path="applications/:applicationId" element={<ApplicationDetail />} />
                 </Route>
               </Route>
               
