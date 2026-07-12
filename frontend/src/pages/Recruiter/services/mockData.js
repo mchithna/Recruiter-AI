@@ -568,3 +568,4 @@ export const getInterviewsByApplication = async (applicationId) =>
   delay(interviews.filter((interview) => interview.applicationId === applicationId));
 
 export const getAllInterviews = async () => delay([...interviews]);
+export const getAllApplications = async () => delay([...applications]);

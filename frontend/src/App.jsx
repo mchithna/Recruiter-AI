@@ -20,6 +20,7 @@ import JobForm from './pages/Recruiter/JobForm';
 import JobApplicationsList from './pages/Recruiter/JobApplicationsList';
 import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
+import RecruiterHome from './pages/Recruiter/RecruiterHome';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -86,7 +87,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
               <Route path="/recruiter" element={<RecruiterRoutes />}>
                 <Route index element={<RecruiterIndexRedirect />} />
-                <Route path="home" element={<div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700"><h2 className="text-xl font-bold mb-2">Recruiter Home</h2><p className="text-slate-500 dark:text-slate-400">Home page will be built in Phase R8.</p></div>} />
+                <Route path="home" element={<RecruiterHome />} />
                 <Route path="jobs" element={<JobsList />} />
                 <Route path="jobs/new" element={<JobForm />} />
                 <Route path="jobs/:jobId/edit" element={<JobForm />} />
