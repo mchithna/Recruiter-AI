@@ -1,9 +1,16 @@
-import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
-import { LogOut, Home, Briefcase, Calendar, MessageSquare } from 'lucide-react';
+import { Briefcase, Calendar, Home, LogOut, MessageSquare } from 'lucide-react';
+import { Avatar, Button } from '../../components/ui';
+import { useAuth } from '../../contexts/AuthContext';
 
-const RecruiterLayout = () => {
+const navItems = [
+  { name: 'Home', path: '/recruiter/home', icon: Home },
+  { name: 'Jobs', path: '/recruiter/jobs', icon: Briefcase },
+  { name: 'Interviews', path: '/recruiter/interviews', icon: Calendar },
+  { name: 'Messages', path: '/recruiter/messages', icon: MessageSquare },
+];
+
+export default function RecruiterLayout() {
   const { signOut, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,38 +20,37 @@ const RecruiterLayout = () => {
     navigate('/login', { replace: true });
   };
 
-  const navItems = [
-    { name: 'Home', path: '/recruiter/home', icon: Home },
-    { name: 'Jobs', path: '/recruiter/jobs', icon: Briefcase },
-    { name: 'Interviews', path: '/recruiter/interviews', icon: Calendar },
-    { name: 'Messages', path: '/recruiter/messages', icon: MessageSquare },
-  ];
+  const profileName = `${profile?.firstName || 'Recruiter'} ${profile?.lastName || ''}`.trim();
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-800 shadow-md border-r border-slate-200 dark:border-slate-700 flex flex-col">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
-          <h2 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Hirely
-          </h2>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Recruiter Portal</p>
+    <div className="flex min-h-screen bg-secondary-50 text-secondary-900">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-secondary-200 bg-white shadow-sm">
+        <div className="shrink-0 border-b border-secondary-100 p-6">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-button bg-primary-600 text-h4 text-white shadow-glow-primary">
+            H
+          </div>
+          <h2 className="mt-3 text-h3 text-secondary-900">Hirely</h2>
+          <p className="mt-1 text-body-sm text-secondary-500">Recruiter Portal</p>
         </div>
-        <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
+
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
             const Icon = item.icon;
+            const isActive = location.pathname.startsWith(item.path);
+
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center gap-3 py-2.5 px-4 rounded-lg font-medium transition-colors ${
+                className={[
+                  'flex items-center gap-3 rounded-button px-4 py-2.5 text-body-sm font-semibold',
+                  'transition-all duration-base',
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400'
-                    : 'text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-indigo-400'
-                }`}
+                    ? 'bg-primary-50 text-primary-700 shadow-row-hover'
+                    : 'text-secondary-600 hover:bg-secondary-100 hover:text-primary-700',
+                ].join(' ')}
               >
-                <Icon size={18} />
+                <Icon size={18} strokeWidth={1.75} />
                 {item.name}
               </Link>
             );
@@ -52,36 +58,35 @@ const RecruiterLayout = () => {
         </nav>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Header */}
-        <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-8 shadow-sm shrink-0">
+      <main className="flex h-screen flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-secondary-200 bg-white px-8 shadow-sm">
           <div>
-            <h1 className="text-lg font-semibold">
+            <p className="text-caption font-semibold uppercase tracking-wide text-secondary-400">
+              Recruiter dashboard
+            </p>
+            <h1 className="text-h4 text-secondary-900">
               Welcome, {profile?.firstName || 'Recruiter'}!
             </h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <button 
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              leftIcon={<LogOut size={16} strokeWidth={1.75} />}
               onClick={handleSignOut}
-              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 transition-colors"
             >
-              <LogOut size={16} />
               Sign Out
-            </button>
-            <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold">
-              {profile?.firstName?.charAt(0) || 'U'}
-            </div>
+            </Button>
+            <Avatar name={profileName} size="sm" />
           </div>
         </header>
-        
-        {/* Page Content */}
-        <div className="p-8 flex-1 overflow-y-auto">
+
+        <div className="mesh-bg flex-1 overflow-y-auto p-8">
           <Outlet />
         </div>
       </main>
     </div>
   );
-};
-
-export default RecruiterLayout;
+}
