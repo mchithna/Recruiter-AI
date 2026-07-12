@@ -88,6 +88,7 @@ const FEATURES = [
     description: 'Our neural networks analyze thousands of data points to find the perfect fit between candidate skills and company culture.',
     color: 'primary',
     span: 'md:col-span-2',
+    bgImage: '/images/card-bg-ai-matching.png',
   },
   {
     icon: BarChart2,
@@ -95,6 +96,7 @@ const FEATURES = [
     description: 'Monitor pipeline health, drop-off rates, and diversity metrics through beautiful, interactive dashboards.',
     color: 'info',
     span: 'md:col-span-1',
+    bgImage: '/images/card-bg-live-analytics.png',
   },
   {
     icon: Shield,
@@ -102,6 +104,7 @@ const FEATURES = [
     description: 'Structured evaluations and blind reviews ensure every candidate gets a fair chance regardless of background.',
     color: 'success',
     span: 'md:col-span-1',
+    bgImage: '/images/card-bg-bias-free.png',
   },
   {
     icon: Globe,
@@ -109,6 +112,7 @@ const FEATURES = [
     description: 'Connect with top professionals worldwide. Multi-language support and timezone-aware scheduling built right in.',
     color: 'ai',
     span: 'md:col-span-2',
+    bgImage: '/images/card-bg-global-network.png',
   },
 ];
 
@@ -157,9 +161,16 @@ const ROLES = [
 /* ─── Main Component ───────────────────────────────────────────────────────── */
 export default function Home() {
   return (
-    <div className="min-h-screen w-full flex flex-col bg-secondary-50 dark:bg-secondary-950 text-secondary-900 dark:text-secondary-100 font-sans relative overflow-hidden">
+    <>
+      <div className="min-h-screen w-full flex flex-col mesh-bg text-secondary-900 dark:text-white font-sans relative overflow-hidden">
 
       <Navbar />
+
+      {/* Floating Background Particles */}
+      <div className="particle w-24 h-24 left-[10%] animation-delay-[0s]" style={{ animationDuration: '20s' }}></div>
+      <div className="particle w-40 h-40 left-[40%] animation-delay-[5s]" style={{ animationDuration: '30s' }}></div>
+      <div className="particle w-16 h-16 left-[80%] animation-delay-[2s]" style={{ animationDuration: '15s' }}></div>
+      <div className="particle w-32 h-32 left-[60%] animation-delay-[12s]" style={{ animationDuration: '25s' }}></div>
 
       <main className="relative z-10 flex-grow flex flex-col items-center pt-[80px]">
 
@@ -197,12 +208,12 @@ export default function Home() {
 
             <FadeSection delay={300} className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
               <Link to="/register/company">
-                <Button size="lg" variant="primary" className="text-base px-8 py-3 rounded-xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300" leftIcon={<Building2 size={18} />}>
+                <Button size="lg" variant="glass" className="text-base px-8 py-3 rounded-xl" leftIcon={<Building2 size={18} />}>
                   Start Hiring
                 </Button>
               </Link>
               <Link to="/register/candidate">
-                <Button size="lg" variant="outline" className="text-base px-8 py-3 rounded-xl hover:-translate-y-0.5 transition-all duration-300" leftIcon={<Search size={18} />}>
+                <Button size="lg" variant="glass" className="text-base px-8 py-3 rounded-xl" leftIcon={<Search size={18} />}>
                   Find a Job
                 </Button>
               </Link>
@@ -221,38 +232,33 @@ export default function Home() {
             </FadeSection>
           </div>
 
-          {/* Hero Image */}
-          <div className="lg:w-1/2 relative z-10 w-full max-w-xl">
-            <FadeSection delay={300} className="relative">
-              {/* Floating glow */}
-              <div className="absolute -inset-4 bg-gradient-to-br from-primary-500/20 to-ai-500/20 dark:from-primary-500/10 dark:to-ai-500/10 rounded-[2.5rem] blur-2xl animate-glow-pulse" />
-
-              {/* Image container */}
-              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-secondary-200/50 dark:border-secondary-700/50">
-                <img
-                  src="/images/hero-illustration.png"
-                  alt="Hirely AI recruitment platform"
-                  className="w-full h-auto"
-                />
-
-                {/* Floating stat card */}
-                <div className="absolute bottom-6 left-6 right-6 bg-white/90 dark:bg-secondary-900/90 backdrop-blur-xl rounded-xl p-5 border border-secondary-200/50 dark:border-secondary-700/50 shadow-lg flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-secondary-500 dark:text-secondary-400 uppercase tracking-wider mb-1">Time to hire</p>
-                    <p className="text-3xl font-black text-primary-600 dark:text-primary-400">-45%</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center">
-                    <TrendingUp className="text-primary-600 dark:text-primary-400 w-6 h-6" />
+          {/* Creative Hero Imagery Layout */}
+          <div className="lg:w-1/2 relative z-10 w-full max-w-2xl mt-12 lg:mt-0">
+            <FadeSection delay={400} className="relative w-full aspect-square md:aspect-[4/3] lg:aspect-square">
+              {/* Abstract decorative rings */}
+              <div className="absolute inset-0 border-2 border-primary-500/20 rounded-full animate-ping" style={{ animationDuration: '8s' }}></div>
+              <div className="absolute inset-8 border border-ai-500/30 rounded-full animate-spin" style={{ animationDuration: '30s' }}></div>
+              
+              {/* Main Hero Image */}
+              <div className="absolute inset-4 rounded-[3rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(99,102,241,0.15)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] ring-1 ring-white/60 dark:ring-white/20 transform rotate-3 hover:rotate-0 transition-transform duration-700 bg-white/40 dark:bg-secondary-900/60 backdrop-blur-2xl p-2.5">
+                <div className="w-full h-full rounded-[2.5rem] overflow-hidden relative bg-secondary-950 shadow-inner">
+                  {/* The image acts as the glowing UI, blending its black background into the dark screen */}
+                  <img src="/images/image_01.jpg" alt="AI Recruitment Dashboard" className="w-full h-full object-cover mix-blend-screen opacity-95" />
+                  
+                  {/* Glass overlay on the screen itself to add depth */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-secondary-950/90 via-secondary-900/30 to-transparent pointer-events-none"></div>
+                  
+                  {/* Floating stats card over image - synchronized for the dark screen */}
+                  <div className="absolute bottom-8 left-8 right-8 bg-white/10 dark:bg-secondary-900/50 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl p-6 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                    <div>
+                      <p className="text-primary-300 text-sm font-semibold uppercase tracking-wider mb-1">Time to hire</p>
+                      <p className="text-4xl font-black text-white">-45%</p>
+                    </div>
+                    <div className="w-14 h-14 rounded-full bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/50">
+                      <TrendingUp className="text-white w-7 h-7" />
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Floating accent elements */}
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-ai-100 dark:bg-ai-500/15 rounded-2xl border border-ai-200 dark:border-ai-500/20 flex items-center justify-center shadow-lg animate-float">
-                <Sparkles className="text-ai-500 w-8 h-8" />
-              </div>
-              <div className="absolute -bottom-3 -left-3 w-16 h-16 bg-success-100 dark:bg-success-500/15 rounded-xl border border-success-200 dark:border-success-500/20 flex items-center justify-center shadow-lg animate-float-slow">
-                <CheckCircle className="text-success-500 w-7 h-7" />
               </div>
             </FadeSection>
           </div>
@@ -266,7 +272,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
               {['TechNova', 'Quantum Labs', 'NexGen AI', 'CloudPeak', 'DataForge', 'SynapseHQ'].map((name) => (
-                <span key={name} className="text-lg font-bold text-secondary-300 dark:text-secondary-600 tracking-tight select-none">
+                <span key={name} className="text-lg font-bold text-secondary-400 dark:text-secondary-500 tracking-tight select-none">
                   {name}
                 </span>
               ))}
@@ -289,19 +295,21 @@ export default function Home() {
           </FadeSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {FEATURES.map(({ icon: Icon, title, description, color, span }, i) => {
+            {FEATURES.map(({ icon: Icon, title, description, color, span, bgImage }, i) => {
               const c = COLOR_MAP[color];
               return (
                 <FadeSection key={title} delay={i * 100} className={span}>
-                  <Card hoverable className="h-full border-secondary-200/60 dark:border-secondary-700/60 bg-white dark:bg-secondary-900 rounded-2xl overflow-hidden group relative">
+                  <Card hoverable className="glass-card-heavy h-full rounded-2xl overflow-hidden group relative border-none">
+                    {/* Responsive texture */}
+                    <img src={bgImage} alt={`${title} background texture`} className="absolute inset-0 w-full h-full object-cover opacity-15 dark:opacity-40 pointer-events-none select-none z-0 dark:mix-blend-screen dark:saturate-200 transition-opacity duration-500 group-hover:opacity-25 dark:group-hover:opacity-60" />
                     {/* Decorative glow */}
-                    <div className={`absolute -top-20 -right-20 w-40 h-40 ${c.glow} rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                    <div className={`absolute -top-20 -right-20 w-40 h-40 ${c.glow} rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0`} />
                     <CardContent className="p-8 relative z-10">
                       <div className={`w-14 h-14 rounded-xl ${c.iconBg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                         <Icon className={`w-7 h-7 ${c.iconText}`} />
                       </div>
                       <h3 className="text-xl font-bold text-secondary-900 dark:text-white mb-3">{title}</h3>
-                      <p className="text-secondary-500 dark:text-secondary-400 leading-relaxed">{description}</p>
+                      <p className="text-secondary-600 dark:text-secondary-400 leading-relaxed">{description}</p>
                     </CardContent>
                   </Card>
                 </FadeSection>
@@ -324,14 +332,16 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Candidate Card */}
             <FadeSection delay={80}>
-              <Card hoverable className="h-full border-secondary-200/60 dark:border-secondary-700/60 bg-white dark:bg-secondary-900 rounded-2xl overflow-hidden group relative">
-                <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-[80px] group-hover:bg-primary-500/10 transition-all duration-500" />
+              <Card hoverable className="glass-card-heavy h-full rounded-2xl overflow-hidden group relative border-none">
+                {/* Responsive texture */}
+                <img src="/images/card-bg-candidate.png" alt="Candidate background texture" className="absolute inset-0 w-full h-full object-cover opacity-15 dark:opacity-40 pointer-events-none select-none z-0 dark:mix-blend-screen dark:saturate-200 transition-opacity duration-500 group-hover:opacity-25 dark:group-hover:opacity-60" />
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-[80px] group-hover:bg-primary-500/10 transition-all duration-500 z-0" />
                 <CardContent className="p-10 flex flex-col h-full relative z-10">
                   <div className="w-14 h-14 rounded-xl bg-primary-100 dark:bg-primary-500/15 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                     <Target className="text-primary-600 dark:text-primary-400 w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-secondary-900 dark:text-white mb-3">For Candidates</h3>
-                  <p className="text-secondary-500 dark:text-secondary-400 mb-8 leading-relaxed">
+                  <p className="text-secondary-600 dark:text-secondary-400 mb-8 leading-relaxed">
                     Elevate your career trajectory with precision AI matching. Stop searching — let your dream role find you.
                   </p>
                   <ul className="space-y-3 mb-8 flex-grow">
@@ -348,19 +358,24 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/register/candidate">
-                    <Button variant="outline" className="rounded-xl self-start" rightIcon={<ArrowRight size={16} />}>
-                      Create your profile
-                    </Button>
-                  </Link>
+                  <div className="relative mt-auto pt-4">
+                    <div className="absolute inset-0 bg-primary-400/20 dark:bg-primary-500/10 blur-2xl rounded-full scale-150 z-0"></div>
+                    <Link to="/register/candidate" className="relative z-10 block">
+                      <Button variant="glass" className="rounded-xl w-auto font-semibold shadow-lg hover:shadow-xl ring-2 ring-white/50 dark:ring-white/10" rightIcon={<ArrowRight size={16} />}>
+                        Create your profile
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </FadeSection>
 
             {/* Company Card */}
             <FadeSection delay={160}>
-              <Card hoverable className="h-full border-secondary-200/60 dark:border-secondary-700/60 bg-white dark:bg-secondary-900 rounded-2xl overflow-hidden group relative">
-                <div className="absolute -top-10 -right-10 w-64 h-64 bg-ai-500/5 dark:bg-ai-500/5 rounded-full blur-[80px] group-hover:bg-ai-500/10 transition-all duration-500" />
+              <Card hoverable className="glass-card-heavy h-full rounded-2xl overflow-hidden group relative border-none">
+                {/* Responsive texture */}
+                <img src="/images/card-bg-company.png" alt="Company background texture" className="absolute inset-0 w-full h-full object-cover opacity-15 dark:opacity-40 pointer-events-none select-none z-0 dark:mix-blend-screen dark:saturate-200 transition-opacity duration-500 group-hover:opacity-25 dark:group-hover:opacity-60" />
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-ai-500/5 dark:bg-ai-500/5 rounded-full blur-[80px] group-hover:bg-ai-500/10 transition-all duration-500 z-0" />
                 <CardContent className="p-10 flex flex-col h-full relative z-10">
                   <div className="w-14 h-14 rounded-xl bg-ai-100 dark:bg-ai-500/15 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                     <Building2 className="text-ai-600 dark:text-ai-400 w-7 h-7" />
@@ -383,11 +398,14 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/register/company">
-                    <Button variant="ai" className="rounded-xl self-start" rightIcon={<ArrowRight size={16} />}>
-                      Start hiring today
-                    </Button>
-                  </Link>
+                  <div className="relative mt-auto pt-4">
+                    <div className="absolute inset-0 bg-ai-400/20 dark:bg-ai-500/10 blur-2xl rounded-full scale-150 z-0"></div>
+                    <Link to="/register/company" className="relative z-10 block">
+                      <Button variant="glass" className="rounded-xl w-auto font-semibold shadow-lg hover:shadow-xl ring-2 ring-white/50 dark:ring-white/10" rightIcon={<ArrowRight size={16} />}>
+                        Start hiring today
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </FadeSection>
@@ -402,7 +420,7 @@ export default function Home() {
               <p className="text-lg text-secondary-500 dark:text-secondary-400">Discover high-impact positions hiring right now.</p>
             </div>
             <Link to="/register/candidate">
-              <Button variant="outline" className="rounded-xl shrink-0" rightIcon={<ArrowRight size={16} />}>
+              <Button variant="glass" className="rounded-xl shrink-0" rightIcon={<ArrowRight size={16} />}>
                 View all roles
               </Button>
             </Link>
@@ -411,7 +429,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {ROLES.map(({ id, title, company, location, type, typeVariant, initial }, i) => (
               <FadeSection key={id} delay={i * 90}>
-                <div className="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200/60 dark:border-secondary-700/60 overflow-hidden h-full flex flex-col hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                <div className="glass-card-heavy rounded-2xl overflow-hidden h-full flex flex-col hover:-translate-y-1 transition-all duration-300 cursor-pointer group border-none">
                   {/* Card top strip */}
                   <div className="h-1 w-full bg-gradient-to-r from-primary-500 to-ai-500" />
                   <div className="p-7 flex flex-col flex-grow">
@@ -452,7 +470,7 @@ export default function Home() {
 
           {/* Stats Row */}
           <FadeSection delay={100}>
-            <div className="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200/60 dark:border-secondary-700/60 p-8 mb-12 shadow-sm">
+            <div className="glass-card-heavy rounded-2xl p-8 mb-12">
               <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-secondary-100 dark:divide-secondary-800">
                 {STATS.map(({ label, value, suffix, Icon, trend, up }) => (
                   <div key={label} className="flex flex-col items-center text-center px-4 py-4 gap-2">
@@ -478,7 +496,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TESTIMONIALS.map(({ name, role, quote }, i) => (
               <FadeSection key={name} delay={i * 100}>
-                <div className="bg-white dark:bg-secondary-900 rounded-2xl border border-secondary-200/60 dark:border-secondary-700/60 p-8 h-full flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="glass-card-heavy rounded-2xl p-8 h-full flex flex-col justify-between hover:scale-[1.02] transition-transform duration-300">
                   {/* Stars */}
                   <div className="flex items-center gap-0.5 mb-4">
                     {[1, 2, 3, 4, 5].map((s) => (
@@ -520,12 +538,12 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                   <Link to="/register/company">
-                    <Button size="lg" className="text-base px-10 py-3 bg-white text-primary-700 font-bold rounded-xl shadow-xl hover:bg-primary-50 hover:-translate-y-0.5 transition-all duration-300">
+                    <Button size="lg" variant="glass" className="text-base px-10 py-3 font-bold rounded-xl">
                       Start Hiring Now
                     </Button>
                   </Link>
                   <Link to="/features">
-                    <Button size="lg" variant="outline" className="text-base px-10 py-3 border-white/30 text-white hover:bg-white/10 rounded-xl hover:-translate-y-0.5 transition-all duration-300" leftIcon={<PlayCircle size={18} />}>
+                    <Button size="lg" variant="glass" className="text-base px-10 py-3 font-bold rounded-xl" leftIcon={<PlayCircle size={18} />}>
                       Learn More
                     </Button>
                   </Link>
@@ -539,5 +557,6 @@ export default function Home() {
 
       <Footer />
     </div>
+    </>
   );
 }

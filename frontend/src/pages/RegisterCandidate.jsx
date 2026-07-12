@@ -100,13 +100,13 @@ export default function RegisterCandidate() {
       <div className="mb-6">
         <Button 
           type="button" 
-          variant="outline" 
-          className="w-full h-12 rounded-xl text-secondary-700 dark:text-secondary-200 border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 hover:bg-secondary-50 dark:hover:bg-secondary-700 shadow-sm flex items-center justify-center font-semibold transition-all"
+          variant="glass" 
+          className="w-full h-12 rounded-xl shadow-sm flex items-center justify-center font-bold gap-2"
           onClick={handleGoogleSignIn}
           isLoading={isGoogleLoading}
           disabled={isSubmitting}
+          leftIcon={!isGoogleLoading ? <GoogleIcon /> : null}
         >
-          {!isGoogleLoading && <GoogleIcon />}
           Sign up with Google
         </Button>
       </div>

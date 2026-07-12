@@ -2,58 +2,51 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { NeuralAnimation } from '../components/ui';
 import { Sun, Moon } from 'lucide-react';
 
 const GuestLayout = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen flex bg-secondary-50 dark:bg-secondary-950 text-secondary-900 dark:text-secondary-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen flex mesh-bg text-secondary-900 dark:text-white font-sans transition-colors duration-300 relative">
       
       {/* Left Side — Illustration Panel (Hidden on small screens) */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-secondary-900 overflow-hidden border-r border-secondary-800">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-white/60 dark:border-white/5 bg-white/40 dark:bg-secondary-950/40 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,0.05)] dark:shadow-[0_0_40px_rgba(0,0,0,0.1)]">
         
-        {/* Background Gradients */}
+        {/* Background Gradients inside the dark glass pane */}
         <div className="absolute inset-0">
-          <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary-600/30 rounded-full blur-[100px] animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-ai-600/30 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-ai-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
 
         {/* Floating elements */}
         <div className="absolute inset-0 z-10 flex flex-col justify-between p-12">
           
           <Link to="/" className="flex items-center gap-2.5 group w-fit">
-            <div className="bg-gradient-to-br from-primary-500 to-ai-600 p-2 rounded-xl shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow duration-300">
-              <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-white">
+            <img src="/logo.png" alt="Hirely Logo" className="w-14 h-14 object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+            <span className="text-3xl font-brand font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-ai-300">
               Hirely
             </span>
           </Link>
           
           <div className="relative">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-4 animate-slide-up">
+            <h1 className="text-4xl lg:text-5xl font-black text-secondary-900 dark:text-white leading-[1.1] tracking-tight mb-4 animate-slide-up">
               Find the perfect match, <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-ai-400">faster than ever.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-ai-500 dark:from-primary-400 dark:to-ai-400">faster than ever.</span>
             </h1>
-            <p className="text-secondary-400 text-lg max-w-md animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <p className="text-secondary-700 dark:text-secondary-400 text-lg max-w-md animate-slide-up" style={{ animationDelay: '100ms' }}>
               Our AI-powered platform connects brilliant minds with visionary companies in milliseconds.
             </p>
           </div>
           
-          <div className="text-secondary-500 text-sm animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div className="text-secondary-600 dark:text-secondary-500 text-sm animate-slide-up" style={{ animationDelay: '200ms' }}>
             &copy; {new Date().getFullYear()} Hirely. All rights reserved.
           </div>
         </div>
 
-        {/* Central Illustration Image */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center p-12 opacity-80 mix-blend-screen">
-          <img 
-            src="/images/auth-illustration.png" 
-            alt="Abstract illustration" 
-            className="w-full max-w-md object-contain animate-float"
-          />
-        </div>
+        {/* Live Neural Background replacing the static illustration */}
+        <NeuralAnimation />
       </div>
 
       {/* Right Side — Auth Form Container */}
@@ -62,10 +55,8 @@ const GuestLayout = () => {
         {/* Mobile Header / Theme Toggle */}
         <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
           <Link to="/" className="flex lg:hidden items-center gap-2.5 group">
-            <div className="bg-gradient-to-br from-primary-500 to-ai-600 p-2 rounded-xl shadow-sm">
-              <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-secondary-900 dark:text-white">
+            <img src="/logo.png" alt="Hirely Logo" className="w-12 h-12 object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]" />
+            <span className="text-2xl font-brand font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-ai-400">
               Hirely
             </span>
           </Link>
