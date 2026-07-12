@@ -231,6 +231,7 @@ const OrgChartBuilder = () => {
         isOpen={!!selectedDeptForDetail}
         onClose={() => setSelectedDeptForDetail(null)}
         department={selectedDeptForDetail}
+        allDepartments={departments}
       />
     </div>
   );

@@ -8,10 +8,13 @@ import { useToast } from '../../lib/ToastContext';
 import api from '../../api';
 import { Copy } from 'lucide-react';
 
-const DepartmentDetailModal = ({ isOpen, onClose, department }) => {
+const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) => {
   const { showToast } = useToast();
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  const [staffList, setStaffList] = useState([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
   
   // Form state
   const [email, setEmail] = useState('');
@@ -24,6 +27,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department }) => {
   useEffect(() => {
     if (isOpen && department) {
       fetchInvitations();
+      fetchStaff();
       // Reset form and success state when opening a new department
       setEmail('');
       setRoleName('Recruiter');
@@ -40,6 +44,39 @@ const DepartmentDetailModal = ({ isOpen, onClose, department }) => {
       showToast('Failed to load pending invitations.', 'danger');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      setLoadingStaff(true);
+      const response = await api.get(`/staff?departmentId=${department.id}`);
+      setStaffList(response.data);
+    } catch (error) {
+      showToast('Failed to load staff.', 'danger');
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  const handleToggleStatus = async (staffId, currentStatus) => {
+    try {
+      await api.put(`/staff/${staffId}/status`, { isActive: !currentStatus });
+      showToast(`Staff member ${!currentStatus ? 'activated' : 'deactivated'} successfully.`, 'success');
+      fetchStaff();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Failed to update status.', 'danger');
+    }
+  };
+
+  const handleReassign = async (staffId, newDepartmentId) => {
+    if (!newDepartmentId || newDepartmentId == department.id) return;
+    try {
+      await api.put(`/staff/${staffId}/reassign`, { departmentId: parseInt(newDepartmentId) });
+      showToast('Staff member reassigned successfully.', 'success');
+      fetchStaff();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Failed to reassign staff.', 'danger');
     }
   };
 
@@ -97,8 +134,62 @@ const DepartmentDetailModal = ({ isOpen, onClose, department }) => {
         {/* Staff Section */}
         <section>
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Staff</h3>
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-slate-500 dark:text-slate-400">
-            No staff assigned yet.
+          
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            {loadingStaff ? (
+              <div className="flex justify-center p-6">
+                <Spinner size="md" className="text-indigo-600" />
+              </div>
+            ) : staffList.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+                No staff assigned yet.
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+                {staffList.map(staff => (
+                  <li key={staff.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-slate-800 dark:text-slate-100">
+                        {staff.firstName} {staff.lastName}
+                      </div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
+                          {staff.roleName}
+                        </span>
+                        <span>•</span>
+                        <span>{staff.email}</span>
+                        <span>•</span>
+                        <span className={staff.isActive ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-400'}>
+                          {staff.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <select 
+                        className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-1.5 px-2 outline-none focus:border-indigo-500"
+                        value="" 
+                        onChange={(e) => handleReassign(staff.id, e.target.value)}
+                      >
+                        <option value="" disabled>Reassign...</option>
+                        {allDepartments?.map(d => (
+                          <option key={d.id} value={d.id} disabled={d.id === department.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => handleToggleStatus(staff.id, staff.isActive)}
+                      >
+                        {staff.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 
