@@ -22,6 +22,18 @@ import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
+import HiringManagerRoutes, { HiringManagerIndexRedirect } from './pages/HiringManager/HiringManagerRoutes';
+import Queue from './pages/HiringManager/Queue';
+import HiringManagerApplicationDetail from './pages/HiringManager/ApplicationDetail';
+import HiringManagerInterviewDetail from './pages/HiringManager/InterviewDetail';
+import HiringManagerEvaluate from './pages/HiringManager/Evaluate';
+import HiringManagerOffer from './pages/HiringManager/Offer';
+import HiringManagerHome from './pages/HiringManager/Home';
+import HiringManagerInterviews from './pages/HiringManager/Interviews';
+import HiringManagerOffers from './pages/HiringManager/Offers';
+
+
+
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -97,6 +109,19 @@ function App() {
             <Route path="applications/:applicationId" element={<ApplicationDetail />} />
             <Route path="interviews" element={<InterviewsList />} />
             <Route path="messages" element={<MessagesList />} />
+          </Route>
+
+          {/* Hiring Manager-specific Layout (Temp Unprotected for UI Testing) */}
+          <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
+            <Route index element={<HiringManagerIndexRedirect />} />
+            <Route path="home" element={<HiringManagerHome />} />
+            <Route path="queue" element={<Queue />} />
+            <Route path="applications/:applicationId" element={<HiringManagerApplicationDetail />} />
+            <Route path="interviews" element={<HiringManagerInterviews />} />
+            <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
+            <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
+            <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
+            <Route path="offers" element={<HiringManagerOffers />} />
           </Route>
           
           {/* Fallback routes */}
