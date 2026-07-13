@@ -59,6 +59,7 @@ builder.Services.AddScoped<NotificationFactory>(serviceProvider =>
         serviceProvider.GetRequiredService<EmailNotificationService>(),
         serviceProvider.GetRequiredService<SmsNotificationService>()));
 
+builder.Services.AddHttpClient<IAiChatService, GeminiChatService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
