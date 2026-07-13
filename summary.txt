@@ -1,0 +1,44 @@
+Hiring Manager Portal Development Summary
+=========================================
+Author: geenod saniru
+Date: July 13, 2026
+Time: 8:53 PM (GMT+5:30)
+
+Summary of Accomplished Tasks:
+------------------------------
+1. Setup & Specifications Documentations:
+   - Created context.md defining Phase 1 guidelines, shared component boundaries, and mock-data structures.
+   - Created context2.md defining Phase 2 updates, adding four persistent tabs structure.
+
+2. Service Layer & Mock Database:
+   - Configured mockData.js service with simulated delays to mock endpoints for retrieving shortlisted applications, individual application details, scheduling details, evaluations, and offers.
+   - Initialized mock arrays with mock items (candidates like Maya, Noah, Leah, and pre-populated offers/evaluations) to support robust dashboard metrics.
+
+3. Persistent Shell Navigation & Layout:
+   - Implemented HiringManagerLayout.jsx sidebar wrapper and custom navigation tabs list:
+     - Home (/hiring-manager/home)
+     - Shortlist (/hiring-manager/queue)
+     - Interviews (/hiring-manager/interviews)
+     - Offers (/hiring-manager/offers)
+   - Created HiringManagerRoutes.jsx wrapper with redirect logic.
+   - Updated default landing page of the dashboard to Home dashboard view.
+
+4. Page Components & Views:
+   - Created Home.jsx Dashboard: Aggregates real-time stats and automatically triggers actions required lists (e.g. pending evaluations on completed interviews).
+   - Created Queue.jsx Queue: Displays shortlisted candidates with statuses, interview loops schedules, and direct links to profile views.
+   - Created Interviews.jsx Schedule: Lists all candidate interview loops with active timeline filters (upcoming/past/all) and status checks.
+   - Created Offers.jsx Tracker: Tracks all packages initiated with annual base salary amount and currencies.
+   - Created ApplicationDetail.jsx: Shows candidates' complete experience and education profiles alongside scheduled interview listings.
+   - Created InterviewDetail.jsx: Manages active loop lifecycles (Confirm, Cancel, Completed) and lists submitted evaluations with offer links.
+   - Created Evaluate.jsx Assessment: Handles numerical scoring (1-100), key strengths, concerns, and hire recommendation switches.
+   - Created Offer.jsx Generation: Formulates packages with bases, currencies, start dates, and expiry dates, with confirmation of TA recruiter handoff.
+
+5. Shared Ported Components:
+   - Created custom duplicates under Hiring Manager space:
+     - CandidateProfileView.jsx
+     - InterviewCard.jsx
+     - StatusBadge.jsx
+     - CalendarConnectButton.jsx
+
+6. Routing Configuration:
+   - Modified App.jsx to register the new /hiring-manager layout, default home redirection, and all sub-routes.
