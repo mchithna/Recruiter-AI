@@ -14,7 +14,6 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import AdminLayout from './pages/Admin/AdminLayout';
 import CompanyProfile from './pages/Admin/CompanyProfile';
 import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
@@ -92,10 +91,8 @@ function App() {
               </Route>
               
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route path="company" element={<CompanyProfile />} />
-                  <Route path="org-chart" element={<OrgChartBuilder />} />
-                </Route>
+                <Route path="/admin/company" element={<CompanyProfile />} />
+                <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
               </Route>
             </Route>
 

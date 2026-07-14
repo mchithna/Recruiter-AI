@@ -8,7 +8,9 @@ import {
   Moon,
   Sun,
   Building2,
-  Network
+  Network,
+  BarChart2,
+  ClipboardList
 } from 'lucide-react';
 import { Avatar, Button, Tooltip } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +26,8 @@ const navItemsByRole = {
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
+    { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
+    { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
   ],
   Candidate: [
     { name: 'Dashboard', path: '/candidate', icon: Home },
