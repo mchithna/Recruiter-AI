@@ -79,10 +79,11 @@ function App() {
             <Route path="/invite/accept" element={<AcceptInvite />} />
           </Route>
 
-          {/* Protected Dashboard Routes */}
-          <Route element={<ProtectedRoute />}>
-            {/* Standard Dashboard Layout */}
-            <Route element={<DashboardLayout />}>
+          {/* Dashboard Layout (Shared shell) */}
+          <Route element={<DashboardLayout />}>
+            
+            {/* Protected Routes inside Dashboard */}
+            <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
               
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
@@ -98,19 +99,18 @@ function App() {
               </Route>
             </Route>
 
-          </Route>
-          
-          {/* Recruiter-specific Layout (Temp Unprotected for UI Testing) */}
-          <Route path="/recruiter" element={<RecruiterRoutes />}>
-            <Route index element={<RecruiterIndexRedirect />} />
-            <Route path="home" element={<RecruiterHome />} />
-            <Route path="jobs" element={<JobsList />} />
-            <Route path="jobs/new" element={<JobForm />} />
-            <Route path="jobs/:jobId/edit" element={<JobForm />} />
-            <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
-            <Route path="applications/:applicationId" element={<ApplicationDetail />} />
-            <Route path="interviews" element={<InterviewsList />} />
-            <Route path="messages" element={<MessagesList />} />
+            {/* Recruiter-specific routes (Temp Unprotected for UI Testing) */}
+            <Route path="/recruiter" element={<RecruiterRoutes />}>
+              <Route index element={<RecruiterIndexRedirect />} />
+              <Route path="home" element={<RecruiterHome />} />
+              <Route path="jobs" element={<JobsList />} />
+              <Route path="jobs/new" element={<JobForm />} />
+              <Route path="jobs/:jobId/edit" element={<JobForm />} />
+              <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
+              <Route path="applications/:applicationId" element={<ApplicationDetail />} />
+              <Route path="interviews" element={<InterviewsList />} />
+              <Route path="messages" element={<MessagesList />} />
+            </Route>
           </Route>
           
           {/* Fallback routes */}
