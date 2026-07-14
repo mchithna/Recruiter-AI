@@ -79,17 +79,18 @@ function App() {
             <Route path="/invite/accept" element={<AcceptInvite />} />
           </Route>
 
-          {/* Protected Dashboard Routes */}
-          <Route element={<ProtectedRoute />}>
-            {/* Standard Dashboard Layout */}
-            <Route element={<DashboardLayout />}>
+          {/* Dashboard Layout (Shared shell) */}
+          <Route element={<DashboardLayout />}>
+
+            {/* Protected Routes inside Dashboard */}
+            <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
-              
+
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<CandidateDashboard />} />
               </Route>
-              
+
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Navigate to="/admin/company" replace />} />
@@ -114,9 +115,7 @@ function App() {
               </Route>
             </Route>
           </Route>
-          
 
-          
           {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
