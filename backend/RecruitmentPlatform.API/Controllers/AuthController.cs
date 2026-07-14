@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPlatform.Core.Entities;
 using RecruitmentPlatform.Core.Interfaces;
+using RecruitmentPlatform.Core.Helpers;
 
 namespace RecruitmentPlatform.API.Controllers;
 
@@ -25,7 +26,7 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrEmpty(token)) return BadRequest(new { message = "Token is required." });
 
-        var tokenHash = HashToken(token);
+        var tokenHash = SecurityHelper.HashToken(token);
         
         var invitation = await _unitOfWork.UserInvitations.FirstOrDefaultAsync(
             i => i.InvitationTokenHash == tokenHash,
@@ -66,7 +67,7 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrEmpty(request.Token)) return BadRequest(new { message = "Token is required." });
 
-        var tokenHash = HashToken(request.Token);
+        var tokenHash = SecurityHelper.HashToken(request.Token);
         
         var invitation = await _unitOfWork.UserInvitations.FirstOrDefaultAsync(
             i => i.InvitationTokenHash == tokenHash,
@@ -134,15 +135,6 @@ public class AuthController : ControllerBase
 
         return Ok(MapToResponse(newUser));
     }
-
-    private string HashToken(string token)
-    {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(token);
-        var hash = sha256.ComputeHash(bytes);
-        return Convert.ToBase64String(hash);
-    }
-
     private AuthProfileResponse MapToResponse(User user)
     {
         return new AuthProfileResponse

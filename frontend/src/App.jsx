@@ -14,6 +14,9 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import AdminLayout from './pages/Admin/AdminLayout';
+import CompanyProfile from './pages/Admin/CompanyProfile';
+import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
 import JobsList from './pages/Recruiter/JobsList';
 import JobForm from './pages/Recruiter/JobForm';
@@ -33,6 +36,14 @@ const CandidateDashboard = () => {
     </div>
   );
 };
+
+const RecruiterDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
+  </div>
+);
+
 
 const AdminDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
@@ -80,7 +91,10 @@ function App() {
               </Route>
               
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route path="company" element={<CompanyProfile />} />
+                  <Route path="org-chart" element={<OrgChartBuilder />} />
+                </Route>
               </Route>
             </Route>
 
