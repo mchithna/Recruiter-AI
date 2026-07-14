@@ -6,6 +6,7 @@
  */
 
 export { Button } from './Button';
+export { NeuralAnimation } from './NeuralAnimation';
 export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Select } from './Select';

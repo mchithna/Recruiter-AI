@@ -38,17 +38,15 @@ export default function Navbar() {
         ref={headerRef}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'py-3 glass-light dark:glass-dark border-b border-secondary-200/50 dark:border-secondary-700/50 shadow-glass dark:shadow-glass-dark'
+            ? 'py-3 glass-header-fixed'
             : 'py-5 bg-transparent'
         }`}
       >
         <div className="w-full max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="bg-gradient-to-br from-primary-500 to-ai-600 p-2 rounded-xl shadow-lg shadow-primary-500/20 group-hover:shadow-primary-500/40 transition-shadow duration-300">
-              <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-secondary-900 dark:text-white">
+            <img src="/logo.png" alt="Hirely Logo" className="w-14 h-14 object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+            <span className="text-3xl font-brand font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-ai-400">
               Hirely
             </span>
           </Link>
@@ -116,7 +114,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/20 dark:bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-[72px] left-0 right-0 glass-light dark:glass-dark border-b border-secondary-200/50 dark:border-secondary-700/50 shadow-lg p-6 animate-slide-up">
+          <div className="absolute top-[72px] left-0 right-0 glass-header-fixed shadow-lg p-6 animate-slide-up">
             <nav className="flex flex-col gap-1 mb-6">
               {NAV_LINKS.map(({ label, to }) => {
                 const isActive = location.pathname === to;

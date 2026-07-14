@@ -84,10 +84,10 @@ export default function Login() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-white/40 dark:bg-secondary-900/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 rounded-[2.5rem] p-8 sm:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-black text-secondary-900 dark:text-white mb-2 tracking-tight">Welcome Back</h1>
-        <p className="text-secondary-500 dark:text-secondary-400">Sign in to your account to continue</p>
+        <h1 className="text-3xl font-brand font-black text-secondary-900 dark:text-white mb-2 tracking-wide">Welcome Back</h1>
+        <p className="text-secondary-600 dark:text-secondary-400">Sign in to your account to continue</p>
       </div>
 
       {errorMsg && (
@@ -100,13 +100,13 @@ export default function Login() {
       <div className="mb-6">
         <Button 
           type="button" 
-          variant="outline" 
-          className="w-full h-12 rounded-xl text-secondary-700 dark:text-secondary-200 border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 hover:bg-secondary-50 dark:hover:bg-secondary-700 shadow-sm flex items-center justify-center font-semibold transition-all"
+          variant="glass" 
+          className="w-full h-12 rounded-xl shadow-sm flex items-center justify-center font-bold gap-2"
           onClick={handleGoogleSignIn}
           isLoading={isGoogleLoading}
           disabled={isSubmitting}
+          leftIcon={!isGoogleLoading ? <GoogleIcon /> : null}
         >
-          {!isGoogleLoading && <GoogleIcon />}
           Sign in with Google
         </Button>
       </div>
@@ -147,8 +147,8 @@ export default function Login() {
         <div className="pt-2">
           <Button 
             type="submit" 
-            variant="primary" 
-            className="w-full h-12 rounded-xl font-bold text-base shadow-md shadow-primary-500/20"
+            variant="glass" 
+            className="w-full h-12 rounded-xl font-black tracking-wide text-base"
             isLoading={isSubmitting}
             disabled={isGoogleLoading}
           >
@@ -167,7 +167,7 @@ export default function Login() {
           </Link>
           <div className="w-1 h-1 rounded-full bg-secondary-300 dark:bg-secondary-700"></div>
           <Link to="/register/company" className="text-sm font-semibold text-ai-600 dark:text-ai-400 hover:text-ai-700 dark:hover:text-ai-300 transition-colors border-b border-transparent hover:border-ai-600 dark:hover:border-ai-400 pb-0.5">
-            I'm a Company
+            I'm an Employer
           </Link>
         </div>
       </div>

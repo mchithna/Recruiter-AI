@@ -24,6 +24,7 @@ const VARIANT_CLASSES = {
     'bg-transparent text-secondary-600 hover:bg-secondary-100 active:bg-secondary-200',
   ai:
     'bg-ai-600 text-white hover:bg-ai-700 active:bg-ai-800 shadow-row-hover',
+  glass: 'glass-btn',
 };
 
 const SIZE_CLASSES = {
@@ -89,7 +90,7 @@ export function Button({
 }
 
 Button.propTypes = {
-  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'danger', 'ghost', 'ai']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'danger', 'ghost', 'ai', 'glass']),
   size: PropTypes.oneOf(['sm', 'md', 'lg']),
   isLoading: PropTypes.bool,
   disabled: PropTypes.bool,

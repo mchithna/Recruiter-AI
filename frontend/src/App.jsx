@@ -17,6 +17,14 @@ import Contact from './pages/Contact';
 import AdminLayout from './pages/Admin/AdminLayout';
 import CompanyProfile from './pages/Admin/CompanyProfile';
 import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
+import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
+import JobsList from './pages/Recruiter/JobsList';
+import JobForm from './pages/Recruiter/JobForm';
+import JobApplicationsList from './pages/Recruiter/JobApplicationsList';
+import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
+import InterviewsList from './pages/Recruiter/InterviewsList';
+import RecruiterHome from './pages/Recruiter/RecruiterHome';
+import MessagesList from './pages/Recruiter/MessagesList';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -37,6 +45,12 @@ const RecruiterDashboard = () => (
 );
 
 
+const AdminDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
+  </div>
+);
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -67,16 +81,13 @@ function App() {
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute />}>
+            {/* Standard Dashboard Layout */}
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
               
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<CandidateDashboard />} />
-              </Route>
-              
-              <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
-                <Route path="/recruiter" element={<RecruiterDashboard />} />
               </Route>
               
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
@@ -86,6 +97,20 @@ function App() {
                 </Route>
               </Route>
             </Route>
+
+          </Route>
+          
+          {/* Recruiter-specific Layout (Temp Unprotected for UI Testing) */}
+          <Route path="/recruiter" element={<RecruiterRoutes />}>
+            <Route index element={<RecruiterIndexRedirect />} />
+            <Route path="home" element={<RecruiterHome />} />
+            <Route path="jobs" element={<JobsList />} />
+            <Route path="jobs/new" element={<JobForm />} />
+            <Route path="jobs/:jobId/edit" element={<JobForm />} />
+            <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
+            <Route path="applications/:applicationId" element={<ApplicationDetail />} />
+            <Route path="interviews" element={<InterviewsList />} />
+            <Route path="messages" element={<MessagesList />} />
           </Route>
           
           {/* Fallback routes */}
