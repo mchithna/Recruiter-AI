@@ -9,4 +9,9 @@ public class SmsNotificationService : INotificationService
         Console.WriteLine($"SMS notification to user {userId}: {message}");
         return Task.CompletedTask;
     }
+
+    public Task SendEmailAsync(string toEmail, string subject, string htmlBody)
+    {
+        throw new NotImplementedException();
+    }
 }
