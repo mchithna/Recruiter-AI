@@ -37,6 +37,14 @@ const CandidateDashboard = () => {
   );
 };
 
+const RecruiterDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
+  </div>
+);
+
+
 const AdminDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
     <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
@@ -73,7 +81,6 @@ function App() {
 
           {/* Dashboard Layout (Shared shell) */}
           <Route element={<DashboardLayout />}>
-
             {/* Protected Routes inside Dashboard */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
