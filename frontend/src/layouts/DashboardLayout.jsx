@@ -50,7 +50,7 @@ export default function DashboardLayout() {
 
   const role = profile?.role || 'Guest';
   const navItems = navItemsByRole[role] || navItemsByRole.Guest;
-  const profileName = ${""} .trim();
+  const profileName = `${profile?.firstName || role} ${profile?.lastName || ''}`.trim();
 
   return (
     <div className="recruiter-shell relative flex min-h-screen overflow-hidden text-secondary-900 dark:text-white">
@@ -119,7 +119,7 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Tooltip content={Switch to {theme === 'dark' ? 'light' : 'dark'} mode}>
+            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               <Button
                 type="button"
                 variant="glass"
