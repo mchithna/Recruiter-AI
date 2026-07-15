@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api';
+import { getDashboardPathForRole, getProfileRole, normalizeRole } from '../lib/roles';
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const { session, profile, loading } = useAuth();
@@ -48,8 +49,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
     return <Navigate to="/login" state={{ message: "We couldn't finish setting up your account — please try signing in again." }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(localProfile.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  const role = getProfileRole(localProfile, session);
+
+  if (allowedRoles && !allowedRoles.map(normalizeRole).includes(role)) {
+    return <Navigate to={getDashboardPathForRole(role)} replace />;
   }
 
   return <Outlet />;

@@ -1,77 +1,50 @@
 import React from 'react';
-import { Outlet, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import Button from '../../components/ui/Button';
-import { LogOut } from 'lucide-react';
+import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Activity, BarChart2, Building2, Network } from 'lucide-react';
+
+const tabs = [
+  { label: 'Company Profile', path: '/admin/company', icon: Building2 },
+  { label: 'Org Chart', path: '/admin/org-chart', icon: Network },
+  { label: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
+  { label: 'Activity Log', path: '/admin/activity', icon: Activity },
+];
 
 const AdminLayout = () => {
-  const { profile, signOut } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login', { replace: true });
-  };
 
   if (location.pathname === '/admin' || location.pathname === '/admin/') {
-    return <Navigate to="/admin/org-chart" replace />;
+    return <Navigate to="/admin/company" replace />;
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
-      {/* Header with Greeting and Logout */}
-      <div className="bg-white dark:bg-slate-800 p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Welcome, {profile?.firstName || 'Admin'}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-            Manage your company's settings and organization.
-          </p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={handleSignOut}
-          className="flex items-center gap-2"
-        >
-          <LogOut size={16} />
-          Log Out
-        </Button>
-      </div>
+    <div className="flex min-h-full flex-col overflow-hidden rounded-xl border border-white/70 bg-white/80 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-secondary-900/70">
+      <div className="border-b border-secondary-100 px-4 dark:border-white/10 sm:px-6">
+        <nav className="flex gap-2 overflow-x-auto py-3">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
 
-      {/* Top Tabs Navigation */}
-      <div className="bg-white dark:bg-slate-800 px-6 border-b border-slate-200 dark:border-slate-700">
-        <nav className="flex space-x-6">
-          <NavLink
-            to="/admin/company"
-            className={({ isActive }) =>
-              `py-4 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600'
-              }`
-            }
-          >
-            Company Profile
-          </NavLink>
-          <NavLink
-            to="/admin/org-chart"
-            className={({ isActive }) =>
-              `py-4 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:border-slate-600'
-              }`
-            }
-          >
-            Org Chart
-          </NavLink>
+            return (
+              <NavLink
+                key={tab.path}
+                to={tab.path}
+                className={({ isActive }) =>
+                  [
+                    'inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-body-sm font-semibold transition-colors',
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300'
+                      : 'text-secondary-500 hover:bg-secondary-50 hover:text-secondary-800 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
+                  ].join(' ')
+                }
+              >
+                <Icon size={16} strokeWidth={1.75} />
+                {tab.label}
+              </NavLink>
+            );
+          })}
         </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <Outlet />
       </div>
     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Input, Button } from '../components/ui';
+import { getDashboardPathForRole, getProfileRole } from '../lib/roles';
 
 // Simple Google SVG icon
 const GoogleIcon = () => (
@@ -33,12 +34,8 @@ export default function Login() {
 
   useEffect(() => {
     if (session && profile) {
-      const role = profile.role;
-      if (role === 'Admin') navigate('/admin', { replace: true });
-      else if (role === 'Recruiter') navigate('/recruiter', { replace: true });
-      else if (role === 'HiringManager') navigate('/hiring-manager', { replace: true });
-      else if (role === 'Candidate') navigate('/candidate', { replace: true });
-      else navigate('/', { replace: true }); 
+      const role = getProfileRole(profile, session);
+      navigate(getDashboardPathForRole(role), { replace: true });
     }
   }, [session, profile, navigate]);
 

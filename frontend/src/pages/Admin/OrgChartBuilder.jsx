@@ -162,7 +162,7 @@ const OrgChartBuilder = () => {
   const tree = buildTree(departments);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Org Chart Builder</h3>
@@ -170,12 +170,12 @@ const OrgChartBuilder = () => {
             Build your company's organization chart and manage departments.
           </p>
         </div>
-        <Button variant="primary" onClick={() => handleOpenAdd(null)} className="flex items-center gap-2">
-          <Plus size={16} /> Add Top-Level Department
+        <Button variant="primary" onClick={() => handleOpenAdd(null)} className="w-full whitespace-nowrap sm:w-auto">
+          <Plus size={16} /> Add Department
         </Button>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 min-h-[400px]">
+      <div className="min-h-[440px] overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/50 sm:p-6">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <Spinner size="lg" className="text-indigo-600" />
