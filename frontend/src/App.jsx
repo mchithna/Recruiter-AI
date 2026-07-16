@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
@@ -80,36 +80,39 @@ function App() {
 
           {/* Dashboard Layout (Shared shell) */}
           <Route element={<DashboardLayout />}>
-            
+
             {/* Protected Routes inside Dashboard */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
-              
+
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<CandidateDashboard />} />
               </Route>
-              
+
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+                <Route path="/admin" element={<Navigate to="/admin/company" replace />} />
                 <Route path="/admin/company" element={<CompanyProfile />} />
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
               </Route>
             </Route>
 
-            {/* Recruiter-specific routes (Temp Unprotected for UI Testing) */}
-            <Route path="/recruiter" element={<RecruiterRoutes />}>
-              <Route index element={<RecruiterIndexRedirect />} />
-              <Route path="home" element={<RecruiterHome />} />
-              <Route path="jobs" element={<JobsList />} />
-              <Route path="jobs/new" element={<JobForm />} />
-              <Route path="jobs/:jobId/edit" element={<JobForm />} />
-              <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
-              <Route path="applications/:applicationId" element={<ApplicationDetail />} />
-              <Route path="interviews" element={<InterviewsList />} />
-              <Route path="messages" element={<MessagesList />} />
+            {/* Recruiter-specific Layout */}
+            <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
+              <Route path="/recruiter" element={<RecruiterRoutes />}>
+                <Route index element={<RecruiterIndexRedirect />} />
+                <Route path="home" element={<RecruiterHome />} />
+                <Route path="jobs" element={<JobsList />} />
+                <Route path="jobs/new" element={<JobForm />} />
+                <Route path="jobs/:jobId/edit" element={<JobForm />} />
+                <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
+                <Route path="applications/:applicationId" element={<ApplicationDetail />} />
+                <Route path="interviews" element={<InterviewsList />} />
+                <Route path="messages" element={<MessagesList />} />
+              </Route>
             </Route>
           </Route>
-          
+
           {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 

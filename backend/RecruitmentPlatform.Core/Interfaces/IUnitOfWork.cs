@@ -13,5 +13,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Role> Roles { get; }
 
     IRepository<UserInvitation> UserInvitations { get; }
+    IRepository<AuditLog> AuditLogs { get; }
     Task<int> SaveChangesAsync();
 }
