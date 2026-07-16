@@ -14,7 +14,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { useRecruiterJobs } from './useRecruiterJobs';
 
 const formatDeadline = (deadline) => {
@@ -170,7 +170,7 @@ export function JobsList() {
                         {job.departmentName}
                       </p>
                     </div>
-                    <StatusBadge status={job.status} />
+                    <StatusBadge status={job.status?.toLowerCase().replace(/ /g, '_')} type="job" />
                   </div>
 
                   <p className="mb-5 line-clamp-2 text-body-sm leading-relaxed text-secondary-600 dark:text-secondary-300">

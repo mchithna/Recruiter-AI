@@ -18,7 +18,7 @@ import {
 import CalendarConnectButton from './components/CalendarConnectButton';
 import CandidateProfileView from './components/CandidateProfileView';
 import InterviewCard from './components/InterviewCard';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { getAiScreeningResult, getApplication, getMessagesForApplication } from './services/mockData';
 import { MessagingThread } from './components/MessagingThread';
 
@@ -415,7 +415,7 @@ export function ApplicationDetail() {
               Applied {formatAppliedAt(application.appliedAt)}
             </CardDescription>
           </div>
-          <StatusBadge status={application.status} size="md" />
+          <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} size="md" />
         </CardHeader>
       </Card>
 

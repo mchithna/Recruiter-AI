@@ -17,7 +17,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { getAllInterviews } from './services/mockData';
 
 const formatScheduledTime = (scheduledTime) => {
@@ -268,7 +268,7 @@ export default function InterviewsList() {
                       </div>
                     </div>
                     <div className="shrink-0">
-                      <StatusBadge status={interview.status} />
+                      <StatusBadge status={interview.status?.toLowerCase().replace(/ /g, '_')} />
                     </div>
                   </div>
 
