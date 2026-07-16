@@ -16,6 +16,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import CompanyProfile from './pages/Admin/CompanyProfile';
 import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
+import Analytics from './pages/Admin/Analytics';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
 import JobsList from './pages/Recruiter/JobsList';
 import JobForm from './pages/Recruiter/JobForm';
@@ -94,6 +95,7 @@ function App() {
                 <Route path="/admin" element={<Navigate to="/admin/company" replace />} />
                 <Route path="/admin/company" element={<CompanyProfile />} />
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
+                <Route path="/admin/analytics" element={<Analytics />} />
               </Route>
             </Route>
 
