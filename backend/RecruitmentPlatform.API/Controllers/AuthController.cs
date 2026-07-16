@@ -92,36 +92,22 @@ public class AuthController : ControllerBase
         }
 
         var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var supabaseUserId))
         {
             return BadRequest(new { message = "Invalid token claims." });
         }
 
-        if (string.IsNullOrEmpty(email) || !string.Equals(email, invitation.Email, StringComparison.OrdinalIgnoreCase))
-        {
-            return BadRequest(new { message = "This invitation belongs to a different email address." });
-        }
-
-        // Idempotency check: if the Supabase account already exists, align it with
-        // the accepted invite so role-based routing lands on the correct dashboard.
+        // Idempotency check: in case they somehow retry
         var existingUser = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, u => u.Role);
         if (existingUser != null)
         {
-            existingUser.RoleId = invitation.RoleId;
-            existingUser.Role = invitation.Role;
-            existingUser.CompanyId = invitation.CompanyId;
-            existingUser.DepartmentId = invitation.DepartmentId;
-            existingUser.FirstName = string.IsNullOrWhiteSpace(existingUser.FirstName) ? request.FirstName : existingUser.FirstName;
-            existingUser.LastName = string.IsNullOrWhiteSpace(existingUser.LastName) ? request.LastName : existingUser.LastName;
-            existingUser.IsActive = true;
-            existingUser.UpdatedAt = DateTime.UtcNow;
-
-            invitation.Status = "Accepted";
-            _unitOfWork.Users.Update(existingUser);
-            _unitOfWork.UserInvitations.Update(invitation);
-            await _unitOfWork.SaveChangesAsync();
-
+            // If they already have a user row, just mark accepted if it isn't
+            if (invitation.Status == "Pending")
+            {
+                invitation.Status = "Accepted";
+                _unitOfWork.UserInvitations.Update(invitation);
+                await _unitOfWork.SaveChangesAsync();
+            }
             return Ok(MapToResponse(existingUser));
         }
 

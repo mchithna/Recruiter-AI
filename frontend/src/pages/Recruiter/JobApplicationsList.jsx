@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { getApplicationsByJob } from './services/mockData';
 import { useRecruiterJobs } from './useRecruiterJobs';
 
@@ -158,7 +158,7 @@ export function JobApplicationsList() {
                     <TableCell>{formatAppliedAt(application.appliedAt)}</TableCell>
                     <TableCell numeric>{application.aiMatchScore}%</TableCell>
                     <TableCell>
-                      <StatusBadge status={application.status} />
+                      <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
                     </TableCell>
                   </TableRow>
                 ))}

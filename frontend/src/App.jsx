@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -14,11 +14,10 @@ import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import AdminLayout from './pages/Admin/AdminLayout';
 import CompanyProfile from './pages/Admin/CompanyProfile';
 import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
-import AdminAnalytics from './pages/Admin/AdminAnalytics';
-import AdminActivityLog from './pages/Admin/AdminActivityLog';
+import Analytics from './pages/Admin/Analytics';
+import ActivityLog from './pages/Admin/ActivityLog';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
 import JobsList from './pages/Recruiter/JobsList';
 import JobForm from './pages/Recruiter/JobForm';
@@ -27,8 +26,33 @@ import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
-import CandidateDashboardPage from './pages/candidate/Dashboard';
-import HiringManagerDashboard from './pages/HiringManagerDashboard';
+import ChatBot from './components/chat/ChatBot';
+
+// Dummy components
+const CandidateDashboard = () => {
+  const { profile } = useAuth();
+  return (
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+      <h2 className="text-xl font-bold mb-2">Welcome, {profile?.firstName} {profile?.lastName}!</h2>
+      <p className="text-slate-500 dark:text-slate-400">This is your blank candidate dashboard.</p>
+    </div>
+  );
+};
+
+const RecruiterDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
+  </div>
+);
+
+
+const AdminDashboard = () => (
+  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
+    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
+  </div>
+);
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -59,35 +83,27 @@ function App() {
 
           {/* Dashboard Layout (Shared shell) */}
           <Route element={<DashboardLayout />}>
+
             {/* Protected Routes inside Dashboard */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
 
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
-                <Route path="/candidate" element={<CandidateDashboardPage />} />
+                <Route path="/candidate" element={<CandidateDashboard />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Navigate to="/admin/company" replace />} />
-                  <Route path="company" element={<CompanyProfile />} />
-                  <Route path="org-chart" element={<OrgChartBuilder />} />
-                  <Route path="analytics" element={<AdminAnalytics />} />
-                  <Route path="activity" element={<AdminActivityLog />} />
-                </Route>
-              </Route>
-
-              <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
-                <Route path="/hiring-manager" element={<HiringManagerDashboard />} />
+                <Route path="/admin" element={<Navigate to="/admin/company" replace />} />
+                <Route path="/admin/company" element={<CompanyProfile />} />
+                <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
+                <Route path="/admin/analytics" element={<Analytics />} />
+                <Route path="/admin/activity" element={<ActivityLog />} />
               </Route>
             </Route>
 
-          </Route>
-
-          {/* Recruiter-specific Layout */}
-          <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
-            <Route element={<DashboardLayout />}>
+            {/* Recruiter-specific Layout */}
+            <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
               <Route path="/recruiter" element={<RecruiterRoutes />}>
                 <Route index element={<RecruiterIndexRedirect />} />
                 <Route path="home" element={<RecruiterHome />} />
@@ -108,6 +124,7 @@ function App() {
           {/* Dev-only: design system showcase — no auth required */}
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
+        <ChatBot />
       </BrowserRouter>
     </AuthProvider>
   );

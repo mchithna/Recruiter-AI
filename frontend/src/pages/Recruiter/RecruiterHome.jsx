@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { getAllApplications, getAllInterviews, getJobs } from './services/mockData';
 
 const pipelineOrder = [
@@ -216,7 +216,7 @@ export default function RecruiterHome() {
               return (
                 <div key={item.status} className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)_48px] sm:items-center">
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={item.status} />
+                    <StatusBadge status={item.status?.toLowerCase().replace(/ /g, '_')} />
                   </div>
                   <ProgressBar value={value} size="md" />
                   <p className="text-right text-body-sm font-semibold tabular-nums text-secondary-800 dark:text-white">
@@ -250,7 +250,7 @@ export default function RecruiterHome() {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <Badge variant="ai" size="sm">{topCandidate.aiMatchScore}% AI match</Badge>
-                      <StatusBadge status={topCandidate.status} />
+                      <StatusBadge status={topCandidate.status?.toLowerCase().replace(/ /g, '_')} />
                     </div>
                   </div>
                 </div>
@@ -381,7 +381,7 @@ export default function RecruiterHome() {
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
-                  <StatusBadge status={application.status} />
+                  <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
                   <ChevronRight
                     size={20}
                     strokeWidth={1.75}

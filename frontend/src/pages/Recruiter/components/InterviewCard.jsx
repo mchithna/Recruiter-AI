@@ -7,7 +7,7 @@ import {
   CardContent,
   CardHeader,
 } from '../../../components/ui';
-import StatusBadge from './StatusBadge';
+import { StatusBadge } from '../../../components/ui';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -50,7 +50,7 @@ export function InterviewCard({ interview }) {
               </p>
             </div>
           </div>
-          <StatusBadge status={status} />
+          <StatusBadge status={status?.toLowerCase().replace(/ /g, '_')} />
         </div>
       </CardHeader>
 
