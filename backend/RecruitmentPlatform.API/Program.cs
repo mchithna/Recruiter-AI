@@ -58,6 +58,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
 
+builder.Services.AddHttpClient<IAiChatService, GeminiChatService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

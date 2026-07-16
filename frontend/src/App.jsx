@@ -26,6 +26,7 @@ import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
+import ChatBot from './components/chat/ChatBot';
 
 // Dummy components
 const CandidateDashboard = () => {
@@ -123,6 +124,7 @@ function App() {
           {/* Dev-only: design system showcase — no auth required */}
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
+        <ChatBot />
       </BrowserRouter>
     </AuthProvider>
   );
