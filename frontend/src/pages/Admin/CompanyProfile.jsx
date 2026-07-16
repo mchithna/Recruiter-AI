@@ -98,7 +98,7 @@ const CompanyProfile = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" className="text-indigo-600" />
+        <Spinner size="lg" className="text-primary-700" />
       </div>
     );
   }
@@ -106,18 +106,18 @@ const CompanyProfile = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+        <h3 className="text-h3 font-bold text-secondary-900 dark:text-white flex items-center gap-3">
           Company Profile
           <Badge variant={formData.subscriptionStatus === 'Active' ? 'success' : 'warning'}>
             {formData.subscriptionStatus}
           </Badge>
         </h3>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+        <p className="text-secondary-500 dark:text-secondary-400 text-body-sm mt-1">
           Manage your company details and location.
         </p>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl border border-secondary-200 dark:border-secondary-700">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input 
@@ -149,8 +149,8 @@ const CompanyProfile = () => {
             />
           </div>
 
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Location</h4>
+          <div className="border-t border-secondary-200 dark:border-secondary-700 pt-6">
+            <h4 className="text-body-lg font-semibold text-secondary-800 dark:text-secondary-200 mb-4">Location</h4>
             <div className="space-y-6">
               <Input 
                 label="Address Line 1" 
