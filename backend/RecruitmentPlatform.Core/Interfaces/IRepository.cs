@@ -8,6 +8,7 @@ public interface IRepository<T>
     Task<T?> GetByIdAsync(params object[] keyValues);
     Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
     Task<IEnumerable<T>> GetAllAsync();
+    IQueryable<T> Query();
     Task<IEnumerable<T>> FindAsync(System.Linq.Expressions.Expression<Func<T, bool>> predicate);
     Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
         Expression<Func<T, bool>> predicate,

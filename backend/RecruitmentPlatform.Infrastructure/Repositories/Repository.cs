@@ -39,6 +39,11 @@ public class Repository<T> : IRepository<T>
         return await DbSet.ToListAsync();
     }
 
+    public IQueryable<T> Query()
+    {
+        return DbSet.AsQueryable();
+    }
+
     public async Task<IEnumerable<T>> FindAsync(System.Linq.Expressions.Expression<Func<T, bool>> predicate)
     {
         return await DbSet.Where(predicate).ToListAsync();
