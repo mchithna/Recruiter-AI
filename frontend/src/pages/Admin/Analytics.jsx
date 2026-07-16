@@ -14,7 +14,7 @@ const Analytics = () => {
         setLoading(true);
         const response = await api.get('/analytics/overview');
         setData(response.data);
-      } catch (error) {
+      } catch {
         showToast('Failed to load analytics data.', 'danger');
       } finally {
         setLoading(false);

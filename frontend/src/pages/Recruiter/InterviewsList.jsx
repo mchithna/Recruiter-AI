@@ -9,7 +9,6 @@ import {
   Video,
 } from 'lucide-react';
 import {
-  Avatar,
   Badge,
   Card,
   EmptyState,

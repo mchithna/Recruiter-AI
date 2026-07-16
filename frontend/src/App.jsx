@@ -39,21 +39,6 @@ const CandidateDashboard = () => {
   );
 };
 
-const RecruiterDashboard = () => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-    <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
-    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
-  </div>
-);
-
-
-const AdminDashboard = () => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-    <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
-    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
-  </div>
-);
-
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
     <h2 className="text-4xl font-bold text-red-500 mb-2">403</h2>

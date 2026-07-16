@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button, Badge, Card, CardContent } from '../components/ui';
-import { Brain, Target, BarChart2, Shield, Globe, Users, Zap, ArrowRight, Video, MessageSquare, Layers } from 'lucide-react';
+import { Brain, Target, BarChart2, Shield, Globe, Users, ArrowRight, Video, MessageSquare, Layers } from 'lucide-react';
 
 const FEATURES_DETAILED = [
   {

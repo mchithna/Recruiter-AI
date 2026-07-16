@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { authService } from '../lib/authService';
 import api from '../api';
-import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext();
 
@@ -93,6 +92,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   return useContext(AuthContext);
 };

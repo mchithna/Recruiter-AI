@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { createContext, useCallback, useContext, useId, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 /* ─── Context ────────────────────────────────────────────────────────────── */
 

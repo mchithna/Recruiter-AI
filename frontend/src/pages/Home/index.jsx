@@ -7,10 +7,10 @@ import {
   Card, CardContent,
 } from '../../components/ui';
 import {
-  Sparkles, Building2, Search, ArrowRight,
+  Building2, Search, ArrowRight,
   Zap, Target, Users, Briefcase, TrendingUp, Clock,
   Brain, BarChart2, Shield, Globe,
-  Star, CheckCircle, PlayCircle,
+  Star, PlayCircle,
 } from 'lucide-react';
 
 /* ─── Intersection-observer entrance animation ─────────────────────────────── */

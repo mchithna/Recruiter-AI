@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sparkles, Sun, Moon, Menu, X } from 'lucide-react';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'Features', to: '/features' },

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Button, Badge, Card, CardContent } from '../components/ui';
+import { Button, Badge } from '../components/ui';
 import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 const PLANS = [

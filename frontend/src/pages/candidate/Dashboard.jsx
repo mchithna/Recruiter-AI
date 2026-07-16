@@ -6,7 +6,7 @@ import {
 import { Eye, Trash2, MoreHorizontal } from 'lucide-react';
 
 export default function CandidateDashboard() {
-  const [applications, setApplications] = useState([
+  const [applications] = useState([
     { id: 1, jobTitle: 'Senior React Developer', companyName: 'TechCorp', appliedDate: '2023-10-01', status: 'interview_scheduled' },
     { id: 2, jobTitle: 'Product Designer', companyName: 'Innovate.io', appliedDate: '2023-10-05', status: 'under_review' },
     { id: 3, jobTitle: 'Backend Engineer', companyName: 'FinTech Solutions', appliedDate: '2023-10-10', status: 'applied' },

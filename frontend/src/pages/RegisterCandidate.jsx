@@ -35,7 +35,7 @@ export default function RegisterCandidate() {
         setErrorMsg(error.message || 'Google sign up failed.');
         setIsGoogleLoading(false);
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('An unexpected error occurred with Google Sign-In.');
       setIsGoogleLoading(false);
     }

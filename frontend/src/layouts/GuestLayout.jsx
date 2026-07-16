@@ -1,6 +1,5 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { NeuralAnimation } from '../components/ui';
 import { Sun, Moon } from 'lucide-react';

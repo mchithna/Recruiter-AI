@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button } from '../../components/ui';
 
 export default function JobSearch() {
-  const [jobs, setJobs] = useState([
+  const [jobs] = useState([
     { id: 1, title: 'Senior React Developer', company: 'TechCorp', location: 'Remote', employmentType: 'Full-time' },
     { id: 2, title: 'Product Designer', company: 'Innovate.io', location: 'New York, NY', employmentType: 'Contract' },
     { id: 3, title: 'Backend Engineer', company: 'FinTech Solutions', location: 'San Francisco, CA', employmentType: 'Full-time' },

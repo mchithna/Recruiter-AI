@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
@@ -24,21 +24,21 @@ const OrgChartBuilder = () => {
   
   const [selectedDeptForDetail, setSelectedDeptForDetail] = useState(null);
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
+  const fetchDepartments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/departments');
       setDepartments(response.data);
-    } catch (error) {
+    } catch {
       showToast('Failed to load departments.', 'danger');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   const handleOpenAdd = (parentId = null) => {
     setModalState({

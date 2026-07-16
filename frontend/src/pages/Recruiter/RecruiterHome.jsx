@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   BarChart2,
-  Bot,
   Briefcase,
   CalendarClock,
   ChevronRight,
