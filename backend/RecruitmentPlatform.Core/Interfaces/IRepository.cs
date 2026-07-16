@@ -9,6 +9,12 @@ public interface IRepository<T>
     Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
     Task<IEnumerable<T>> GetAllAsync();
     Task<IEnumerable<T>> FindAsync(System.Linq.Expressions.Expression<Func<T, bool>> predicate);
+    Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        Expression<Func<T, bool>> predicate,
+        int page,
+        int pageSize,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        params Expression<Func<T, object>>[] includes);
     Task AddAsync(T entity);
     void Update(T entity);
     void Delete(T entity);

@@ -13,10 +13,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class DepartmentsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogger _auditLogger;
 
-    public DepartmentsController(IUnitOfWork unitOfWork)
+    public DepartmentsController(IUnitOfWork unitOfWork, IAuditLogger auditLogger)
     {
         _unitOfWork = unitOfWork;
+        _auditLogger = auditLogger;
     }
 
     private int GetCompanyId()
@@ -27,6 +29,16 @@ public class DepartmentsController : ControllerBase
             return companyId;
         }
         throw new UnauthorizedAccessException("Company ID claim is missing or invalid.");
+    }
+
+    private int? GetAppUserId()
+    {
+        var appUserIdClaim = User.FindFirst("app_user_id")?.Value;
+        if (int.TryParse(appUserIdClaim, out var appUserId))
+        {
+            return appUserId;
+        }
+        return null;
     }
 
     [HttpGet]
@@ -77,6 +89,15 @@ public class DepartmentsController : ControllerBase
             Name = department.Name
         };
 
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "DEPARTMENT_CREATED",
+            entityType: "Department",
+            entityId: department.Id,
+            oldValue: null,
+            newValue: dto
+        );
+
         return CreatedAtAction(nameof(GetAll), new { id = department.Id }, dto); // Standard created response
     }
 
@@ -90,6 +111,13 @@ public class DepartmentsController : ControllerBase
         {
             return NotFound("Department not found.");
         }
+
+        var oldValue = new DepartmentDto
+        {
+            Id = department.Id,
+            ParentId = department.ParentId,
+            Name = department.Name
+        };
 
         if (updateDto.ParentId.HasValue && updateDto.ParentId != department.ParentId)
         {
@@ -132,6 +160,15 @@ public class DepartmentsController : ControllerBase
             Name = department.Name
         };
 
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "DEPARTMENT_UPDATED",
+            entityType: "Department",
+            entityId: department.Id,
+            oldValue: oldValue,
+            newValue: dto
+        );
+
         return Ok(dto);
     }
 
@@ -158,8 +195,24 @@ public class DepartmentsController : ControllerBase
             return BadRequest("Please remove sub-departments and reassign staff before deleting this department.");
         }
 
+        var oldValue = new DepartmentDto
+        {
+            Id = department.Id,
+            ParentId = department.ParentId,
+            Name = department.Name
+        };
+
         _unitOfWork.Departments.Delete(department);
         await _unitOfWork.SaveChangesAsync();
+
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "DEPARTMENT_DELETED",
+            entityType: "Department",
+            entityId: department.Id,
+            oldValue: oldValue,
+            newValue: null
+        );
 
         return NoContent();
     }

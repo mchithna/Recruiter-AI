@@ -11,10 +11,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class StaffController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogger _auditLogger;
 
-    public StaffController(IUnitOfWork unitOfWork)
+    public StaffController(IUnitOfWork unitOfWork, IAuditLogger auditLogger)
     {
         _unitOfWork = unitOfWork;
+        _auditLogger = auditLogger;
     }
 
     private int GetCompanyId()
@@ -25,6 +27,16 @@ public class StaffController : ControllerBase
             return companyId;
         }
         throw new UnauthorizedAccessException("Company ID claim is missing or invalid.");
+    }
+
+    private int? GetAppUserId()
+    {
+        var appUserIdClaim = User.FindFirst("app_user_id")?.Value;
+        if (int.TryParse(appUserIdClaim, out var appUserId))
+        {
+            return appUserId;
+        }
+        return null;
     }
 
     [HttpGet]
@@ -75,11 +87,24 @@ public class StaffController : ControllerBase
             return BadRequest(new { message = "Cannot modify staff members with this role." });
         }
 
+        var oldValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
         user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        var newValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "STAFF_DEACTIVATED",
+            entityType: "User",
+            entityId: user.Id,
+            oldValue: oldValue,
+            newValue: newValue
+        );
 
         return Ok(new { message = "Staff member deactivated successfully." });
     }
@@ -101,11 +126,24 @@ public class StaffController : ControllerBase
             return BadRequest(new { message = "Cannot modify staff members with this role." });
         }
 
+        var oldValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
         user.IsActive = true;
         user.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        var newValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "STAFF_REACTIVATED",
+            entityType: "User",
+            entityId: user.Id,
+            oldValue: oldValue,
+            newValue: newValue
+        );
 
         return Ok(new { message = "Staff member reactivated successfully." });
     }
@@ -133,11 +171,24 @@ public class StaffController : ControllerBase
             return BadRequest(new { message = "Target department not found or does not belong to your company." });
         }
 
+        var oldValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
         user.DepartmentId = request.DepartmentId;
         user.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        var newValue = new { user.Id, user.Email, user.IsActive, user.DepartmentId, user.RoleId };
+
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "STAFF_REASSIGNED",
+            entityType: "User",
+            entityId: user.Id,
+            oldValue: oldValue,
+            newValue: newValue
+        );
 
         return Ok(new { message = "Staff member reassigned successfully." });
     }

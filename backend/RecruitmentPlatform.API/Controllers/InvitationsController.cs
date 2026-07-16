@@ -16,15 +16,18 @@ public class InvitationsController : ControllerBase
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationFactory _notificationFactory;
     private readonly IConfiguration _configuration;
+    private readonly IAuditLogger _auditLogger;
 
     public InvitationsController(
         IUnitOfWork unitOfWork,
         INotificationFactory notificationFactory,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IAuditLogger auditLogger)
     {
         _unitOfWork = unitOfWork;
         _notificationFactory = notificationFactory;
         _configuration = configuration;
+        _auditLogger = auditLogger;
     }
 
     [HttpPost]
@@ -88,6 +91,23 @@ public class InvitationsController : ControllerBase
 
         await _unitOfWork.UserInvitations.AddAsync(invitation);
         await _unitOfWork.SaveChangesAsync();
+
+        await _auditLogger.LogAsync(
+            userId: appUserId,
+            action: "INVITATION_CREATED",
+            entityType: "UserInvitation",
+            entityId: invitation.Id,
+            oldValue: null,
+            newValue: new
+            {
+                invitation.Id,
+                invitation.Email,
+                invitation.RoleId,
+                invitation.DepartmentId,
+                invitation.Status,
+                invitation.ExpiresAt
+            }
+        );
 
         var baseUrl = _configuration.GetValue<string>("FrontendSettings:BaseUrl")?.TrimEnd('/');
         var acceptUrl = $"{baseUrl}/invite/accept?token={rawToken}";
@@ -182,9 +202,41 @@ public class InvitationsController : ControllerBase
             return BadRequest(new { message = $"Cannot revoke invitation because it is already {invitation.Status}." });
         }
 
+        var oldValue = new
+        {
+            invitation.Id,
+            invitation.Email,
+            invitation.RoleId,
+            invitation.DepartmentId,
+            invitation.Status,
+            invitation.ExpiresAt
+        };
+
         invitation.Status = "Revoked";
         _unitOfWork.UserInvitations.Update(invitation);
         await _unitOfWork.SaveChangesAsync();
+
+        var newValue = new
+        {
+            invitation.Id,
+            invitation.Email,
+            invitation.RoleId,
+            invitation.DepartmentId,
+            invitation.Status,
+            invitation.ExpiresAt
+        };
+
+        var appUserIdClaim = User.FindFirst("app_user_id")?.Value;
+        int? appUserId = int.TryParse(appUserIdClaim, out var parsedId) ? parsedId : null;
+
+        await _auditLogger.LogAsync(
+            userId: appUserId,
+            action: "INVITATION_REVOKED",
+            entityType: "UserInvitation",
+            entityId: invitation.Id,
+            oldValue: oldValue,
+            newValue: newValue
+        );
 
         return Ok(new { message = "Invitation revoked successfully." });
     }
