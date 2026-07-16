@@ -91,6 +91,7 @@ function App() {
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+                <Route path="/admin" element={<Navigate to="/admin/company" replace />} />
                 <Route path="/admin/company" element={<CompanyProfile />} />
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
               </Route>

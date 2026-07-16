@@ -39,8 +39,6 @@ public class StaffController : ControllerBase
         }
 
         var users = await _unitOfWork.Users.FindAsync(u => u.CompanyId == companyId && u.DepartmentId == departmentId);
-
-        // Load roles manually if not loaded (or rely on lazy loading if configured)
         var roles = await _unitOfWork.Roles.GetAllAsync();
 
         var staffDtos = users.Select(u => new StaffDto
@@ -51,44 +49,82 @@ public class StaffController : ControllerBase
             Email = u.Email,
             RoleName = roles.FirstOrDefault(r => r.Id == u.RoleId)?.Name ?? "Unknown",
             IsActive = u.IsActive,
+            LastLoginAt = u.LastLoginAt,
             DepartmentId = u.DepartmentId
-        }).ToList();
+        })
+        .Where(s => s.RoleName != "Admin" && s.RoleName != "Candidate")
+        .ToList();
 
         return Ok(staffDtos);
     }
 
-    [HttpPut("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStaffStatusDto request)
+    [HttpPut("{userId}/deactivate")]
+    public async Task<IActionResult> Deactivate(int userId)
     {
         var companyId = GetCompanyId();
 
-        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId && u.CompanyId == companyId);
         if (user == null)
         {
             return NotFound(new { message = "Staff member not found." });
         }
 
-        // Optional: Prevent admin from deactivating themselves if that's a risk. 
-        // Though Admin users shouldn't be in departments anyway based on the schema and plans.
+        var role = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
+        if (role?.Name == "Admin" || role?.Name == "Candidate")
+        {
+            return BadRequest(new { message = "Cannot modify staff members with this role." });
+        }
 
-        user.IsActive = request.IsActive;
+        user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return Ok(new { message = "Staff status updated successfully." });
+        return Ok(new { message = "Staff member deactivated successfully." });
     }
 
-    [HttpPut("{id}/reassign")]
-    public async Task<IActionResult> Reassign(int id, [FromBody] ReassignStaffDto request)
+    [HttpPut("{userId}/reactivate")]
+    public async Task<IActionResult> Reactivate(int userId)
     {
         var companyId = GetCompanyId();
 
-        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == companyId);
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId && u.CompanyId == companyId);
         if (user == null)
         {
             return NotFound(new { message = "Staff member not found." });
+        }
+
+        var role = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
+        if (role?.Name == "Admin" || role?.Name == "Candidate")
+        {
+            return BadRequest(new { message = "Cannot modify staff members with this role." });
+        }
+
+        user.IsActive = true;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _unitOfWork.Users.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new { message = "Staff member reactivated successfully." });
+    }
+
+    [HttpPut("{userId}/reassign-department")]
+    public async Task<IActionResult> ReassignDepartment(int userId, [FromBody] ReassignStaffDto request)
+    {
+        var companyId = GetCompanyId();
+
+        var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId && u.CompanyId == companyId);
+        if (user == null)
+        {
+            return NotFound(new { message = "Staff member not found." });
+        }
+
+        var role = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
+        if (role?.Name == "Admin" || role?.Name == "Candidate")
+        {
+            return BadRequest(new { message = "Cannot modify staff members with this role." });
         }
 
         var newDepartment = await _unitOfWork.Departments.FirstOrDefaultAsync(d => d.Id == request.DepartmentId && d.CompanyId == companyId);
@@ -103,6 +139,6 @@ public class StaffController : ControllerBase
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return Ok(new { message = "Staff reassigned successfully." });
+        return Ok(new { message = "Staff member reassigned successfully." });
     }
 }
