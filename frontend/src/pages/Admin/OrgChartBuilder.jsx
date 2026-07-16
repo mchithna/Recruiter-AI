@@ -124,14 +124,14 @@ const OrgChartBuilder = () => {
 
   const DepartmentNode = ({ node }) => {
     return (
-      <div className="ml-6 mt-4 border-l-2 border-slate-200 dark:border-slate-700 pl-6 relative">
-        <div className="absolute w-6 h-0.5 bg-slate-200 dark:bg-slate-700 -left-0.5 top-7" />
+      <div className="ml-6 mt-4 border-l-2 border-secondary-200 dark:border-secondary-700 pl-6 relative">
+        <div className="absolute w-6 h-0.5 bg-secondary-200 dark:bg-secondary-700 -left-0.5 top-7" />
         
         <div 
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors group relative z-10"
+          className="bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 p-4 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500 transition-colors group relative z-10"
           onClick={() => handleNodeClick(node)}
         >
-          <span className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
+          <span className="font-semibold text-secondary-800 dark:text-secondary-100 text-body-lg">
             {node.name}
           </span>
           
@@ -139,10 +139,10 @@ const OrgChartBuilder = () => {
             <Button size="sm" variant="secondary" onClick={() => handleOpenAdd(node.id)} className="flex items-center gap-1.5">
               <Plus size={14} /> <span className="hidden sm:inline">Add Sub</span>
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleOpenEdit(node)} className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400">
+            <Button size="sm" variant="ghost" onClick={() => handleOpenEdit(node)} className="text-secondary-500 hover:text-primary-700 dark:text-secondary-400 dark:hover:text-primary-400">
               <Edit2 size={16} />
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleDelete(node.id)} className="text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400">
+            <Button size="sm" variant="ghost" onClick={() => handleDelete(node.id)} className="text-secondary-400 hover:text-red-600 dark:text-secondary-500 dark:hover:text-red-400">
               <Trash2 size={16} />
             </Button>
           </div>
@@ -165,8 +165,8 @@ const OrgChartBuilder = () => {
     <div className="space-y-6 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Org Chart Builder</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+          <h3 className="text-h3 font-bold text-secondary-900 dark:text-white">Org Chart Builder</h3>
+          <p className="text-secondary-500 dark:text-secondary-400 text-body-sm mt-1">
             Build your company's organization chart and manage departments.
           </p>
         </div>
@@ -175,18 +175,18 @@ const OrgChartBuilder = () => {
         </Button>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 min-h-[400px]">
+      <div className="bg-secondary-50 dark:bg-secondary-900/50 p-6 rounded-xl border border-secondary-200 dark:border-secondary-800 min-h-[400px]">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <Spinner size="lg" className="text-indigo-600" />
+            <Spinner size="lg" className="text-primary-700" />
           </div>
         ) : departments.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-              <Plus size={24} className="text-slate-400" />
+            <div className="w-16 h-16 bg-secondary-100 dark:bg-secondary-800 rounded-full flex items-center justify-center mb-4">
+              <Plus size={24} className="text-secondary-400" />
             </div>
-            <h4 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-1">No Departments Yet</h4>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm">
+            <h4 className="text-body-lg font-medium text-secondary-900 dark:text-secondary-100 mb-1">No Departments Yet</h4>
+            <p className="text-secondary-500 dark:text-secondary-400 mb-6 max-w-sm">
               Get started by creating your first top-level department to build your org chart.
             </p>
             <Button variant="primary" onClick={() => handleOpenAdd(null)}>

@@ -54,6 +54,8 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<EmailNotificationService>();
 builder.Services.AddScoped<SmsNotificationService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

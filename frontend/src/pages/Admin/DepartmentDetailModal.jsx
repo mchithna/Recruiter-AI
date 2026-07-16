@@ -61,8 +61,12 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
 
   const handleToggleStatus = async (staffId, currentStatus) => {
     try {
-      await api.put(`/staff/${staffId}/status`, { isActive: !currentStatus });
-      showToast(`Staff member ${!currentStatus ? 'activated' : 'deactivated'} successfully.`, 'success');
+      if (currentStatus) {
+        await api.put(`/staff/${staffId}/deactivate`);
+      } else {
+        await api.put(`/staff/${staffId}/reactivate`);
+      }
+      showToast(`Staff member ${currentStatus ? 'deactivated' : 'activated'} successfully.`, 'success');
       fetchStaff();
     } catch (error) {
       showToast(error.response?.data?.message || 'Failed to update status.', 'danger');
@@ -72,7 +76,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
   const handleReassign = async (staffId, newDepartmentId) => {
     if (!newDepartmentId || newDepartmentId == department.id) return;
     try {
-      await api.put(`/staff/${staffId}/reassign`, { departmentId: parseInt(newDepartmentId) });
+      await api.put(`/staff/${staffId}/reassign-department`, { departmentId: parseInt(newDepartmentId) });
       showToast('Staff member reassigned successfully.', 'success');
       fetchStaff();
     } catch (error) {
@@ -133,27 +137,27 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
       <div className="space-y-8">
         {/* Staff Section */}
         <section>
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Staff</h3>
+          <h3 className="text-body-lg font-semibold text-secondary-800 dark:text-secondary-100 mb-3">Staff</h3>
           
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
             {loadingStaff ? (
               <div className="flex justify-center p-6">
-                <Spinner size="md" className="text-indigo-600" />
+                <Spinner size="md" className="text-primary-700" />
               </div>
             ) : staffList.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+              <div className="p-6 text-center text-secondary-500 dark:text-secondary-400 text-body-sm">
                 No staff assigned yet.
               </div>
             ) : (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+              <ul className="divide-y divide-secondary-100 dark:divide-secondary-700">
                 {staffList.map(staff => (
                   <li key={staff.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-slate-800 dark:text-slate-100">
+                      <div className="font-medium text-secondary-800 dark:text-secondary-100">
                         {staff.firstName} {staff.lastName}
                       </div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
+                      <div className="text-body-sm text-secondary-500 dark:text-secondary-400 flex items-center gap-2 mt-0.5">
+                        <span className="bg-secondary-100 dark:bg-secondary-700 px-2 py-0.5 rounded text-xs">
                           {staff.roleName}
                         </span>
                         <span>•</span>
@@ -162,13 +166,19 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
                         <span className={staff.isActive ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-400'}>
                           {staff.isActive ? 'Active' : 'Inactive'}
                         </span>
+                        {staff.lastLoginAt && (
+                          <>
+                            <span>•</span>
+                            <span>Last login: {new Date(staff.lastLoginAt).toLocaleDateString()}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <div className="w-36">
                         <Select
-                          placeholder="Reassign..."
+                          placeholder="Move to..."
                           value=""
                           onChange={(e) => handleReassign(staff.id, e.target.value)}
                           options={allDepartments
@@ -193,25 +203,25 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
 
         {/* Pending Invitations Section */}
         <section>
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Pending Invitations</h3>
+          <h3 className="text-body-lg font-semibold text-secondary-800 dark:text-secondary-100 mb-3">Pending Invitations</h3>
           
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700 overflow-hidden">
             {loading ? (
               <div className="flex justify-center p-6">
-                <Spinner size="md" className="text-indigo-600" />
+                <Spinner size="md" className="text-primary-700" />
               </div>
             ) : invitations.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+              <div className="p-6 text-center text-secondary-500 dark:text-secondary-400 text-body-sm">
                 No pending invitations.
               </div>
             ) : (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+              <ul className="divide-y divide-secondary-100 dark:divide-secondary-700">
                 {invitations.map(inv => (
                   <li key={inv.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-slate-800 dark:text-slate-100">{inv.email}</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
+                      <div className="font-medium text-secondary-800 dark:text-secondary-100">{inv.email}</div>
+                      <div className="text-body-sm text-secondary-500 dark:text-secondary-400 flex items-center gap-2 mt-0.5">
+                        <span className="bg-secondary-100 dark:bg-secondary-700 px-2 py-0.5 rounded text-xs">
                           {inv.roleName}
                         </span>
                         <span>•</span>
@@ -241,8 +251,8 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
 
         {/* Invite Someone Section */}
         <section>
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Invite Someone</h3>
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+          <h3 className="text-body-lg font-semibold text-secondary-800 dark:text-secondary-100 mb-3">Invite Someone</h3>
+          <div className="bg-secondary-50 dark:bg-secondary-900/50 p-5 rounded-xl border border-secondary-200 dark:border-secondary-800">
             <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1 w-full">
                 <Input 
