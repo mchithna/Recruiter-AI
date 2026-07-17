@@ -75,18 +75,18 @@ export function Tooltip({ content, children, position = 'top', delay = 300 }) {
     >
       {/* Clone the child, injecting aria-describedby */}
       {typeof children === 'string' ? (
-        <span aria-describedby={visible && content ? tooltipId : undefined}>{children}</span>
+        <span aria-describedby={visible ? tooltipId : undefined}>{children}</span>
       ) : (
         <span
-          aria-describedby={visible && content ? tooltipId : undefined}
-          className="inline-flex w-full"
+          aria-describedby={visible ? tooltipId : undefined}
+          className="inline-flex"
         >
           {children}
         </span>
       )}
 
       {/* Tooltip bubble */}
-      {visible && content && (
+      {visible && (
         <span
           id={tooltipId}
           role="tooltip"

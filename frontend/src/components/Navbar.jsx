@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sparkles, Menu, X, Home as HomeIcon, ChevronLeft } from 'lucide-react';
-import { ThemeToggle } from './ui';
+import { Sparkles, Sun, Moon, Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'Features', to: '/features' },
@@ -54,17 +53,6 @@ export default function Navbar() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-1">
-            {location.pathname !== '/' && (
-              <Link
-                to="/"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200/50 dark:border-primary-700/50 shadow-sm mr-2 group"
-              >
-                <div className="bg-white dark:bg-slate-800 rounded-full p-0.5 shadow-[0_2px_4px_rgba(0,0,0,0.05)] group-hover:-translate-x-0.5 transition-transform">
-                  <ChevronLeft size={14} className="text-primary-600 dark:text-primary-400" />
-                </div>
-                Return Home
-              </Link>
-            )}
             {NAV_LINKS.map(({ label, to }) => {
               const isActive = location.pathname === to;
               return (
@@ -85,7 +73,14 @@ export default function Navbar() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-secondary-500 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors duration-200"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
 
             {/* Desktop Auth Buttons */}
             <div className="hidden md:flex items-center gap-2">
@@ -121,17 +116,6 @@ export default function Navbar() {
           <div className="absolute inset-0 bg-black/20 dark:bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute top-[72px] left-0 right-0 glass-header-fixed shadow-lg p-6 animate-slide-up">
             <nav className="flex flex-col gap-1 mb-6">
-              {location.pathname !== '/' && (
-                <Link
-                  to="/"
-                  className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl text-sm font-semibold transition-colors text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-700/50"
-                >
-                  <div className="bg-white dark:bg-slate-800 rounded-full p-1 shadow-sm">
-                    <HomeIcon size={16} className="text-primary-600 dark:text-primary-400" />
-                  </div>
-                  Return to Home
-                </Link>
-              )}
               {NAV_LINKS.map(({ label, to }) => {
                 const isActive = location.pathname === to;
                 return (

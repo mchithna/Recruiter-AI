@@ -3,6 +3,8 @@ import { X, Send, History, Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
+import { chatApi } from '../../lib/chatApi';
+import { supabase } from '../../supabaseClient';
 
 const SUGGESTIONS = [
   "What are the requirements?",
@@ -10,44 +12,34 @@ const SUGGESTIONS = [
   "How do I apply?"
 ];
 
-// Mock generic responses
-const MOCK_REPLIES = [
-  "That's a great question! Based on your profile, you seem like a strong fit. I recommend uploading your latest resume to make sure the requirements match.",
-  "Your application is currently in the 'Applied' stage. You'll receive an email notification as soon as the recruiter reviews it.",
-  "You can apply by visiting the Job Details page and clicking the 'Apply' button, provided you have a primary resume uploaded.",
-  "I am Hirely, your AI assistant! Right now I am in mock mode for candidate testing, so I can only give these canned responses. Have a great day!"
-];
-
 const ChatBot = () => {
-  const [uiState, setUiState] = useState(
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 'button' : 'greeting'
-  ); // 'greeting' | 'button' | 'chat'
+  const [uiState, setUiState] = useState('greeting'); // 'greeting' | 'button' | 'chat'
   const [showHistory, setShowHistory] = useState(false);
-  const [sessions, setSessions] = useState([
-    { id: 'mock-1', startedAt: new Date(Date.now() - 86400000).toISOString(), sessionContext: 'Application follow up' }
-  ]);
+  const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  // Auth check
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuth(!!session);
+      if (session) fetchSessions();
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuth(!!session);
+      if (session) fetchSessions();
+    });
+    return () => authListener.subscription.unsubscribe();
+  }, []);
 
   // Keep greeting on screen in a continuous loop until clicked
   useEffect(() => {
     // No auto-dismiss logic, remains on screen
-  }, [uiState]);
-
-  // Handle responsive state switches dynamically
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768 && uiState === 'greeting') {
-        setUiState('button');
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [uiState]);
 
   useEffect(() => {
@@ -56,17 +48,31 @@ const ChatBot = () => {
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+  const fetchSessions = async () => {
+    try {
+      const data = await chatApi.getSessions();
+      setSessions(data);
+    } catch (err) {
+      console.error('Failed to fetch sessions:', err);
+    }
+  };
+
   const loadSession = async (sessionId) => {
-    setIsLoading(true);
-    // Mock loading delay
-    await new Promise(r => setTimeout(r, 600));
-    setCurrentSessionId(sessionId);
-    setMessages([
-      { role: 'User', content: 'Can I check my previous application?', sentAt: new Date(Date.now() - 86400000).toISOString() },
-      { role: 'AI', content: 'Certainly! You can navigate to the **Applications** tab to see the full timeline of your previous applications.', sentAt: new Date(Date.now() - 86390000).toISOString() }
-    ]);
-    setShowHistory(false);
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const sessionData = await chatApi.getSession(sessionId);
+      setCurrentSessionId(sessionId);
+      if (sessionData.messages?.length > 0) {
+        setMessages(sessionData.messages);
+      } else {
+        setMessages([]); // Empty start for new sessions so we can show the welcome screen
+      }
+      setShowHistory(false);
+    } catch (err) {
+      console.error('Failed to load session:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const startNewChat = () => {
@@ -77,23 +83,32 @@ const ChatBot = () => {
 
   const handleSendMessage = async (msgText) => {
     if (!msgText.trim()) return;
+    
+    if (!isAuth) {
+      setMessages(prev => [
+        ...prev, 
+        { role: 'User', content: msgText, sentAt: new Date().toISOString() },
+        { role: 'AI', content: 'Please log in to continue chatting with me!', sentAt: new Date().toISOString() }
+      ]);
+      return;
+    }
 
     setInput('');
     setMessages(prev => [...prev, { role: 'User', content: msgText, sentAt: new Date().toISOString() }]);
     setIsLoading(true);
     
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 1200));
-
-    if (!currentSessionId) {
-      setCurrentSessionId('mock-new');
-      setSessions(prev => [{ id: 'mock-new', startedAt: new Date().toISOString(), sessionContext: msgText }, ...prev]);
+    try {
+      const response = await chatApi.sendMessage(msgText, currentSessionId);
+      if (!currentSessionId && response.sessionId) {
+        setCurrentSessionId(response.sessionId);
+        fetchSessions();
+      }
+      setMessages(prev => [...prev, { role: response.role, content: response.content, sentAt: response.sentAt }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'AI', content: 'Sorry, I encountered an error. Please try again.', sentAt: new Date().toISOString() }]);
+    } finally {
+      setIsLoading(false);
     }
-
-    const randomReply = MOCK_REPLIES[Math.floor(Math.random() * MOCK_REPLIES.length)];
-
-    setMessages(prev => [...prev, { role: 'AI', content: randomReply, sentAt: new Date().toISOString() }]);
-    setIsLoading(false);
   };
 
   const onSubmitForm = (e) => {
@@ -326,10 +341,9 @@ const ChatBot = () => {
                     <button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                      className="absolute right-1.5 w-10 h-10 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full hover:shadow-lg hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none transition-all duration-300"
+                      className="absolute right-1.5 p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full hover:shadow-lg hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none transition-all duration-300"
                     >
-                      {/* The Send icon naturally points top-right, making it look off-center. We slightly nudge it down and left to balance the visual weight. */}
-                      <Send size={18} className="-ml-0.5 mt-0.5" />
+                      <Send size={18} className="ml-0.5 -mt-0.5" />
                     </button>
                   </form>
                 </div>
