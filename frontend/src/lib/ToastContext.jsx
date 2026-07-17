@@ -43,20 +43,13 @@ export function ToastProvider({ children }) {
     []
   );
 
-  const showToast = useCallback(
-    (title, variant = 'info', description = '') => {
-      toast({ title, description, variant });
-    },
-    [toast]
-  );
-
   /** Called by the Toast component when its exit transition finishes. */
   const dismiss = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
-    <ToastContext.Provider value={{ toast, showToast, toasts, dismiss }}>
+    <ToastContext.Provider value={{ toast, toasts, dismiss }}>
       {children}
     </ToastContext.Provider>
   );
@@ -79,7 +72,6 @@ ToastProvider.propTypes = {
  *
  * Throws if used outside a <ToastProvider>.
  */
-// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {

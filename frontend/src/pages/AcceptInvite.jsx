@@ -33,7 +33,7 @@ export default function AcceptInvite() {
       try {
         const response = await api.get(`/auth/invite/validate?token=${encodeURIComponent(token)}`);
         setInviteData(response.data);
-      } catch {
+      } catch (err) {
         setValidationError("This invite link is no longer valid — ask your company admin to resend it");
       } finally {
         setIsValidating(false);

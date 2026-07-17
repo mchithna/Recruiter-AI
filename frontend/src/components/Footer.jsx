@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, MessageCircle, ExternalLink, Mail, Heart } from 'lucide-react';
+import { Sparkles, Globe, MessageCircle, ExternalLink, Mail, Heart } from 'lucide-react';
 
 const PLATFORM_LINKS = [
   { label: 'Features', to: '/features' },

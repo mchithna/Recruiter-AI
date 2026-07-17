@@ -53,7 +53,7 @@ export default function Login() {
         setErrorMsg(error.message || 'Invalid credentials. Please try again.');
         setIsSubmitting(false); 
       }
-    } catch {
+    } catch (err) {
       setErrorMsg('An unexpected error occurred.');
       setIsSubmitting(false);
     }
@@ -68,7 +68,7 @@ export default function Login() {
         setErrorMsg(error.message || 'Google sign in failed.');
         setIsGoogleLoading(false);
       }
-    } catch {
+    } catch (err) {
       setErrorMsg('An unexpected error occurred with Google Sign-In.');
       setIsGoogleLoading(false);
     }

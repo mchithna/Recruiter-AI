@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -24,30 +24,6 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
   // Success state for displaying link
   const [lastInviteUrl, setLastInviteUrl] = useState(null);
 
-  const fetchInvitations = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/invitations?departmentId=${department.id}`);
-      setInvitations(response.data);
-    } catch {
-      showToast('Failed to load pending invitations.', 'danger');
-    } finally {
-      setLoading(false);
-    }
-  }, [department, showToast]);
-
-  const fetchStaff = useCallback(async () => {
-    try {
-      setLoadingStaff(true);
-      const response = await api.get(`/staff?departmentId=${department.id}`);
-      setStaffList(response.data);
-    } catch {
-      showToast('Failed to load staff.', 'danger');
-    } finally {
-      setLoadingStaff(false);
-    }
-  }, [department, showToast]);
-
   useEffect(() => {
     if (isOpen && department) {
       fetchInvitations();
@@ -57,7 +33,31 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
       setRoleName('Recruiter');
       setLastInviteUrl(null);
     }
-  }, [isOpen, department, fetchInvitations, fetchStaff]);
+  }, [isOpen, department]);
+
+  const fetchInvitations = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/invitations?departmentId=${department.id}`);
+      setInvitations(response.data);
+    } catch (error) {
+      showToast('Failed to load pending invitations.', 'danger');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      setLoadingStaff(true);
+      const response = await api.get(`/staff?departmentId=${department.id}`);
+      setStaffList(response.data);
+    } catch (error) {
+      showToast('Failed to load staff.', 'danger');
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
 
   const handleToggleStatus = async (staffId, currentStatus) => {
     try {

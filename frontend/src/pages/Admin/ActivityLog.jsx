@@ -31,7 +31,7 @@ const ActivityLog = () => {
           setLogs(data.items || data.data || []);
           setTotalCount(data.totalCount || data.total || 0);
         }
-      } catch {
+      } catch (error) {
         showToast('Failed to load activity log.', 'danger');
       } finally {
         setLoading(false);

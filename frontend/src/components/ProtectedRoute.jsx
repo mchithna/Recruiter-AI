@@ -22,7 +22,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
         try {
           const res = await api.get('/profile/me');
           setLocalProfile(res.data);
-        } catch {
+        } catch (err) {
           setProvisionFailed(true);
         } finally {
           setRetryLoading(false);

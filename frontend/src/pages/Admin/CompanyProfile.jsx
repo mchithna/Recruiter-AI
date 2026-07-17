@@ -37,7 +37,7 @@ const CompanyProfile = () => {
             addressLine1 = parsed.addressLine1 || '';
             city = parsed.city || '';
             country = parsed.country || '';
-          } catch {
+          } catch (e) {
             // Fallback for legacy plain text address
             addressLine1 = data.address;
           }
@@ -53,7 +53,7 @@ const CompanyProfile = () => {
           country,
           subscriptionStatus: data.subscriptionStatus || 'Active',
         });
-      } catch {
+      } catch (error) {
         showToast('Failed to load company profile.', 'danger');
       } finally {
         setLoading(false);
@@ -88,7 +88,7 @@ const CompanyProfile = () => {
       });
       
       showToast('Company profile updated successfully.', 'success');
-    } catch {
+    } catch (error) {
       showToast('Failed to update company profile.', 'danger');
     } finally {
       setSaving(false);

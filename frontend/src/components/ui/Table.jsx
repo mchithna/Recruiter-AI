@@ -64,6 +64,8 @@ TableBody.propTypes = { className: PropTypes.string, children: PropTypes.node };
  * @param {boolean} [isHeader] – When true, skips the hover/divider styling (used inside <thead>).
  */
 export function TableRow({ isHeader = false, className = '', children }) {
+  const density = useContext(TableDensityContext);
+
   return (
     <tr
       className={[

@@ -7,11 +7,12 @@ import {
   Card, CardContent,
 } from '../../components/ui';
 import {
-  Building2, Search, ArrowRight,
+  Sparkles, Building2, Search, ArrowRight,
   Zap, Target, Users, Briefcase, TrendingUp, Clock,
   Brain, BarChart2, Shield, Globe,
-  Star, PlayCircle,
+  Star, CheckCircle, PlayCircle,
 } from 'lucide-react';
+import ChatBot from '../../components/chat/ChatBot';
 
 /* ─── Intersection-observer entrance animation ─────────────────────────────── */
 function useFadeIn(ref) {
@@ -556,6 +557,7 @@ export default function Home() {
       </main>
 
       <Footer />
+      <ChatBot />
     </div>
     </>
   );
