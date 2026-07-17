@@ -15,6 +15,7 @@ import {
 import { Avatar, Button, Tooltip } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ChatBot from '../components/chat/ChatBot';
 
 const navItemsByRole = {
   Recruiter: [
@@ -154,6 +155,7 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
+      {role !== 'Guest' && <ChatBot />}
     </div>
   );
 }

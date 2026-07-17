@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using RecruitmentPlatform.Core.Entities;
+using RecruitmentPlatform.Core.DTOs;
 using RecruitmentPlatform.Core.Interfaces;
 
 namespace RecruitmentPlatform.Infrastructure.Services;
@@ -13,83 +13,113 @@ public class GeminiChatService : IAiChatService
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
     private readonly ILogger<GeminiChatService> _logger;
+    private const string GeminiModel = "gemini-1.5-flash";
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["GeminiSettings:ApiKey"] ?? string.Empty;
+        _apiKey = configuration["GeminiSettings:ApiKey"]
+            ?? configuration["GEMINI_API_KEY"]
+            ?? string.Empty;
         _logger = logger;
     }
 
-    public async Task<string> ProcessMessageAsync(ChatSession session, string userMessage)
+    public async Task<string> GenerateResponseAsync(ChatGenerationRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(_apiKey))
         {
-            _logger.LogWarning("Gemini API Key is missing. Returning a mocked response.");
-            return "This is a mocked response since the Gemini API key is missing from .env.";
+            _logger.LogWarning("Gemini API key is missing.");
+            return "The AI assistant is not configured yet. Please contact support or try again later.";
         }
 
-        try
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(20));
+
+        for (var attempt = 1; attempt <= 3; attempt++)
         {
-            var systemInstruction = "You are a helpful recruitment platform AI assistant. " +
-                                    "Your job is to help users manage candidates, jobs, and applications on the platform. " +
-                                    $"The current date and time is {DateTime.Now:yyyy-MM-dd HH:mm:ss}.";
-
-            var contents = new List<object>();
-
-            // Add previous messages (simplified mapping)
-            foreach (var msg in session.ChatMessages.OrderBy(m => m.SentAt))
+            try
             {
+                var contents = request.History
+                    .TakeLast(12)
+                    .Select(msg => new
+                    {
+                        role = msg.Role.Equals("AI", StringComparison.OrdinalIgnoreCase) ? "model" : "user",
+                        parts = new[] { new { text = msg.Content } }
+                    })
+                    .Cast<object>()
+                    .ToList();
+
                 contents.Add(new
                 {
-                    role = msg.Role.ToLower() == "ai" ? "model" : "user",
-                    parts = new[] { new { text = msg.Content } }
+                    role = "user",
+                    parts = new[] { new { text = request.UserMessage } }
                 });
-            }
 
-            // Ensure the latest message is also added if not already in session.ChatMessages
-            // Actually, we should assume the session.ChatMessages ALREADY contains the user message,
-            // or the controller adds it before calling this. We will assume the controller adds it.
-
-            var requestBody = new
-            {
-                system_instruction = new
+                var requestBody = new
                 {
-                    parts = new[] { new { text = systemInstruction } }
-                },
-                contents = contents
-            };
+                    system_instruction = new
+                    {
+                        parts = new[] { new { text = request.SystemInstruction } }
+                    },
+                    contents,
+                    generationConfig = new
+                    {
+                        temperature = 0.2,
+                        topP = 0.8,
+                        maxOutputTokens = 800
+                    }
+                };
 
-            var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var json = JsonSerializer.Serialize(requestBody);
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";
-            var response = await _httpClient.PostAsync(url, content);
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{GeminiModel}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
+                using var response = await _httpClient.PostAsync(url, content, timeoutCts.Token);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API Error: {StatusCode} - {Body}", response.StatusCode, errorBody);
-                return "I'm sorry, I encountered an error while processing your request.";
+                if (!response.IsSuccessStatusCode)
+                {
+                    if ((int)response.StatusCode >= 500 && attempt < 3)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt), timeoutCts.Token);
+                        continue;
+                    }
+
+                    _logger.LogWarning("Gemini API returned status code {StatusCode}.", response.StatusCode);
+                    return "I'm sorry, I couldn't process that request right now. Please try again later.";
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                using var jsonDocument = JsonDocument.Parse(responseBody);
+
+                var generatedText = jsonDocument.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+
+                return string.IsNullOrWhiteSpace(generatedText)
+                    ? "I'm sorry, I could not generate a response from the available information."
+                    : generatedText.Trim();
             }
-
-            var responseBody = await response.Content.ReadAsStringAsync();
-            var jsonDocument = JsonDocument.Parse(responseBody);
-            
-            // Extract the generated text
-            var generatedText = jsonDocument.RootElement
-                .GetProperty("candidates")[0]
-                .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
-                .GetString();
-
-            return generatedText ?? "I'm sorry, I could not generate a response.";
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Gemini API request timed out on attempt {Attempt}.", attempt);
+                if (attempt == 3)
+                {
+                    return "The AI assistant took too long to respond. Please try again.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling Gemini API.");
+                if (attempt == 3)
+                {
+                    return "I'm sorry, I couldn't process that request right now. Please try again later.";
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error calling Gemini API");
-            return "An internal error occurred while reaching the AI service.";
-        }
+
+        return "I'm sorry, I couldn't process that request right now. Please try again later.";
     }
 }

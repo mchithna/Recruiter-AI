@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using RecruitmentPlatform.API.Chat;
 using RecruitmentPlatform.API.Authentication;
 
 using RecruitmentPlatform.Core.Interfaces;
@@ -14,9 +15,9 @@ using RecruitmentPlatform.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Enable detailed PII logging for IdentityModel to debug JWT issues
-Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = true;
+// Keep authentication logs free of tokens and sensitive claims by default.
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = false;
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = false;
 
 var dotenvPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
 if (File.Exists(dotenvPath))
@@ -57,8 +58,19 @@ builder.Services.AddScoped<SmsNotificationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
+builder.Services.AddSingleton<IChatAssistantConfigProvider, ChatAssistantConfigProvider>();
+builder.Services.AddScoped<IChatContextResolver, ChatContextResolver>();
+builder.Services.AddScoped<IChatPermissionValidator, ChatPermissionValidator>();
+builder.Services.AddScoped<IChatInputValidator, ChatInputValidator>();
+builder.Services.AddScoped<IChatScopeClassifier, ChatScopeClassifier>();
+builder.Services.AddScoped<IChatDataRetrievalService, ChatDataRetrievalService>();
+builder.Services.AddScoped<IChatPromptBuilder, ChatPromptBuilder>();
+builder.Services.AddSingleton<IChatRateLimiter, InMemoryChatRateLimiter>();
 
-builder.Services.AddHttpClient<IAiChatService, GeminiChatService>();
+builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

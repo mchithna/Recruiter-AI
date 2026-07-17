@@ -1,46 +1,84 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RecruitmentPlatform.API.Chat;
 using RecruitmentPlatform.Core.DTOs;
 using RecruitmentPlatform.Core.Entities;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
-using System.Security.Claims;
 
 namespace RecruitmentPlatform.API.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ChatController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IAiChatService _aiChatService;
+    private readonly IChatContextResolver _contextResolver;
+    private readonly IChatPermissionValidator _permissionValidator;
+    private readonly IChatInputValidator _inputValidator;
+    private readonly IChatScopeClassifier _scopeClassifier;
+    private readonly IChatDataRetrievalService _dataRetrievalService;
+    private readonly IChatPromptBuilder _promptBuilder;
+    private readonly IChatRateLimiter _rateLimiter;
+    private readonly ILogger<ChatController> _logger;
 
-    public ChatController(ApplicationDbContext context, IAiChatService aiChatService)
+    public ChatController(
+        ApplicationDbContext context,
+        IAiChatService aiChatService,
+        IChatContextResolver contextResolver,
+        IChatPermissionValidator permissionValidator,
+        IChatInputValidator inputValidator,
+        IChatScopeClassifier scopeClassifier,
+        IChatDataRetrievalService dataRetrievalService,
+        IChatPromptBuilder promptBuilder,
+        IChatRateLimiter rateLimiter,
+        ILogger<ChatController> logger)
     {
         _context = context;
         _aiChatService = aiChatService;
+        _contextResolver = contextResolver;
+        _permissionValidator = permissionValidator;
+        _inputValidator = inputValidator;
+        _scopeClassifier = scopeClassifier;
+        _dataRetrievalService = dataRetrievalService;
+        _promptBuilder = promptBuilder;
+        _rateLimiter = rateLimiter;
+        _logger = logger;
     }
 
-    private int GetCurrentUserId()
+    [AllowAnonymous]
+    [HttpGet("context")]
+    public ActionResult<ChatContextMetadataDto> GetContext([FromQuery] string? path)
     {
-        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(idClaim, out int userId))
+        var resolved = _contextResolver.Resolve(path, User);
+        if (!_permissionValidator.IsAllowed(resolved))
         {
-            return userId;
+            return Unauthorized(new { message = "Please log in and open the relevant dashboard to use this assistant." });
         }
-        return 0; // Fallback, though [Authorize] should prevent this if claims are setup properly
+
+        return Ok(_contextResolver.ToMetadata(resolved));
     }
 
+    [AllowAnonymous]
     [HttpGet("sessions")]
-    public async Task<ActionResult<IEnumerable<ChatSessionDto>>> GetSessions()
+    public async Task<ActionResult<IEnumerable<ChatSessionDto>>> GetSessions([FromQuery] string? contextKey)
     {
-        var userId = GetCurrentUserId();
-        if (userId == 0) return Unauthorized();
+        var resolved = _contextResolver.Resolve(null, User, contextKey);
+        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home && !resolved.IsAuthenticated)
+        {
+            return Ok(Array.Empty<ChatSessionDto>());
+        }
+
+        if (!_permissionValidator.IsAllowed(resolved))
+        {
+            return Unauthorized(new { message = "Please log in and open the relevant dashboard to view chat history." });
+        }
 
         var sessions = await _context.ChatSessions
-            .Where(s => s.UserId == userId)
+            .AsNoTracking()
+            .Where(s => s.UserId == resolved.UserId!.Value && s.SessionContext == resolved.Config.ContextKey)
             .OrderByDescending(s => s.StartedAt)
             .Select(s => new ChatSessionDto
             {
@@ -54,20 +92,30 @@ public class ChatController : ControllerBase
         return Ok(sessions);
     }
 
-    [HttpGet("sessions/{id}")]
-    public async Task<ActionResult<ChatSessionDto>> GetSession(int id)
+    [Authorize]
+    [HttpGet("sessions/{id:int}")]
+    public async Task<ActionResult<ChatSessionDto>> GetSession(int id, [FromQuery] string? contextKey)
     {
-        var userId = GetCurrentUserId();
-        if (userId == 0) return Unauthorized();
+        var resolved = _contextResolver.Resolve(null, User, contextKey);
+        if (!_permissionValidator.IsAllowed(resolved))
+        {
+            return Unauthorized(new { message = "You are not authorized to view this chat session." });
+        }
 
         var session = await _context.ChatSessions
+            .AsNoTracking()
             .Include(s => s.ChatMessages)
-            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+            .FirstOrDefaultAsync(s =>
+                s.Id == id
+                && s.UserId == resolved.UserId!.Value
+                && s.SessionContext == resolved.Config.ContextKey);
 
         if (session == null)
-            return NotFound();
+        {
+            return NotFound(new { message = "Session not found." });
+        }
 
-        var dto = new ChatSessionDto
+        return Ok(new ChatSessionDto
         {
             Id = session.Id,
             SessionContext = session.SessionContext,
@@ -79,59 +127,87 @@ public class ChatController : ControllerBase
                 SessionId = m.SessionId,
                 Role = m.Role,
                 Content = m.Content,
-                SentAt = m.SentAt
+                SentAt = m.SentAt,
+                ContextKey = resolved.Config.ContextKey
             }).ToList()
-        };
-
-        return Ok(dto);
+        });
     }
 
+    [AllowAnonymous]
     [HttpPost("message")]
-    public async Task<ActionResult<ChatMessageResponseDto>> SendMessage([FromBody] ChatMessageRequestDto request)
+    public async Task<ActionResult<ChatMessageResponseDto>> SendMessage([FromBody] ChatMessageRequestDto request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == 0) return Unauthorized();
-
-        ChatSession? session;
-
-        if (request.SessionId.HasValue && request.SessionId.Value > 0)
+        var resolved = _contextResolver.Resolve(request.Path, User);
+        if (!_permissionValidator.IsAllowed(resolved))
         {
-            session = await _context.ChatSessions
-                .Include(s => s.ChatMessages)
-                .FirstOrDefaultAsync(s => s.Id == request.SessionId.Value && s.UserId == userId);
-            
-            if (session == null) return NotFound("Session not found");
+            return Unauthorized(new { message = "Please log in and open the relevant dashboard to use this assistant." });
         }
-        else
+
+        var rateKey = resolved.UserId?.ToString() ?? HttpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        if (!_rateLimiter.IsAllowed($"{resolved.Config.ContextKey}:{rateKey}"))
         {
-            session = new ChatSession
+            return StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many chat requests. Please wait a moment and try again." });
+        }
+
+        var validation = _inputValidator.Validate(request.Message);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new { message = validation.ErrorMessage });
+        }
+
+        var scope = _scopeClassifier.Classify(resolved, validation.SanitizedMessage);
+        if (!scope.IsAllowed)
+        {
+            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, scope.Response!, "out_of_scope", cancellationToken);
+        }
+
+        ChatDataSnapshot snapshot;
+        try
+        {
+            snapshot = await _dataRetrievalService.GetSnapshotAsync(resolved, cancellationToken);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Chat data is temporarily unavailable. Please try again." });
+        }
+
+        if (!snapshot.HasData)
+        {
+            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
+        }
+
+        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
+        {
+            var homePrompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, Array.Empty<ChatMessage>());
+            var homeResponse = await _aiChatService.GenerateResponseAsync(homePrompt, cancellationToken);
+            return Ok(new ChatMessageResponseDto
             {
-                UserId = userId,
-                StartedAt = DateTime.UtcNow,
-                SessionContext = "General Support"
-            };
-            _context.ChatSessions.Add(session);
-            await _context.SaveChangesAsync();
+                Id = 0,
+                SessionId = 0,
+                Role = "AI",
+                Content = homeResponse,
+                SentAt = DateTime.UtcNow,
+                ContextKey = resolved.Config.ContextKey
+            });
         }
 
-        // 1. Add user message
+        var session = await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = "Session not found." });
+        }
+
+        var history = session.ChatMessages.OrderBy(m => m.SentAt).ToList();
+        var prompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, history);
+        var aiResponseText = await _aiChatService.GenerateResponseAsync(prompt, cancellationToken);
+
         var userMessage = new ChatMessage
         {
             SessionId = session.Id,
             Role = "User",
-            Content = request.Message,
+            Content = validation.SanitizedMessage,
             SentAt = DateTime.UtcNow
         };
-        session.ChatMessages.Add(userMessage);
-        
-        // Save user message first so we have the DB ID if needed, 
-        // though we can also save both later.
-        await _context.SaveChangesAsync();
-
-        // 2. Call AI Service (passing the full session context)
-        var aiResponseText = await _aiChatService.ProcessMessageAsync(session, request.Message);
-
-        // 3. Add AI message
         var aiMessage = new ChatMessage
         {
             SessionId = session.Id,
@@ -139,16 +215,106 @@ public class ChatController : ControllerBase
             Content = aiResponseText,
             SentAt = DateTime.UtcNow
         };
-        session.ChatMessages.Add(aiMessage);
-        await _context.SaveChangesAsync();
 
-        return Ok(new ChatMessageResponseDto
+        _context.ChatMessages.Add(userMessage);
+        _context.ChatMessages.Add(aiMessage);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(ToResponse(aiMessage, resolved.Config.ContextKey));
+    }
+
+    private async Task<ActionResult<ChatMessageResponseDto>> ReturnAssistantMessageAsync(
+        ChatResolvedContext resolved,
+        int? sessionId,
+        string userText,
+        string assistantText,
+        string responseType,
+        CancellationToken cancellationToken)
+    {
+        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
+        {
+            return Ok(new ChatMessageResponseDto
+            {
+                Id = 0,
+                SessionId = 0,
+                Role = "AI",
+                Content = assistantText,
+                SentAt = DateTime.UtcNow,
+                ContextKey = resolved.Config.ContextKey,
+                ResponseType = responseType
+            });
+        }
+
+        var session = await GetOrCreateSessionAsync(resolved, sessionId, cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = "Session not found." });
+        }
+
+        var userMessage = new ChatMessage
+        {
+            SessionId = session.Id,
+            Role = "User",
+            Content = userText,
+            SentAt = DateTime.UtcNow
+        };
+        var aiMessage = new ChatMessage
+        {
+            SessionId = session.Id,
+            Role = "AI",
+            Content = assistantText,
+            SentAt = DateTime.UtcNow
+        };
+
+        _context.ChatMessages.Add(userMessage);
+        _context.ChatMessages.Add(aiMessage);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var dto = ToResponse(aiMessage, resolved.Config.ContextKey);
+        dto.ResponseType = responseType;
+        return Ok(dto);
+    }
+
+    private async Task<ChatSession?> GetOrCreateSessionAsync(ChatResolvedContext resolved, int? sessionId, CancellationToken cancellationToken)
+    {
+        if (resolved.UserId is null)
+        {
+            return null;
+        }
+
+        if (sessionId.HasValue && sessionId.Value > 0)
+        {
+            return await _context.ChatSessions
+                .Include(s => s.ChatMessages)
+                .FirstOrDefaultAsync(s =>
+                    s.Id == sessionId.Value
+                    && s.UserId == resolved.UserId.Value
+                    && s.SessionContext == resolved.Config.ContextKey,
+                    cancellationToken);
+        }
+
+        var session = new ChatSession
+        {
+            UserId = resolved.UserId.Value,
+            StartedAt = DateTime.UtcNow,
+            SessionContext = resolved.Config.ContextKey
+        };
+
+        _context.ChatSessions.Add(session);
+        await _context.SaveChangesAsync(cancellationToken);
+        return session;
+    }
+
+    private static ChatMessageResponseDto ToResponse(ChatMessage aiMessage, string contextKey)
+    {
+        return new ChatMessageResponseDto
         {
             Id = aiMessage.Id,
             SessionId = aiMessage.SessionId,
             Role = aiMessage.Role,
             Content = aiMessage.Content,
-            SentAt = aiMessage.SentAt
-        });
+            SentAt = aiMessage.SentAt,
+            ContextKey = contextKey
+        };
     }
 }

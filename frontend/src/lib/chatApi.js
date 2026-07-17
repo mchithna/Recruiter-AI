@@ -1,20 +1,26 @@
 import api from '../api';
 
 export const chatApi = {
-  getSessions: async () => {
-    const response = await api.get('/chat/sessions');
+  getContext: async (path) => {
+    const response = await api.get('/chat/context', { params: { path } });
     return response.data;
   },
 
-  getSession: async (id) => {
-    const response = await api.get(`/chat/sessions/${id}`);
+  getSessions: async (contextKey) => {
+    const response = await api.get('/chat/sessions', { params: { contextKey } });
     return response.data;
   },
 
-  sendMessage: async (message, sessionId = null) => {
+  getSession: async (id, contextKey) => {
+    const response = await api.get(`/chat/sessions/${id}`, { params: { contextKey } });
+    return response.data;
+  },
+
+  sendMessage: async (message, sessionId = null, path = '/') => {
     const response = await api.post('/chat/message', {
       message,
-      sessionId
+      sessionId,
+      path
     });
     return response.data;
   }

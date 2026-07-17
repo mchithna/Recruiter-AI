@@ -12,6 +12,7 @@ This root README is the main onboarding guide for the project. Backend-specific 
 - Recruiter job management, application review, interview tracking, and messaging views
 - Candidate profile and job search areas
 - AI chatbot support powered through a Gemini service integration
+- Context-aware chatbot enforcement for Home, Candidate, Recruiter, Admin, and Hiring Manager areas
 - Analytics and activity log screens for administrative visibility
 - Shared UI component library for consistent frontend styling
 - Swagger-enabled backend API for local development and testing
@@ -169,9 +170,34 @@ Environment variables are intentionally kept out of source control. Use local `.
 | Backend | `JwtSettings__SupabaseJwtSecret` | Supabase JWT signing secret |
 | Backend | `JwtSettings__SupabaseUrl` | Supabase issuer URL for JWT validation |
 | Backend | `GeminiSettings__ApiKey` | Gemini API key for AI chat responses |
+| Backend | `GEMINI_API_KEY` | Alternative Gemini API key name accepted by the backend |
 | Backend | `EmailSettings__AppPassword` | App password for email notifications |
 
 Never commit `.env` files, API keys, database credentials, JWT secrets, or email passwords.
+
+### Gemini API key setup
+
+The chatbot sends Gemini requests only from the ASP.NET backend. Add your real Gemini key to `backend/RecruitmentPlatform.API/.env` using one of these names:
+
+```env
+GeminiSettings__ApiKey=your-real-key
+# or
+GEMINI_API_KEY=your-real-key
+```
+
+Do not put a real Gemini key in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.
+
+## Chatbot Architecture
+
+The chatbot is split into backend enforcement and frontend display:
+
+- `ChatController` resolves the active page/dashboard, validates auth, rate-limits requests, validates input, rejects out-of-scope questions, retrieves authorized data, builds a scoped prompt, and calls Gemini.
+- Assistant configuration is defined separately for Home, Candidate, Recruiter, Admin, and Hiring Manager contexts. Dashboard names/purposes are placeholder values until the final business labels are supplied.
+- The backend derives dashboard context from trusted route and authenticated role claims. A user-supplied dashboard name is never trusted as authorization.
+- Data snapshots are built from EF Core using current user, role, company, department, and dashboard context. Only scoped data is passed to Gemini.
+- The React `ChatBot` component displays server-provided welcome text, example questions, history, loading, error, retry, out-of-scope, and empty-data states.
+
+When a question is outside the active context, the assistant returns a professional scope message instead of asking Gemini. When backend data is unavailable or insufficient, it returns the configured missing-data response and does not invent values.
 
 ## Development Notes
 
@@ -188,6 +214,21 @@ Never commit `.env` files, API keys, database credentials, JWT secrets, or email
 | Frontend | `http://localhost:5173` |
 | Backend API | `http://localhost:5120` |
 | Swagger UI | `http://localhost:5120/swagger` |
+
+## Tests
+
+Run backend chatbot/security tests:
+
+```powershell
+dotnet test backend\RecruitmentPlatform.Tests\RecruitmentPlatform.Tests.csproj
+```
+
+Run the frontend production build:
+
+```powershell
+cd frontend
+npm run build
+```
 
 ## Documentation
 
