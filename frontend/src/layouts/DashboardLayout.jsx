@@ -45,6 +45,9 @@ const navItemsByRole = {
     { name: 'Jobs',         path: '/candidate/jobs',         icon: Briefcase },
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
   ],
+  HiringManager: [
+    { name: 'Dashboard', path: '/hiring-manager', icon: Home },
+  ],
   Guest: [
     { name: 'Overview', path: '/dashboard', icon: Home },
   ],

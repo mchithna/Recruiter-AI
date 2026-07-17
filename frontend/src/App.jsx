@@ -35,6 +35,14 @@ import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 
+// Dummy components
+const HiringManagerDashboard = () => (
+  <div className="bg-white/60 dark:bg-secondary-900/40 p-6 rounded-2xl shadow-glass border border-white/60 dark:border-white/10">
+    <h2 className="text-xl font-bold mb-2 text-secondary-900 dark:text-white">Hiring Manager Dashboard</h2>
+    <p className="text-secondary-500 dark:text-secondary-400">Review candidates and manage hiring pipelines.</p>
+  </div>
+);
+
 const RecruiterDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
     <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
@@ -85,6 +93,10 @@ function App() {
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
 
               {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
+              <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
+                <Route path="/hiring-manager" element={<HiringManagerDashboard />} />
+              </Route>
+
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
                 <Route path="/candidate" element={<Navigate to="/candidate/home" replace />} />
                 <Route path="/candidate/home" element={<CandidateHome />} />
