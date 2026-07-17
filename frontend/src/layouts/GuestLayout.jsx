@@ -2,8 +2,8 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { NeuralAnimation } from '../components/ui';
-import { Sun, Moon } from 'lucide-react';
+import { NeuralAnimation, ThemeToggle } from '../components/ui';
+import { Home } from 'lucide-react';
 
 const GuestLayout = () => {
   const { theme, toggleTheme } = useTheme();
@@ -61,14 +61,15 @@ const GuestLayout = () => {
             </span>
           </Link>
           
-          <div className="ml-auto">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-white dark:bg-secondary-800 text-secondary-500 dark:text-secondary-400 border border-secondary-200 dark:border-secondary-700 shadow-sm hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200"
-              aria-label="Toggle theme"
+          <div className="ml-auto flex items-center gap-3">
+            <Link 
+              to="/" 
+              className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-700 shadow-sm hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200 text-sm font-medium"
             >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+              <Home size={16} />
+              <span className="hidden sm:inline">Back to Home</span>
+            </Link>
+            <ThemeToggle />
           </div>
         </div>
 
