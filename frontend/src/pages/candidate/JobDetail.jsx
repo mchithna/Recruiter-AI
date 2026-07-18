@@ -10,6 +10,8 @@ export default function JobDetail() {
   const [job, setJob] = useState(null);
   const [hasPrimaryDoc, setHasPrimaryDoc] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [applyError, setApplyError] = useState('');
   const [applying, setApplying] = useState(false);
   const [skillGap, setSkillGap] = useState(null);
   const [assistance, setAssistance] = useState(null);
@@ -22,20 +24,34 @@ export default function JobDetail() {
 
   const loadData = async () => {
     setLoading(true);
-    const [jobData, docsData] = await Promise.all([
-      getJob(jobId),
-      getMyDocuments()
-    ]);
-    setJob(jobData);
-    setHasPrimaryDoc(docsData.some(d => d.isPrimary));
-    setLoading(false);
+    setLoadError('');
+    try {
+      const [jobData, docsData] = await Promise.all([
+        getJob(jobId),
+        getMyDocuments()
+      ]);
+      setJob(jobData);
+      setHasPrimaryDoc(docsData.some(d => d.isPrimary));
+    } catch (err) {
+      setJob(null);
+      setLoadError(err?.response?.data?.message || 'Unable to load this job right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleApply = async () => {
     if (!hasPrimaryDoc) return;
     setApplying(true);
-    await applyForJob(jobId);
-    navigate('/candidate/applications');
+    setApplyError('');
+    try {
+      await applyForJob(jobId);
+      navigate('/candidate/applications');
+    } catch (err) {
+      setApplyError(err?.response?.data?.message || 'Unable to apply for this job right now.');
+    } finally {
+      setApplying(false);
+    }
   };
 
   const runSkillGap = async () => {
@@ -68,6 +84,16 @@ export default function JobDetail() {
     return (
       <div className="flex h-full items-center justify-center">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <h2 className="text-h2 text-secondary-900 dark:text-white">Unable to Load Job</h2>
+        <p className="mt-2 max-w-xl text-body-sm text-secondary-500 dark:text-secondary-400">{loadError}</p>
+        <Button variant="outline" leftIcon={<ChevronLeft size={16} />} onClick={() => navigate('/candidate/jobs')} className="mt-4">Back to Jobs</Button>
       </div>
     );
   }
@@ -128,6 +154,11 @@ export default function JobDetail() {
                 <p>
                   Upload a primary resume before applying. <Link to="/candidate/documents" className="font-semibold underline">Go to Documents</Link>
                 </p>
+              </div>
+            )}
+            {applyError && (
+              <div className="rounded-lg bg-red-50 p-3 text-caption text-red-700 dark:bg-red-500/10 dark:text-red-400">
+                {applyError}
               </div>
             )}
           </div>

@@ -151,7 +151,7 @@ public class RecruiterAiController : ControllerBase
         {
             request.JobTitle, request.Responsibilities, request.RequiredSkills, request.ExistingDescription, request.ExistingRequirements
         }.Any(v => !string.IsNullOrWhiteSpace(v));
-        if (!hasInput) return BadRequest(new { message = RecruiterAiMessages.MissingData });
+        if (!hasInput) return BadRequest(new { message = RecruiterAiMessages.MissingJobDescriptionInput });
 
         var result = await _gemini.GenerateJsonAsync<JobDescriptionResultDto>(
             SafetySystemInstruction,
@@ -159,7 +159,7 @@ public class RecruiterAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result);
+        return ToAiResponse(result, RecruiterAiMessages.JobDescriptionGenerationFailed);
     }
 
     [HttpPost("applications/{applicationId:int}/interview-questions")]
@@ -253,9 +253,9 @@ public class RecruiterAiController : ControllerBase
         return ToAiResponse(result);
     }
 
-    private IActionResult ToAiResponse<T>(T? result)
+    private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return BadRequest(new { message = RecruiterAiMessages.MissingData });
+        if (result == null) return BadRequest(new { message = failureMessage ?? RecruiterAiMessages.MissingData });
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 

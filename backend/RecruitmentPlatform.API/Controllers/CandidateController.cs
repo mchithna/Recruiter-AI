@@ -251,10 +251,18 @@ public class CandidateController : ControllerBase
     }
 
     private IQueryable<Job> ActiveJobsQuery() =>
-        _context.Jobs.AsNoTracking().Where(j => j.Status == "Open" || j.Status == "Published");
+        _context.Jobs
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(j => j.Department).ThenInclude(d => d.Company)
+            .Include(j => j.JobSkills).ThenInclude(s => s.Skill)
+            .Where(j => j.Status == "Open" || j.Status == "Published");
 
     private IQueryable<Application> CandidateApplications(int userId) =>
-        _context.Applications.AsNoTracking().Where(a => a.CandidateId == userId);
+        _context.Applications
+            .AsNoTracking()
+            .Include(a => a.Job).ThenInclude(j => j.Department).ThenInclude(d => d.Company)
+            .Where(a => a.CandidateId == userId);
 
     private int GetUserId()
     {

@@ -3,6 +3,8 @@ namespace RecruitmentPlatform.Core.DTOs;
 public static class RecruiterAiMessages
 {
     public const string MissingData = "I couldn’t find enough current information to complete this request. Please verify the candidate, vacancy, or application data and try again.";
+    public const string MissingJobDescriptionInput = "Add a job title, description, or requirements before using AI to improve the job description.";
+    public const string JobDescriptionGenerationFailed = "AI could not generate a job description right now. Please try again after reviewing the job details.";
     public const string Disclaimer = "AI-generated insights are provided to support recruiter review. Please verify candidate information before making employment decisions.";
     public const string OutOfScope = "I’m configured to assist with vacancies, candidates, applications, screening, interviews, and recruitment analytics. Please ask a question related to the Recruiter Dashboard.";
 }
@@ -75,6 +77,7 @@ public class JobDescriptionRequestDto
     public string? Experience { get; set; }
     public string? Education { get; set; }
     public string? EmploymentType { get; set; }
+    public string? WorkMode { get; set; }
     public string? Location { get; set; }
     public string? ExistingDescription { get; set; }
     public string? ExistingRequirements { get; set; }

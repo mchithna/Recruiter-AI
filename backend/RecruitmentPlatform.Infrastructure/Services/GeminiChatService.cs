@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +11,7 @@ public class GeminiChatService : IAiChatService
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
-    private readonly string _model;
+    private readonly string[] _models;
     private readonly ILogger<GeminiChatService> _logger;
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
@@ -21,9 +20,10 @@ public class GeminiChatService : IAiChatService
         _apiKey = configuration["GeminiSettings:ApiKey"]
             ?? configuration["GEMINI_API_KEY"]
             ?? string.Empty;
-        _model = configuration["GeminiSettings:Model"]
+        var configuredModel = configuration["GeminiSettings:Model"]
             ?? configuration["GEMINI_MODEL"]
             ?? "gemini-2.5-flash";
+        _models = BuildModelFallbacks(configuredModel);
         _logger = logger;
     }
 
@@ -73,11 +73,7 @@ public class GeminiChatService : IAiChatService
                     }
                 };
 
-                var json = JsonSerializer.Serialize(requestBody);
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(_model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
-                using var response = await _httpClient.PostAsync(url, content, timeoutCts.Token);
+                using var response = await SendWithModelFallbacksAsync(requestBody, timeoutCts.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -87,7 +83,8 @@ public class GeminiChatService : IAiChatService
                         continue;
                     }
 
-                    _logger.LogWarning("Gemini API returned status code {StatusCode}.", response.StatusCode);
+                    var errorBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                    _logger.LogWarning("Gemini API returned status code {StatusCode}: {ErrorBody}", response.StatusCode, TruncateForLog(errorBody));
                     return "I'm sorry, I couldn't process that request right now. Please try again later.";
                 }
 
@@ -125,4 +122,53 @@ public class GeminiChatService : IAiChatService
 
         return "I'm sorry, I couldn't process that request right now. Please try again later.";
     }
+
+    private async Task<HttpResponseMessage> SendWithModelFallbacksAsync(object requestBody, CancellationToken cancellationToken)
+    {
+        var json = JsonSerializer.Serialize(requestBody);
+        HttpResponseMessage? lastResponse = null;
+
+        foreach (var model in _models)
+        {
+            lastResponse?.Dispose();
+
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
+            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+
+            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+            {
+                return response;
+            }
+
+            _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+            lastResponse = response;
+        }
+
+        return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private static string[] BuildModelFallbacks(string configuredModel)
+    {
+        var models = new[] { configuredModel, "gemini-flash-latest", "gemini-2.0-flash" };
+        return models
+            .Select(NormalizeModel)
+            .Where(model => !string.IsNullOrWhiteSpace(model))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string NormalizeModel(string model)
+    {
+        var normalized = model.Trim().Trim('"');
+        return normalized.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+            ? normalized["models/".Length..]
+            : normalized;
+    }
+
+    private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
+        statusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest;
+
+    private static string TruncateForLog(string value) =>
+        value.Length <= 500 ? value : value[..500];
 }

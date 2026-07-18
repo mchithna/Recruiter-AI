@@ -114,6 +114,31 @@ public class ChatSecurityTests
     }
 
     [Fact]
+    public async Task Gemini_chat_falls_back_when_configured_model_is_unavailable()
+    {
+        var handler = new ModelFallbackHandler();
+        var service = new GeminiChatService(
+            new HttpClient(handler),
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["GEMINI_API_KEY"] = "test-key",
+                ["GEMINI_MODEL"] = "gemini-test"
+            }).Build(),
+            NullLogger<GeminiChatService>.Instance);
+
+        var response = await service.GenerateResponseAsync(new ChatGenerationRequest
+        {
+            SystemInstruction = "Only test.",
+            UserMessage = "Hello"
+        });
+
+        Assert.Equal("fallback ok", response);
+        Assert.Contains("gemini-test", handler.RequestedModels);
+        Assert.Contains("gemini-flash-latest", handler.RequestedModels);
+    }
+
+
+    [Fact]
     public async Task Invalid_api_configuration_does_not_return_mock_data()
     {
         var service = new GeminiChatService(
@@ -189,6 +214,27 @@ public class ChatSecurityTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("""{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}""")
+            });
+        }
+    }
+
+    private sealed class ModelFallbackHandler : HttpMessageHandler
+    {
+        public List<string> RequestedModels { get; } = new();
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var segments = request.RequestUri!.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            RequestedModels.Add(segments.Last().Split(':')[0]);
+
+            if (RequestedModels.Count == 1)
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"candidates":[{"content":{"parts":[{"text":"fallback ok"}]}}]}""")
             });
         }
     }

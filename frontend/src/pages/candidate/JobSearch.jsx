@@ -10,6 +10,7 @@ import { getJobs } from './services/candidateApi';
 export default function JobSearch() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   const [filters, setFilters] = useState({
     search: '',
@@ -23,9 +24,16 @@ export default function JobSearch() {
 
   const loadJobs = async () => {
     setLoading(true);
-    const data = await getJobs(filters);
-    setJobs(data);
-    setLoading(false);
+    setError('');
+    try {
+      const data = await getJobs(filters);
+      setJobs(data);
+    } catch (err) {
+      setJobs([]);
+      setError(err?.response?.data?.message || 'Unable to load jobs right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFilterChange = (key, value) => {
@@ -70,6 +78,12 @@ export default function JobSearch() {
           />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-body-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex py-12 items-center justify-center">

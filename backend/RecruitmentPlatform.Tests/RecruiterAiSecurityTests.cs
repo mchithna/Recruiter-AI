@@ -51,6 +51,20 @@ public class RecruiterAiSecurityTests
         Assert.Contains("React", result.MatchedRequirements);
     }
 
+    [Fact]
+    public async Task Structured_gemini_falls_back_when_configured_model_is_unavailable()
+    {
+        var handler = new ModelFallbackHandler();
+        var service = CreateService(handler, SettingsWithKey());
+
+        var result = await service.GenerateJsonAsync<CandidateJobMatchResultDto>("test", "test");
+
+        Assert.NotNull(result);
+        Assert.Equal(77, result!.OverallMatchScore);
+        Assert.Contains("gemini-test", handler.RequestedModels);
+        Assert.Contains("gemini-flash-latest", handler.RequestedModels);
+    }
+
     private static GeminiStructuredService CreateService(HttpMessageHandler handler, Dictionary<string, string?> settings)
     {
         return new GeminiStructuredService(
@@ -85,6 +99,29 @@ public class RecruiterAiSecurityTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var escaped = System.Text.Json.JsonSerializer.Serialize(_json);
+            var payload = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":" + escaped + "}]}}]}";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload)
+            });
+        }
+    }
+
+    private sealed class ModelFallbackHandler : HttpMessageHandler
+    {
+        public List<string> RequestedModels { get; } = new();
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var segments = request.RequestUri!.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            RequestedModels.Add(segments.Last().Split(':')[0]);
+
+            if (RequestedModels.Count == 1)
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+
+            var escaped = System.Text.Json.JsonSerializer.Serialize("""{"overallMatchScore":77}""");
             var payload = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":" + escaped + "}]}}]}";
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {

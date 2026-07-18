@@ -97,8 +97,9 @@ public class RecruiterController : ControllerBase
     [HttpPost("jobs")]
     public async Task<ActionResult<RecruiterJobDto>> CreateJob([FromBody] SaveRecruiterJobDto request, CancellationToken cancellationToken)
     {
-        var companyId = GetCompanyId();
-        var recruiterId = GetUserId();
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+        if (!TryGetUserId(out var recruiterId)) return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
+
         var departmentId = await ResolveDepartmentId(companyId, cancellationToken);
         if (departmentId is null)
         {
@@ -124,7 +125,7 @@ public class RecruiterController : ControllerBase
         _context.Jobs.Add(job);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return CreatedAtAction(nameof(GetJobs), new { id = job.Id }, new RecruiterJobDto
+        return CreatedAtAction(nameof(GetJobs), null, new RecruiterJobDto
         {
             Id = job.Id,
             Title = job.Title,
@@ -142,7 +143,8 @@ public class RecruiterController : ControllerBase
     [HttpPut("jobs/{jobId:int}")]
     public async Task<IActionResult> UpdateJob(int jobId, [FromBody] SaveRecruiterJobDto request, CancellationToken cancellationToken)
     {
-        var companyId = GetCompanyId();
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+
         var job = await _context.Jobs
             .Include(j => j.Department)
             .FirstOrDefaultAsync(j => j.Id == jobId && j.Department.CompanyId == companyId, cancellationToken);
@@ -237,6 +239,21 @@ public class RecruiterController : ControllerBase
         if (int.TryParse(value, out var userId)) return userId;
         throw new UnauthorizedAccessException("User ID claim is missing or invalid.");
     }
+
+    private bool TryGetCompanyId(out int companyId)
+    {
+        var value = User.FindFirst("company_id")?.Value;
+        return int.TryParse(value, out companyId);
+    }
+
+    private bool TryGetUserId(out int userId)
+    {
+        var value = User.FindFirst("app_user_id")?.Value;
+        return int.TryParse(value, out userId);
+    }
+
+    private UnauthorizedObjectResult MissingRecruiterCompany() =>
+        Unauthorized(new { message = "Your recruiter profile is not linked to a company. Please accept your company invitation again or ask your admin to resend it." });
 
     private async Task<int?> ResolveDepartmentId(int companyId, CancellationToken cancellationToken)
     {
