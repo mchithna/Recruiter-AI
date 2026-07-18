@@ -5,11 +5,9 @@ import {
   Home,
   LogOut,
   MessageSquare,
-  Moon,
   Sparkles,
-  Sun,
 } from 'lucide-react';
-import { Avatar, Badge, Button, Tooltip } from '../../components/ui';
+import { Avatar, Badge, Button, Tooltip, ThemeToggle } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -114,21 +112,7 @@ export default function RecruiterLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              <Button
-                type="button"
-                variant="glass"
-                size="sm"
-                leftIcon={
-                  theme === 'dark'
-                    ? <Sun size={16} strokeWidth={1.75} />
-                    : <Moon size={16} strokeWidth={1.75} />
-                }
-                onClick={toggleTheme}
-              >
-                {theme === 'dark' ? 'Light' : 'Dark'}
-              </Button>
-            </Tooltip>
+            <ThemeToggle />
             <Button
               type="button"
               variant="ghost"

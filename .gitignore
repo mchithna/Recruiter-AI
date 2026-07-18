@@ -106,3 +106,6 @@ TestResult.xml
 nunit-*.xml
 
 context.md
+
+# Ignore markdown documentation
+docs/
