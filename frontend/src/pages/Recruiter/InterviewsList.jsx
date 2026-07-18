@@ -18,7 +18,7 @@ import {
   StatCard,
 } from '../../components/ui';
 import { StatusBadge } from '../../components/ui';
-import { getAllInterviews } from './services/mockData';
+import { recruiterApi } from './services/recruiterApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -56,11 +56,11 @@ export default function InterviewsList() {
       setLoading(true);
 
       try {
-        const data = await getAllInterviews();
+        const data = await recruiterApi.getDashboard();
         if (!isActive) return;
 
         setInterviews(
-          [...data].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
+          [...(data.interviews || [])].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
         );
       } catch (error) {
         console.error('Failed to fetch interviews:', error);

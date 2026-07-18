@@ -12,8 +12,8 @@ public class GeminiChatService : IAiChatService
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
+    private readonly string _model;
     private readonly ILogger<GeminiChatService> _logger;
-    private const string GeminiModel = "gemini-1.5-flash";
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
     {
@@ -21,6 +21,9 @@ public class GeminiChatService : IAiChatService
         _apiKey = configuration["GeminiSettings:ApiKey"]
             ?? configuration["GEMINI_API_KEY"]
             ?? string.Empty;
+        _model = configuration["GeminiSettings:Model"]
+            ?? configuration["GEMINI_MODEL"]
+            ?? "gemini-1.5-flash";
         _logger = logger;
     }
 
@@ -73,7 +76,7 @@ public class GeminiChatService : IAiChatService
                 var json = JsonSerializer.Serialize(requestBody);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{GeminiModel}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(_model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
                 using var response = await _httpClient.PostAsync(url, content, timeoutCts.Token);
 
                 if (!response.IsSuccessStatusCode)

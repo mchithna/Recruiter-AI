@@ -10,7 +10,7 @@ import {
   Input,
   Skeleton,
 } from '../../components/ui';
-import { getAllConversations, getApplication, getMessagesForApplication } from './services/mockData';
+import { recruiterApi } from './services/recruiterApi';
 import { formatMessageTime } from './utils/messageFormatting';
 
 export default function MessagesList() {
@@ -32,7 +32,7 @@ export default function MessagesList() {
       setLoadingList(true);
 
       try {
-        const convos = await getAllConversations();
+        const convos = await recruiterApi.getConversations();
         if (!isActive) return;
 
         setConversations(convos);
@@ -66,10 +66,7 @@ export default function MessagesList() {
       setLoadingThread(true);
 
       try {
-        const [app, msgs] = await Promise.all([
-          getApplication(selectedAppId),
-          getMessagesForApplication(selectedAppId),
-        ]);
+        const app = await recruiterApi.getApplication(selectedAppId);
 
         if (!isActive) return;
 
@@ -81,7 +78,7 @@ export default function MessagesList() {
           )
         );
         setSelectedApplication(app);
-        setMessages(msgs || []);
+        setMessages(app.messages || []);
         setDraftMessage('');
       } catch (error) {
         console.error('Failed to load thread:', error);
@@ -106,6 +103,7 @@ export default function MessagesList() {
 
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
+    if (!window.confirm('Confirm that you reviewed and want to send this message?')) return;
 
     const newMessage = {
       id: `msg-${Date.now()}`,

@@ -79,6 +79,10 @@ builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(25);
 });
+builder.Services.AddHttpClient<IGeminiStructuredService, GeminiStructuredService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

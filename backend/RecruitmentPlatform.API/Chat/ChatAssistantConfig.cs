@@ -83,8 +83,8 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "Which jobs need attention?", "Summarize applications for my jobs.", "What interviews are scheduled?", "Which candidates have high match scores?" },
             "Hi, I'm Hirely. I can help with your jobs, candidate pipeline, applications, interviews, and messages.",
             "Recruiter dashboard assistance using only jobs and candidates you are authorized to access.",
-            OutOfScope,
-            MissingData),
+            "I’m configured to assist with vacancies, candidates, applications, screening, interviews, and recruitment analytics. Please ask a question related to the Recruiter Dashboard.",
+            "I couldn’t find enough current information to complete this request. Please verify the candidate, vacancy, or application data and try again."),
 
         [Admin] = new(
             Admin,
