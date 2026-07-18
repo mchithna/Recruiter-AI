@@ -104,7 +104,7 @@ const CompanyProfile = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="min-w-full max-w-none space-y-6">
       <div>
         <h3 className="text-h3 font-bold text-secondary-900 dark:text-white flex items-center gap-3">
           Company Profile
@@ -117,14 +117,15 @@ const CompanyProfile = () => {
         </p>
       </div>
 
-      <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl border border-secondary-200 dark:border-secondary-700">
+      <div className="min-w-full rounded-2xl border border-secondary-200 bg-white p-4 shadow-sm dark:border-secondary-700 dark:bg-secondary-800 sm:p-6 lg:p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-10">
             <Input 
               label="Company Name" 
               name="name" 
               value={formData.name} 
               onChange={handleChange} 
+              className="min-w-0"
               required 
             />
             <Input 
@@ -132,6 +133,7 @@ const CompanyProfile = () => {
               name="industry" 
               value={formData.industry} 
               onChange={handleChange} 
+              className="min-w-0"
             />
             <Input 
               label="Website URL" 
@@ -139,6 +141,7 @@ const CompanyProfile = () => {
               type="url"
               value={formData.websiteUrl} 
               onChange={handleChange} 
+              className="min-w-0"
             />
             <Input 
               label="Logo URL" 
@@ -146,37 +149,41 @@ const CompanyProfile = () => {
               type="url"
               value={formData.logoUrl} 
               onChange={handleChange} 
+              className="min-w-0"
             />
           </div>
 
           <div className="border-t border-secondary-200 dark:border-secondary-700 pt-6">
             <h4 className="text-body-lg font-semibold text-secondary-800 dark:text-secondary-200 mb-4">Location</h4>
-            <div className="space-y-6">
+            <div className="space-y-5">
               <Input 
                 label="Address Line 1" 
                 name="addressLine1" 
                 value={formData.addressLine1} 
                 onChange={handleChange} 
+                className="min-w-0"
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-10">
                 <Input 
                   label="City" 
                   name="city" 
                   value={formData.city} 
                   onChange={handleChange} 
+                  className="min-w-0"
                 />
                 <Input 
                   label="Country" 
                   name="country" 
                   value={formData.country} 
                   onChange={handleChange} 
+                  className="min-w-0"
                 />
               </div>
             </div>
           </div>
           
-          <div className="flex justify-end pt-4">
-            <Button variant="primary" type="submit" isLoading={saving}>
+          <div className="flex flex-col pt-4 sm:flex-row sm:justify-end">
+            <Button variant="primary" type="submit" isLoading={saving} className="w-full sm:w-auto">
               Save Profile
             </Button>
           </div>

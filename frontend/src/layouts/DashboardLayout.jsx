@@ -180,53 +180,59 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="flex h-20 shrink-0 items-center justify-between border-b border-white/60 bg-white/65 px-8 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45">
-          <div>
-            <button
-              type="button"
-              aria-label="Open sidebar"
-              className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu size={18} />
-            </button>
-            <p className="text-caption font-semibold uppercase tracking-wide text-secondary-400">
-              {role} dashboard
-            </p>
-            <h1 className="text-h3 text-secondary-900 dark:text-white">
-              Welcome, {profile?.firstName || role}!
-            </h1>
+        <header className="flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <button
+                type="button"
+                aria-label="Open sidebar"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu size={14} strokeWidth={2} />
+              </button>
+              <div className="min-w-0">
+                <p className="text-[8px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
+                  {role} dashboard
+                </p>
+                <h1 className="mt-1 truncate text-[11px] font-bold leading-none text-secondary-900 dark:text-white sm:text-h3">
+                  Welcome, {profile?.firstName || role}!
+                </h1>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               <Button
                 type="button"
                 variant="glass"
                 size="sm"
+                className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
                 leftIcon={
                   theme === 'dark'
-                    ? <Sun size={16} strokeWidth={1.75} />
-                    : <Moon size={16} strokeWidth={1.75} />
+                    ? <Sun size={13} strokeWidth={2} />
+                    : <Moon size={13} strokeWidth={2} />
                 }
                 onClick={toggleTheme}
               >
-                {theme === 'dark' ? 'Light' : 'Dark'}
+                <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </Button>
             </Tooltip>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              leftIcon={<LogOut size={16} strokeWidth={1.75} />}
+              className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
+              leftIcon={<LogOut size={13} strokeWidth={2} />}
               onClick={handleSignOut}
             >
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
             <Tooltip content="Open profile">
               <button
                 type="button"
-                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400"
+                className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
                 onClick={() => navigate(profilePath)}
                 aria-label="Open profile"
               >
@@ -236,7 +242,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <div className="relative flex-1 overflow-y-auto p-8">
+        <div className="relative flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:pr-12">
           <Outlet />
         </div>
       </main>
