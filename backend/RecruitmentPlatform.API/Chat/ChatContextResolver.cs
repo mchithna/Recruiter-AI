@@ -28,9 +28,9 @@ public sealed class ChatContextResolver : IChatContextResolver
 
     public ChatResolvedContext Resolve(string? path, ClaimsPrincipal user, string? requestedContextKey = null)
     {
-        var isAuthenticated = user.Identity?.IsAuthenticated == true;
-        var role = user.FindFirst(ClaimTypes.Role)?.Value;
         var userId = TryReadIntClaim(user, "app_user_id");
+        var isAuthenticated = user.Identity?.IsAuthenticated == true || userId.HasValue;
+        var role = NormalizeRole(user.FindFirst(ClaimTypes.Role)?.Value);
         var companyId = TryReadIntClaim(user, "company_id");
         var departmentId = TryReadIntClaim(user, "department_id");
         var routeContext = ResolveContextKeyFromPath(path, role);
@@ -91,7 +91,7 @@ public sealed class ChatContextResolver : IChatContextResolver
 
         if (normalized.StartsWith("/dashboard") && !string.IsNullOrWhiteSpace(role))
         {
-            return role switch
+            return NormalizeRole(role) switch
             {
                 "Candidate" => ChatAssistantConfigProvider.Candidate,
                 "Recruiter" => ChatAssistantConfigProvider.Recruiter,
@@ -108,5 +108,19 @@ public sealed class ChatContextResolver : IChatContextResolver
     {
         var value = user.FindFirst(claimType)?.Value;
         return int.TryParse(value, out var result) ? result : null;
+    }
+
+    private static string? NormalizeRole(string? role)
+    {
+        return role?.Trim().ToLowerInvariant() switch
+        {
+            "admin" => "Admin",
+            "recruiter" => "Recruiter",
+            "candidate" => "Candidate",
+            "hiringmanager" => "HiringManager",
+            "hiring-manager" => "HiringManager",
+            "hiring_manager" => "HiringManager",
+            _ => role
+        };
     }
 }

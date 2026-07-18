@@ -72,6 +72,7 @@ builder.Services.AddScoped<IChatInputValidator, ChatInputValidator>();
 builder.Services.AddScoped<IChatScopeClassifier, ChatScopeClassifier>();
 builder.Services.AddScoped<IChatDataRetrievalService, ChatDataRetrievalService>();
 builder.Services.AddScoped<IChatPromptBuilder, ChatPromptBuilder>();
+builder.Services.AddSingleton<IHomeChatResponseFormatter, HomeChatResponseFormatter>();
 builder.Services.AddSingleton<IChatRateLimiter, InMemoryChatRateLimiter>();
 
 builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>

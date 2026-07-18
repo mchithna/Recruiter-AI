@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
@@ -68,6 +68,19 @@ const Unauthorized = () => (
   </div>
 );
 
+const PublicChatBotMount = () => {
+  const location = useLocation();
+  const path = location.pathname || '/';
+  const isDashboardPath =
+    path.startsWith('/candidate')
+    || path.startsWith('/recruiter')
+    || path.startsWith('/admin')
+    || path.startsWith('/hiring-manager')
+    || path.startsWith('/dashboard');
+
+  return isDashboardPath ? null : <ChatBot />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -135,7 +148,7 @@ function App() {
           {/* Dev-only: design system showcase — no auth required */}
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
-        <ChatBot />
+        <PublicChatBotMount />
       </BrowserRouter>
     </AuthProvider>
   );

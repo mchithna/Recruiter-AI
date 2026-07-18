@@ -21,6 +21,7 @@ public class ChatController : ControllerBase
     private readonly IChatScopeClassifier _scopeClassifier;
     private readonly IChatDataRetrievalService _dataRetrievalService;
     private readonly IChatPromptBuilder _promptBuilder;
+    private readonly IHomeChatResponseFormatter _homeResponseFormatter;
     private readonly IChatRateLimiter _rateLimiter;
     private readonly ILogger<ChatController> _logger;
 
@@ -33,6 +34,7 @@ public class ChatController : ControllerBase
         IChatScopeClassifier scopeClassifier,
         IChatDataRetrievalService dataRetrievalService,
         IChatPromptBuilder promptBuilder,
+        IHomeChatResponseFormatter homeResponseFormatter,
         IChatRateLimiter rateLimiter,
         ILogger<ChatController> logger)
     {
@@ -45,6 +47,7 @@ public class ChatController : ControllerBase
         _scopeClassifier = scopeClassifier;
         _dataRetrievalService = dataRetrievalService;
         _promptBuilder = promptBuilder;
+        _homeResponseFormatter = homeResponseFormatter;
         _rateLimiter = rateLimiter;
         _logger = logger;
     }
@@ -54,11 +57,6 @@ public class ChatController : ControllerBase
     public ActionResult<ChatContextMetadataDto> GetContext([FromQuery] string? path)
     {
         var resolved = _contextResolver.Resolve(path, User);
-        if (!_permissionValidator.IsAllowed(resolved))
-        {
-            return Unauthorized(new { message = "Please log in and open the relevant dashboard to use this assistant." });
-        }
-
         return Ok(_contextResolver.ToMetadata(resolved));
     }
 
@@ -72,10 +70,7 @@ public class ChatController : ControllerBase
             return Ok(Array.Empty<ChatSessionDto>());
         }
 
-        if (!_permissionValidator.IsAllowed(resolved))
-        {
-            return Unauthorized(new { message = "Please log in and open the relevant dashboard to view chat history." });
-        }
+        if (!_permissionValidator.IsAllowed(resolved)) return Ok(Array.Empty<ChatSessionDto>());
 
         var sessions = await _context.ChatSessions
             .AsNoTracking()
@@ -139,11 +134,6 @@ public class ChatController : ControllerBase
     public async Task<ActionResult<ChatMessageResponseDto>> SendMessage([FromBody] ChatMessageRequestDto request, CancellationToken cancellationToken)
     {
         var resolved = _contextResolver.Resolve(request.Path, User);
-        if (!_permissionValidator.IsAllowed(resolved))
-        {
-            return Unauthorized(new { message = "Please log in and open the relevant dashboard to use this assistant." });
-        }
-
         var rateKey = resolved.UserId?.ToString() ?? HttpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
         if (!_rateLimiter.IsAllowed($"{resolved.Config.ContextKey}:{rateKey}"))
         {
@@ -154,6 +144,16 @@ public class ChatController : ControllerBase
         if (!validation.IsValid)
         {
             return BadRequest(new { message = validation.ErrorMessage });
+        }
+
+        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
+        {
+            return Ok(BuildTransientResponse(resolved, _homeResponseFormatter.Format(validation.SanitizedMessage), "answer"));
+        }
+
+        if (!_permissionValidator.IsAllowed(resolved))
+        {
+            return Ok(BuildTransientResponse(resolved, BuildDashboardHelpResponse(resolved.Config), "answer"));
         }
 
         var scope = _scopeClassifier.Classify(resolved, validation.SanitizedMessage);
@@ -169,7 +169,7 @@ public class ChatController : ControllerBase
         }
         catch
         {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Chat data is temporarily unavailable. Please try again." });
+            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
         }
 
         if (!snapshot.HasData)
@@ -234,7 +234,7 @@ public class ChatController : ControllerBase
         var session = await GetOrCreateSessionAsync(resolved, sessionId, cancellationToken);
         if (session == null)
         {
-            return NotFound(new { message = "Session not found." });
+            return Ok(BuildTransientResponse(resolved, assistantText, responseType));
         }
 
         var userMessage = new ChatMessage
@@ -302,5 +302,24 @@ public class ChatController : ControllerBase
             SentAt = aiMessage.SentAt,
             ContextKey = contextKey
         };
+    }
+
+    private static ChatMessageResponseDto BuildTransientResponse(ChatResolvedContext resolved, string content, string responseType)
+    {
+        return new ChatMessageResponseDto
+        {
+            Id = 0,
+            SessionId = 0,
+            Role = "AI",
+            Content = content,
+            SentAt = DateTime.UtcNow,
+            ContextKey = resolved.Config.ContextKey,
+            ResponseType = responseType
+        };
+    }
+
+    private static string BuildDashboardHelpResponse(ChatAssistantConfig config)
+    {
+        return $"I can help with {config.ScopeDescription.ToLowerInvariant()} Try questions like: {string.Join("; ", config.ExampleQuestions)}.";
     }
 }

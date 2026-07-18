@@ -177,7 +177,7 @@ const ChatBot = () => {
   const canSend = input.trim() && !isLoading && !isContextLoading;
 
   return (
-    <div className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end justify-end" style={{ overflow: 'visible' }}>
+    <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
       <AnimatePresence mode="wait">
         {uiState === 'greeting' && (
           <motion.div
@@ -246,19 +246,19 @@ const ChatBot = () => {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             style={{ transformOrigin: 'bottom right' }}
-            className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[28px] sm:rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(650px,calc(100dvh-1.5rem))] border border-white/50 dark:border-slate-700/50 overflow-visible relative mt-8 ring-1 ring-black/5 dark:ring-white/10"
+            className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[24px] sm:rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))] border border-white/50 dark:border-slate-700/50 overflow-hidden relative ring-1 ring-black/5 dark:ring-white/10"
             role="dialog"
             aria-label="Hirely assistant"
           >
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 group">
-              <div className="w-24 h-24 rounded-full bg-white/30 dark:bg-slate-800/30 backdrop-blur-md p-1.5 shadow-[0_0_20px_rgba(79,70,229,0.3)] border border-white/50 dark:border-slate-600/50">
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 group">
+              <div className="w-16 h-16 rounded-full bg-white/30 dark:bg-slate-800/30 backdrop-blur-md p-1 shadow-[0_0_20px_rgba(79,70,229,0.3)] border border-white/50 dark:border-slate-600/50">
                 <div className="w-full h-full rounded-full overflow-hidden bg-indigo-50 relative">
                   <img src="/assets/chatbot-media/Avatar02.jpeg" alt="Hirely" className="w-full h-full object-cover object-center" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-500/80 to-purple-600/80 dark:from-indigo-600/80 dark:to-purple-800/80 backdrop-blur-md rounded-t-[28px] sm:rounded-t-[32px] pt-12 pb-5 px-4 flex flex-col items-center relative z-20 border-b border-white/20 shadow-sm">
+            <div className="bg-gradient-to-br from-indigo-500/80 to-purple-600/80 dark:from-indigo-600/80 dark:to-purple-800/80 backdrop-blur-md rounded-t-[24px] sm:rounded-t-[28px] pt-20 pb-4 px-4 flex flex-col items-center relative z-20 border-b border-white/20 shadow-sm">
               <div className="absolute top-4 right-4 flex gap-1">
                 <button type="button" onClick={() => setShowHistory(!showHistory)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60" aria-label="Chat history">
                   <History size={16} />
@@ -271,7 +271,7 @@ const ChatBot = () => {
               <p className="text-indigo-100 text-xs text-center max-w-[300px]">{contextMeta.scopeDescription}</p>
             </div>
 
-            <div className="flex-1 flex relative overflow-hidden bg-white/40 dark:bg-slate-900/40 rounded-b-[28px] sm:rounded-b-[32px]">
+            <div className="flex-1 flex min-h-0 relative overflow-hidden bg-white/40 dark:bg-slate-900/40 rounded-b-[24px] sm:rounded-b-[28px]">
               <div className={`absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-40 transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="p-5 h-full flex flex-col">
                   <div className="flex justify-between items-center mb-4 pb-3 border-b border-indigo-50 dark:border-slate-700">
@@ -295,8 +295,8 @@ const ChatBot = () => {
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col h-full w-full">
-                <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+              <div className="flex-1 flex min-h-0 flex-col h-full w-full">
+                <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5 custom-scrollbar">
                   {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center px-4 space-y-6">
                       <div className="space-y-2">
