@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner, StatusBadge } from '../../components/ui';
-import { getMyApplications } from './services/mockData';
+import { getMyApplications } from './services/candidateApi';
 import { Sparkles, Calendar } from 'lucide-react';
 
 export default function Applications() {

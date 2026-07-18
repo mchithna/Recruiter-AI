@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Spinner } from '../../components/ui';
-import { MapPin, Briefcase, Clock, Calendar, AlertCircle, ChevronLeft } from 'lucide-react';
-import { getJob, getMyDocuments, applyForJob } from './services/mockData';
+import { MapPin, Briefcase, Clock, Calendar, AlertCircle, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
+import { applyForJob, candidateAiApi, getJob, getMyDocuments } from './services/candidateApi';
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -11,6 +11,10 @@ export default function JobDetail() {
   const [hasPrimaryDoc, setHasPrimaryDoc] = useState(false);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [skillGap, setSkillGap] = useState(null);
+  const [assistance, setAssistance] = useState(null);
+  const [aiLoading, setAiLoading] = useState('');
+  const [aiError, setAiError] = useState('');
 
   useEffect(() => {
     loadData();
@@ -32,6 +36,32 @@ export default function JobDetail() {
     setApplying(true);
     await applyForJob(jobId);
     navigate('/candidate/applications');
+  };
+
+  const runSkillGap = async () => {
+    setAiLoading('skill-gap');
+    setAiError('');
+    try {
+      const data = await candidateAiApi.skillGap(jobId);
+      setSkillGap(data);
+    } catch (err) {
+      setAiError(err?.response?.data?.message || 'Unable to generate skill-gap analysis.');
+    } finally {
+      setAiLoading('');
+    }
+  };
+
+  const runApplicationHelp = async () => {
+    setAiLoading('application');
+    setAiError('');
+    try {
+      const data = await candidateAiApi.applicationAssistance(jobId);
+      setAssistance(data);
+    } catch (err) {
+      setAiError(err?.response?.data?.message || 'Unable to generate application guidance.');
+    } finally {
+      setAiLoading('');
+    }
   };
 
   if (loading) {
@@ -119,6 +149,78 @@ export default function JobDetail() {
           </div>
         </section>
       </div>
+
+      <div className="space-y-6 rounded-3xl border border-white/60 bg-white/75 p-8 shadow-glass backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-h3 text-secondary-900 dark:text-white">AI Application Support</h3>
+            <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
+              Advisory guidance based on this job and your authenticated profile.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={runSkillGap} disabled={!!aiLoading} leftIcon={aiLoading === 'skill-gap' ? <Spinner size="sm" /> : <Sparkles size={16} />}>
+              View Skill Gaps
+            </Button>
+            <Button type="button" onClick={runApplicationHelp} disabled={!!aiLoading} leftIcon={aiLoading === 'application' ? <Spinner size="sm" /> : <Sparkles size={16} />}>
+              Generate Application Tips
+            </Button>
+          </div>
+        </div>
+
+        {aiError && (
+          <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-body-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between">
+            <span>{aiError}</span>
+            <Button type="button" size="sm" variant="outline" onClick={runSkillGap} leftIcon={<RefreshCw size={14} />}>Retry</Button>
+          </div>
+        )}
+
+        {skillGap?.result && (
+          <div className="grid gap-5 md:grid-cols-2">
+            <AiList title="Required skills you have" items={skillGap.result.availableRequiredSkills} />
+            <AiList title="Missing required skills" items={skillGap.result.missingRequiredSkills} />
+            <AiList title="Preferred skills" items={skillGap.result.preferredSkills} />
+            <AiList title="Suggested learning areas" items={skillGap.result.suggestedLearningAreas} />
+            <div className="md:col-span-2"><AiList title="Practical recommendations" items={skillGap.result.practicalRecommendations} /></div>
+          </div>
+        )}
+
+        {assistance?.result && (
+          <div className="space-y-5 border-t border-secondary-100 pt-6 dark:border-white/10">
+            <AiList title="Application tips" items={assistance.result.applicationTips} />
+            <AiList title="Profile-summary suggestions" items={assistance.result.profileSummarySuggestions} />
+            {assistance.result.coverLetterDraft && (
+              <div>
+                <h4 className="mb-2 text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">Cover-letter draft</h4>
+                <div className="whitespace-pre-wrap rounded-2xl bg-secondary-50 p-4 text-body-sm text-secondary-700 dark:bg-secondary-900 dark:text-secondary-200">
+                  {assistance.result.coverLetterDraft}
+                </div>
+              </div>
+            )}
+            <AiList title="Interview preparation guidance" items={assistance.result.interviewPreparationGuidance} />
+            <p className="text-caption text-secondary-500 dark:text-secondary-400">{assistance.disclaimer}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AiList({ title, items }) {
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (safeItems.length === 0) return null;
+
+  return (
+    <div>
+      <h4 className="mb-2 text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">{title}</h4>
+      <ul className="space-y-1.5 text-body-sm text-secondary-600 dark:text-secondary-300">
+        {safeItems.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ai-500" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

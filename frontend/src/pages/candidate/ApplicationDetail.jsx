@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spinner, StatusBadge, Input } from '../../components/ui';
-import { getApplication, getStatusHistory, getMessages, sendMessage } from './services/mockData';
+import { getApplication, getStatusHistory, getMessages, sendMessage } from './services/candidateApi';
 import { Send, Clock } from 'lucide-react';
 
 export default function CandidateApplicationDetail() {

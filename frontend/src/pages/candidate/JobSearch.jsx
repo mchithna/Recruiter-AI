@@ -5,7 +5,7 @@ import {
   SearchInput
 } from '../../components/ui';
 import JobCard from './components/JobCard';
-import { getJobs } from './services/mockData';
+import { getJobs } from './services/candidateApi';
 
 export default function JobSearch() {
   const [jobs, setJobs] = useState([]);

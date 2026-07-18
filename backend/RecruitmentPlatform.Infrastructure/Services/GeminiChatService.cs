@@ -23,7 +23,7 @@ public class GeminiChatService : IAiChatService
             ?? string.Empty;
         _model = configuration["GeminiSettings:Model"]
             ?? configuration["GEMINI_MODEL"]
-            ?? "gemini-1.5-flash";
+            ?? "gemini-2.5-flash";
         _logger = logger;
     }
 

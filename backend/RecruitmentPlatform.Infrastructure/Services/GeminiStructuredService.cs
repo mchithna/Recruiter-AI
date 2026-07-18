@@ -24,12 +24,14 @@ public class GeminiStructuredService : IGeminiStructuredService
         ILogger<GeminiStructuredService> logger)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["RecruiterGeminiSettings:ApiKey"]
+        _apiKey = configuration["GeminiSettings:ApiKey"]
+            ?? configuration["RecruiterGeminiSettings:ApiKey"]
             ?? configuration["GEMINI_API_KEY"]
             ?? string.Empty;
-        _model = configuration["RecruiterGeminiSettings:Model"]
+        _model = configuration["GeminiSettings:Model"]
+            ?? configuration["RecruiterGeminiSettings:Model"]
             ?? configuration["GEMINI_MODEL"]
-            ?? "gemini-1.5-flash";
+            ?? "gemini-2.5-flash";
         _logger = logger;
     }
 
@@ -41,7 +43,7 @@ public class GeminiStructuredService : IGeminiStructuredService
     {
         if (string.IsNullOrWhiteSpace(_apiKey))
         {
-            _logger.LogWarning("Recruiter Gemini API key is missing.");
+            _logger.LogWarning("Gemini API key is missing.");
             return default;
         }
 
@@ -87,7 +89,7 @@ public class GeminiStructuredService : IGeminiStructuredService
                         continue;
                     }
 
-                    _logger.LogWarning("Recruiter Gemini API returned status code {StatusCode}.", response.StatusCode);
+                    _logger.LogWarning("Gemini API returned status code {StatusCode}.", response.StatusCode);
                     return default;
                 }
 
@@ -110,12 +112,12 @@ public class GeminiStructuredService : IGeminiStructuredService
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning("Recruiter Gemini API request timed out on attempt {Attempt}.", attempt);
+                _logger.LogWarning("Gemini API request timed out on attempt {Attempt}.", attempt);
                 if (attempt == 3) return default;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling Recruiter Gemini API.");
+                _logger.LogError(ex, "Error calling Gemini API.");
                 if (attempt == 3) return default;
             }
         }

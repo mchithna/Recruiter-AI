@@ -87,6 +87,8 @@ public sealed class ChatDataRetrievalService : IChatDataRetrievalService
                 p.ResumeParseStatus,
                 p.UpdatedAt,
                 Skills = p.CandidateSkills.Select(s => new { s.Skill.Name, s.ProficiencyLevel, s.YearsOfExperience }).Take(20),
+                Education = p.CandidateEducations.Select(e => new { e.InstitutionName, e.Degree, e.FieldOfStudy, e.IsCurrent }).Take(10),
+                Experience = p.CandidateWorkExperiences.Select(e => new { e.CompanyName, e.JobTitle, e.IsCurrent, Description = Truncate(e.Description, 700) }).Take(10),
                 Documents = p.CandidateDocuments.Select(d => new { d.Id, d.DocumentType, d.FileName, d.FileSizeKb, d.IsPrimary, d.UploadedAt }).Take(10)
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -127,7 +129,33 @@ public sealed class ChatDataRetrievalService : IChatDataRetrievalService
             .Take(10)
             .ToListAsync(cancellationToken);
 
-        return new { profile, applications, recommendations };
+        var candidateSkillNames = await _dbContext.CandidateSkills
+            .AsNoTracking()
+            .Where(s => s.CandidateId == userId)
+            .Select(s => s.Skill.Name.ToLower())
+            .ToListAsync(cancellationToken);
+        var skillSet = candidateSkillNames.ToHashSet();
+
+        var matchingJobs = await _dbContext.Jobs
+            .AsNoTracking()
+            .Where(j => j.Status == "Open" || j.Status == "Published")
+            .OrderByDescending(j => j.JobSkills.Count(s => skillSet.Contains(s.Skill.Name.ToLower())))
+            .Select(j => new
+            {
+                j.Id,
+                JobTitle = j.Title,
+                Department = j.Department.Name,
+                Company = j.Department.Company.Name,
+                j.EmploymentType,
+                j.WorkMode,
+                j.Location,
+                RequiredSkills = j.JobSkills.Where(s => s.IsMandatory).Select(s => s.Skill.Name).Take(12),
+                PreferredSkills = j.JobSkills.Where(s => !s.IsMandatory).Select(s => s.Skill.Name).Take(12)
+            })
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        return new { profile, applications, recommendations, matchingJobs };
     }
 
     private async Task<object> BuildRecruiterSnapshotAsync(int userId, int? companyId, CancellationToken cancellationToken)
@@ -272,6 +300,12 @@ public sealed class ChatDataRetrievalService : IChatDataRetrievalService
             .ToListAsync(cancellationToken);
 
         return new { jobs };
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return value;
+        return value.Length <= maxLength ? value : value[..maxLength];
     }
 }
 

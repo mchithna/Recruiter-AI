@@ -3,14 +3,18 @@ import {
   Button, 
   Input, 
   Textarea, 
-  Spinner
+  Spinner,
+  ProgressBar
 } from '../../components/ui';
-import { Sparkles, Plus, Trash2, Edit2, Check, X, MapPin, Briefcase, GraduationCap } from 'lucide-react';
-import { getMyProfile, updateMyProfile } from './services/mockData';
+import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw } from 'lucide-react';
+import { candidateAiApi, getMyProfile, updateMyProfile } from './services/candidateApi';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
 
   // Edit states for lists
   const [editingEducation, setEditingEducation] = useState(null);
@@ -41,6 +45,19 @@ export default function Profile() {
       locationCountry: profile.locationCountry,
       yearsOfExperience: profile.yearsOfExperience,
     });
+  };
+
+  const handleAnalyzeProfile = async () => {
+    setAnalysisLoading(true);
+    setAnalysisError('');
+    try {
+      const data = await candidateAiApi.analyzeProfile();
+      setAnalysis(data);
+    } catch (err) {
+      setAnalysisError(err?.response?.data?.message || 'Unable to analyze your profile right now.');
+    } finally {
+      setAnalysisLoading(false);
+    }
   };
 
   const handleRemoveSkill = async (skill) => {
@@ -86,6 +103,51 @@ export default function Profile() {
       </div>
 
       {/* Basic Info Section */}
+      <section className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-h3 text-secondary-900 dark:text-white">Profile and Resume Analysis</h3>
+          <Button type="button" onClick={handleAnalyzeProfile} disabled={analysisLoading} leftIcon={analysisLoading ? <Spinner size="sm" /> : <Sparkles size={16} />}>
+            Analyze Profile
+          </Button>
+        </div>
+        <div className="rounded-2xl border border-white/60 bg-white/75 p-6 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
+          {analysisError ? (
+            <div className="flex flex-col gap-3 text-body-sm text-red-700 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between">
+              <span>{analysisError}</span>
+              <Button type="button" size="sm" variant="outline" onClick={handleAnalyzeProfile} leftIcon={<RefreshCw size={14} />}>Retry</Button>
+            </div>
+          ) : analysis?.result ? (
+            <div className="space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">
+                    <span>Profile completeness</span>
+                    <span>{analysis.result.profileCompletenessScore}%</span>
+                  </div>
+                  <ProgressBar value={analysis.result.profileCompletenessScore} max={100} />
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">
+                    <span>Resume completeness</span>
+                    <span>{analysis.result.resumeCompletenessScore}%</span>
+                  </div>
+                  <ProgressBar value={analysis.result.resumeCompletenessScore} max={100} />
+                </div>
+              </div>
+              <AiList title="Missing profile information" items={analysis.result.missingProfileInformation} />
+              <AiList title="Missing resume information" items={analysis.result.missingResumeInformation} />
+              <AiList title="Extracted skills" items={analysis.result.extractedSkills} />
+              <AiList title="Suggestions" items={analysis.result.suggestions} />
+              <p className="text-caption text-secondary-500 dark:text-secondary-400">{analysis.disclaimer}</p>
+            </div>
+          ) : (
+            <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
+              Run analysis to review completeness, missing information, extracted skills, education, experience, projects, certifications, and improvement suggestions.
+            </p>
+          )}
+        </div>
+      </section>
+
       <section className="space-y-6">
         <h3 className="text-h3 text-secondary-900 dark:text-white">Basic Information</h3>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -240,6 +302,25 @@ export default function Profile() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function AiList({ title, items }) {
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (safeItems.length === 0) return null;
+
+  return (
+    <div>
+      <h4 className="mb-2 text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">{title}</h4>
+      <ul className="space-y-1.5 text-body-sm text-secondary-600 dark:text-secondary-300">
+        {safeItems.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ai-500" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

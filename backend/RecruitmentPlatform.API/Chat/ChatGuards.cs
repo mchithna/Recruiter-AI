@@ -132,6 +132,20 @@ public sealed class ChatScopeClassifier : IChatScopeClassifier
             }
         }
 
+        if (context.Config.ContextKey is ChatAssistantConfigProvider.Candidate or ChatAssistantConfigProvider.Admin)
+        {
+            var dashboardTopic = context.Config.AllowedTopics.Any(topic => lower.Contains(topic.ToLowerInvariant()));
+            var dashboardIntent = lower.Contains("match") || lower.Contains("missing") || lower.Contains("improve")
+                || lower.Contains("summarize") || lower.Contains("prepare") || lower.Contains("progress")
+                || lower.Contains("trend") || lower.Contains("attention") || lower.Contains("compare")
+                || lower.Contains("slow") || lower.Contains("low application") || lower.Contains("activity");
+
+            if (!dashboardTopic && !dashboardIntent)
+            {
+                return new ChatScopeResult(false, context.Config.OutOfScopeResponse);
+            }
+        }
+
         return new ChatScopeResult(true, null);
     }
 }
