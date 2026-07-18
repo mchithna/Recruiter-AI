@@ -1,5 +1,6 @@
 using System.Text;
 using DotNetEnv;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,10 @@ using RecruitmentPlatform.Infrastructure.Repositories;
 using RecruitmentPlatform.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 // Keep authentication logs free of tokens and sensitive claims by default.
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = false;
@@ -47,6 +52,8 @@ var supabaseUrl = builder.Configuration["JwtSettings:SupabaseUrl"]
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".keys")));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -164,18 +171,25 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // Ensure database is created (if not using migrations)
-    db.Database.EnsureCreated();
-    
-    if (!db.Roles.Any())
+    try
     {
-        db.Roles.AddRange(
-            new RecruitmentPlatform.Core.Entities.Role { Name = "Admin", Description = "Platform Administrator" },
-            new RecruitmentPlatform.Core.Entities.Role { Name = "Recruiter", Description = "Company Recruiter" },
-            new RecruitmentPlatform.Core.Entities.Role { Name = "Candidate", Description = "Job Seeker" }
-        );
-        db.SaveChanges();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.EnsureCreated();
+
+        if (!db.Roles.Any())
+        {
+            db.Roles.AddRange(
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Admin", Description = "Platform Administrator" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Recruiter", Description = "Company Recruiter" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Candidate", Description = "Job Seeker" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "HiringManager", Description = "Hiring Manager" }
+            );
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database initialization skipped: {ex.GetType().Name}. Database-backed endpoints may fail until the connection is restored.");
     }
 }
 
