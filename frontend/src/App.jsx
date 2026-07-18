@@ -26,7 +26,14 @@ import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
-import ChatBot from './components/chat/ChatBot';
+
+import CandidateHome from './pages/candidate/Home';
+import Profile from './pages/candidate/Profile';
+import Documents from './pages/candidate/Documents';
+import Jobs from './pages/candidate/JobSearch';
+import JobDetail from './pages/candidate/JobDetail';
+import Applications from './pages/candidate/Applications';
+import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 
 // Dummy components
 const HiringManagerDashboard = () => (
@@ -35,16 +42,6 @@ const HiringManagerDashboard = () => (
     <p className="text-secondary-500 dark:text-secondary-400">Review candidates and manage hiring pipelines.</p>
   </div>
 );
-
-const CandidateDashboard = () => {
-  const { profile } = useAuth();
-  return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-      <h2 className="text-xl font-bold mb-2">Welcome, {profile?.firstName} {profile?.lastName}!</h2>
-      <p className="text-slate-500 dark:text-slate-400">This is your blank candidate dashboard.</p>
-    </div>
-  );
-};
 
 const RecruiterDashboard = () => (
   <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
@@ -101,7 +98,14 @@ function App() {
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
-                <Route path="/candidate" element={<CandidateDashboard />} />
+                <Route path="/candidate" element={<Navigate to="/candidate/home" replace />} />
+                <Route path="/candidate/home" element={<CandidateHome />} />
+                <Route path="/candidate/profile" element={<Profile />} />
+                <Route path="/candidate/documents" element={<Documents />} />
+                <Route path="/candidate/jobs" element={<Jobs />} />
+                <Route path="/candidate/jobs/:jobId" element={<JobDetail />} />
+                <Route path="/candidate/applications" element={<Applications />} />
+                <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationDetail />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
@@ -132,10 +136,8 @@ function App() {
           {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Dev-only: design system showcase — no auth required */}
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
-        <ChatBot />
       </BrowserRouter>
     </AuthProvider>
   );
