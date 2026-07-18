@@ -36,6 +36,7 @@ public class ChatController : ControllerBase
         IChatRateLimiter rateLimiter,
         ILogger<ChatController> logger)
     {
+
         _context = context;
         _aiChatService = aiChatService;
         _contextResolver = contextResolver;
@@ -176,49 +177,34 @@ public class ChatController : ControllerBase
             return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
         }
 
-        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
-        {
-            var homePrompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, Array.Empty<ChatMessage>());
-            var homeResponse = await _aiChatService.GenerateResponseAsync(homePrompt, cancellationToken);
-            return Ok(new ChatMessageResponseDto
-            {
-                Id = 0,
-                SessionId = 0,
-                Role = "AI",
-                Content = homeResponse,
-                SentAt = DateTime.UtcNow,
-                ContextKey = resolved.Config.ContextKey
-            });
-        }
-
         var session = await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
-        if (session == null)
-        {
-            return NotFound(new { message = "Session not found." });
-        }
-
-        var history = session.ChatMessages.OrderBy(m => m.SentAt).ToList();
+        var history = session?.ChatMessages.OrderBy(m => m.SentAt).ToList() ?? new List<ChatMessage>();
+        
         var prompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, history);
         var aiResponseText = await _aiChatService.GenerateResponseAsync(prompt, cancellationToken);
 
-        var userMessage = new ChatMessage
-        {
-            SessionId = session.Id,
-            Role = "User",
-            Content = validation.SanitizedMessage,
-            SentAt = DateTime.UtcNow
-        };
         var aiMessage = new ChatMessage
         {
-            SessionId = session.Id,
+            SessionId = session?.Id ?? 0,
             Role = "AI",
             Content = aiResponseText,
             SentAt = DateTime.UtcNow
         };
 
-        _context.ChatMessages.Add(userMessage);
-        _context.ChatMessages.Add(aiMessage);
-        await _context.SaveChangesAsync(cancellationToken);
+        if (session != null)
+        {
+            var userMessage = new ChatMessage
+            {
+                SessionId = session.Id,
+                Role = "User",
+                Content = validation.SanitizedMessage,
+                SentAt = DateTime.UtcNow
+            };
+            
+            _context.ChatMessages.Add(userMessage);
+            _context.ChatMessages.Add(aiMessage);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         return Ok(ToResponse(aiMessage, resolved.Config.ContextKey));
     }

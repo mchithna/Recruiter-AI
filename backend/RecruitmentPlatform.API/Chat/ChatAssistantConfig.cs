@@ -57,8 +57,8 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
         [Candidate] = new(
             Candidate,
             "Hirely Candidate Assistant",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
+            "Help candidates manage their job search, applications, skills, and interviews on the Hirely platform.",
+            "Candidate Dashboard",
             true,
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Candidate" },
             new[] { "profile", "documents", "resume", "jobs", "applications", "application status", "recommendations", "messages", "interviews" },
@@ -73,8 +73,8 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
         [Recruiter] = new(
             Recruiter,
             "Hirely Recruiter Assistant",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
+            "Help recruiters manage job postings, candidates, screening processes, and interview schedules.",
+            "Recruiter Dashboard",
             true,
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Recruiter" },
             new[] { "jobs", "candidates", "applications", "screening", "interviews", "messages", "pipeline", "recruiter" },
@@ -89,8 +89,8 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
         [Admin] = new(
             Admin,
             "Hirely Admin Assistant",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
+            "Help administrators oversee company structure, manage staff, and monitor overall platform analytics.",
+            "Admin Dashboard",
             true,
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Admin" },
             new[] { "company", "departments", "staff", "analytics", "activity", "organization", "subscription" },
@@ -105,8 +105,8 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
         [HiringManager] = new(
             HiringManager,
             "Hirely Hiring Manager Assistant",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
-            "[DASHBOARD_NAME_AND_PURPOSE]",
+            "Help hiring managers review candidate pipelines, evaluate interview performance, and manage hiring decisions.",
+            "Hiring Manager Dashboard",
             true,
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "HiringManager" },
             new[] { "assigned jobs", "candidates", "applications", "interviews", "evaluations", "hiring pipeline" },
