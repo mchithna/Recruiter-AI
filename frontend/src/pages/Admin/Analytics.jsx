@@ -13,7 +13,7 @@ const Analytics = () => {
   const [summary, setSummary] = useState(null);
   const [insights, setInsights] = useState(null);
   const [activity, setActivity] = useState(null);
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -22,13 +22,13 @@ const Analytics = () => {
         const response = await api.get('/analytics/overview');
         setData(response.data);
       } catch (error) {
-        showToast('Failed to load analytics data.', 'danger');
+        try { toast({ title: 'Failed to load analytics data.', variant: 'danger' }); } catch (e) {}
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
-  }, [showToast]);
+  }, [toast]);
 
   const runAi = async (kind) => {
     setAiLoading(kind);

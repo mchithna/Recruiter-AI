@@ -9,7 +9,7 @@ import api from '../../api';
 import { Copy } from 'lucide-react';
 
 const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) => {
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [staffList, setStaffList] = useState([]);
@@ -35,7 +35,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
       const response = await api.get(`/invitations?departmentId=${department.id}`);
       setInvitations(response.data);
     } catch {
-      showToast('Failed to load pending invitations.', 'danger');
+      try { toast({ title: 'Failed to load pending invitations.', variant: 'danger' }); } catch (e) {}
     } finally {
       setLoading(false);
     }
@@ -47,7 +47,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
       const response = await api.get(`/staff?departmentId=${department.id}`);
       setStaffList(response.data);
     } catch {
-      showToast('Failed to load staff.', 'danger');
+      try { toast({ title: 'Failed to load staff.', variant: 'danger' }); } catch (e) {}
     } finally {
       setLoadingStaff(false);
     }
@@ -60,10 +60,10 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
       } else {
         await api.put(`/staff/${staffId}/reactivate`);
       }
-      showToast(`Staff member ${currentStatus ? 'deactivated' : 'activated'} successfully.`, 'success');
       fetchStaff();
+      try { toast({ title: `Staff member ${currentStatus ? 'deactivated' : 'activated'} successfully.`, variant: 'success' }); } catch (e) {}
     } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to update status.', 'danger');
+      try { toast({ title: error.response?.data?.message || 'Failed to update status.', variant: 'danger' }); } catch (e) {}
     }
   };
 
@@ -72,20 +72,20 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
 
     try {
       await api.put(`/staff/${staffId}/reassign-department`, { departmentId: parseInt(newDepartmentId) });
-      showToast('Staff member reassigned successfully.', 'success');
       fetchStaff();
+      try { toast({ title: 'Staff member reassigned successfully.', variant: 'success' }); } catch (e) {}
     } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to reassign staff.', 'danger');
+      try { toast({ title: error.response?.data?.message || 'Failed to reassign staff.', variant: 'danger' }); } catch (e) {}
     }
   };
 
   const handleRevoke = async (id) => {
     try {
       await api.post(`/invitations/${id}/revoke`);
-      showToast('Invitation revoked successfully.', 'success');
       fetchInvitations();
+      try { toast({ title: 'Invitation revoked successfully.', variant: 'success' }); } catch (e) {}
     } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to revoke invitation.', 'danger');
+      try { toast({ title: error.response?.data?.message || 'Failed to revoke invitation.', variant: 'danger' }); } catch (e) {}
     }
   };
 
@@ -102,12 +102,12 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
         departmentId: department.id,
       });
 
-      showToast('Invitation sent successfully.', 'success');
       setEmail('');
       setLastInviteUrl(response.data.acceptUrl);
       fetchInvitations();
+      try { toast({ title: 'Invitation sent successfully.', variant: 'success' }); } catch (e) {}
     } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to send invitation.', 'danger');
+      try { toast({ title: error.response?.data?.message || 'Failed to send invitation.', variant: 'danger' }); } catch (e) {}
     } finally {
       setInviting(false);
     }
@@ -116,7 +116,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
   const handleCopyLink = () => {
     if (lastInviteUrl) {
       navigator.clipboard.writeText(lastInviteUrl);
-      showToast('Link copied to clipboard.', 'success');
+      try { toast({ title: 'Link copied to clipboard.', variant: 'success' }); } catch (e) {}
     }
   };
 
