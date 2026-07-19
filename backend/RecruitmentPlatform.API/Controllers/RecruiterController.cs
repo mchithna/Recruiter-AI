@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -44,7 +45,7 @@ public class RecruiterController : ControllerBase
         var applications = await RecruiterApplications(companyId)
             .OrderByDescending(a => a.AppliedAt)
             .Take(100)
-            .Select(a => ToApplicationListDto(a))
+            .Select(ToApplicationListDtoExpr)
             .ToListAsync(cancellationToken);
 
         var interviews = await _context.Interviews
@@ -175,7 +176,7 @@ public class RecruiterController : ControllerBase
             .Where(a => a.JobId == jobId)
             .OrderByDescending(a => a.AiMatchScore ?? 0)
             .ThenByDescending(a => a.AppliedAt)
-            .Select(a => ToApplicationListDto(a))
+            .Select(ToApplicationListDtoExpr)
             .ToListAsync(cancellationToken);
     }
 
@@ -282,7 +283,7 @@ public class RecruiterController : ControllerBase
         return text.Length <= maxLength ? text : text[..maxLength];
     }
 
-    private static RecruiterApplicationListDto ToApplicationListDto(Application a) => new()
+    private static Expression<Func<Application, RecruiterApplicationListDto>> ToApplicationListDtoExpr => a => new RecruiterApplicationListDto
     {
         Id = a.Id,
         JobId = a.JobId,

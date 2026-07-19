@@ -8,6 +8,7 @@ import {
 } from '../../components/ui';
 import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw } from 'lucide-react';
 import { candidateAiApi, getMyProfile, updateMyProfile } from './services/candidateApi';
+import { useToast } from '../../lib/ToastContext';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -19,6 +20,9 @@ export default function Profile() {
   // Edit states for lists
   const [editingEducation, setEditingEducation] = useState(null);
   const [editingExperience, setEditingExperience] = useState(null);
+
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -36,15 +40,22 @@ export default function Profile() {
   };
 
   const handleSaveBasicInfo = async () => {
-    await updateMyProfile({
-      summaryText: profile.summaryText,
-      portfolioUrl: profile.portfolioUrl,
-      linkedinUrl: profile.linkedinUrl,
-      githubUrl: profile.githubUrl,
-      locationCity: profile.locationCity,
-      locationCountry: profile.locationCountry,
-      yearsOfExperience: profile.yearsOfExperience,
-    });
+    setSaving(true);
+    try {
+      await updateMyProfile({
+        summaryText: profile.summaryText,
+        portfolioUrl: profile.portfolioUrl,
+        linkedinUrl: profile.linkedinUrl,
+        githubUrl: profile.githubUrl,
+        locationCity: profile.locationCity,
+        yearsOfExperience: profile.yearsOfExperience ? parseInt(profile.yearsOfExperience, 10) : null,
+      });
+      try { toast({ title: 'Profile saved successfully.', variant: 'success' }); } catch(e) {}
+    } catch (err) {
+      try { toast({ title: 'Failed to save profile.', variant: 'danger' }); } catch(e) {}
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAnalyzeProfile = async () => {
@@ -149,14 +160,18 @@ export default function Profile() {
       </section>
 
       <section className="space-y-6">
-        <h3 className="text-h3 text-secondary-900 dark:text-white">Basic Information</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-h3 text-secondary-900 dark:text-white">Basic Information</h3>
+          <Button type="button" onClick={handleSaveBasicInfo} disabled={saving} isLoading={saving} variant="primary">
+            Save Changes
+          </Button>
+        </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="col-span-1 md:col-span-2">
             <Textarea 
               label="Professional Summary" 
               value={profile.summaryText || ''} 
               onChange={(e) => handleBasicInfoChange('summaryText', e.target.value)}
-              onBlur={handleSaveBasicInfo}
               rows={4}
             />
           </div>
@@ -164,38 +179,32 @@ export default function Profile() {
             label="Location (City)" 
             value={profile.locationCity || ''} 
             onChange={(e) => handleBasicInfoChange('locationCity', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Location (Country)" 
             value={profile.locationCountry || ''} 
             onChange={(e) => handleBasicInfoChange('locationCountry', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Years of Experience" 
             type="number"
             value={profile.yearsOfExperience || ''} 
             onChange={(e) => handleBasicInfoChange('yearsOfExperience', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Portfolio URL" 
             value={profile.portfolioUrl || ''} 
             onChange={(e) => handleBasicInfoChange('portfolioUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="LinkedIn URL" 
             value={profile.linkedinUrl || ''} 
             onChange={(e) => handleBasicInfoChange('linkedinUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="GitHub URL" 
             value={profile.githubUrl || ''} 
             onChange={(e) => handleBasicInfoChange('githubUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
         </div>
       </section>
