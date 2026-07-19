@@ -36,6 +36,8 @@ packages/
 !**/.env.example
 appsettings.Development.json
 secrets.json
+.keys/
+**/.keys/
 
 # OS files
 .DS_Store
@@ -102,3 +104,8 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+context.md
+
+# Ignore markdown documentation
+docs/

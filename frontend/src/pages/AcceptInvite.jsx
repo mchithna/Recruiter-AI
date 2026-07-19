@@ -8,7 +8,7 @@ export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, refreshProfile } = useAuth();
 
   const [inviteData, setInviteData] = useState(null);
   const [isValidating, setIsValidating] = useState(true);
@@ -72,6 +72,7 @@ export default function AcceptInvite() {
         firstName,
         lastName
       });
+      await refreshProfile();
       // 3. Redirect based on role
       const role = inviteData.roleName;
       if (role === 'Recruiter') {
