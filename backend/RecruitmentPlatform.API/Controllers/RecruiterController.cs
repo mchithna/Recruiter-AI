@@ -159,6 +159,12 @@ public class RecruiterController : ControllerBase
         job.WorkMode = Clamp(request.WorkMode, 50);
         job.Location = Clamp(request.Location, 255);
         job.ApplicationDeadline = ParseDate(request.ApplicationDeadline);
+        
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            job.Status = request.Status;
+        }
+
         job.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -389,6 +395,7 @@ public class SaveRecruiterJobDto
     public string? WorkMode { get; set; }
     public string? Location { get; set; }
     public string? ApplicationDeadline { get; set; }
+    public string? Status { get; set; }
 }
 
 public class RecruiterJobDto

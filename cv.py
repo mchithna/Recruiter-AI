@@ -4,6 +4,7 @@ import json
 import random
 import argparse
 from faker import Faker
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 # Try to import ReportLab
@@ -18,6 +19,7 @@ except ImportError:
 
 # Try to import Google GenAI
 try:
+    # pyrefly: ignore [missing-import]
     import google.generativeai as genai
     HAS_GEMINI = True
 except ImportError:

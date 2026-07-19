@@ -13,9 +13,12 @@ import {
   Button,
   Skeleton,
   StatCard,
+  Modal,
 } from '../../components/ui';
 import { StatusBadge } from '../../components/ui';
 import { useRecruiterJobs } from './useRecruiterJobs';
+import { useToast } from '../../lib/ToastContext';
+import { useState } from 'react';
 
 const formatDeadline = (deadline) => {
   if (!deadline) return 'No deadline';
@@ -46,10 +49,29 @@ const workModeIcon = {
 
 export function JobsList() {
   const navigate = useNavigate();
-  const { jobs, isLoading } = useRecruiterJobs();
+  const { jobs, isLoading, updateJob } = useRecruiterJobs();
+  const { toast } = useToast();
+  
+  const [jobToPublish, setJobToPublish] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const openJobs = jobs.filter((job) => job.status === 'Open').length;
   const draftJobs = jobs.filter((job) => job.status === 'Draft').length;
   const pausedJobs = jobs.filter((job) => job.status === 'Paused').length;
+
+  const handlePublishJob = async () => {
+    if (!jobToPublish) return;
+    setIsPublishing(true);
+    try {
+      await updateJob(jobToPublish.id, { status: 'Open' });
+      toast.success(`Job "${jobToPublish.title}" published successfully!`);
+      setJobToPublish(null);
+    } catch (error) {
+      toast.error(error.message || 'Failed to publish job.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   return (
     <div className="relative z-10 mx-auto max-w-7xl space-y-8 animate-slide-up">
@@ -137,10 +159,10 @@ export function JobsList() {
             return (
               <div
                 key={job.id}
-                onClick={() => navigate(`/recruiter/jobs/${job.id}/applications`)}
+                onClick={() => navigate(`/recruiter/jobs/${job.id}/edit`)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
-                    navigate(`/recruiter/jobs/${job.id}/applications`);
+                    navigate(`/recruiter/jobs/${job.id}/edit`);
                   }
                 }}
                 role="link"
@@ -205,6 +227,20 @@ export function JobsList() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
+                      {job.status === 'Draft' && (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setJobToPublish(job);
+                          }}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          Publish
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -230,6 +266,35 @@ export function JobsList() {
           })}
         </div>
       )}
+      
+      {/* Publish Confirmation Modal */}
+      <Modal
+        isOpen={!!jobToPublish}
+        onClose={() => !isPublishing && setJobToPublish(null)}
+        title="Publish Job"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setJobToPublish(null)}
+              disabled={isPublishing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handlePublishJob}
+              disabled={isPublishing}
+            >
+              {isPublishing ? 'Publishing...' : 'Publish'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Are you sure you want to publish the job <strong>{jobToPublish?.title}</strong>? It will become visible to candidates immediately.
+        </p>
+      </Modal>
     </div>
   );
 }
