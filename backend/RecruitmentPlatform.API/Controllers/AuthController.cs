@@ -101,13 +101,25 @@ public class AuthController : ControllerBase
         var existingUser = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, u => u.Role);
         if (existingUser != null)
         {
-            // If they already have a user row, just mark accepted if it isn't
+            existingUser.RoleId = invitation.RoleId;
+            existingUser.Role = invitation.Role;
+            existingUser.CompanyId = invitation.CompanyId;
+            existingUser.DepartmentId = invitation.DepartmentId;
+            existingUser.FirstName = request.FirstName;
+            existingUser.LastName = request.LastName;
+            existingUser.Email = invitation.Email;
+            existingUser.IsActive = true;
+            existingUser.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Users.Update(existingUser);
+
+            // If they already have a user row, repair it from the invitation and mark accepted.
             if (invitation.Status == "Pending")
             {
                 invitation.Status = "Accepted";
                 _unitOfWork.UserInvitations.Update(invitation);
-                await _unitOfWork.SaveChangesAsync();
             }
+
+            await _unitOfWork.SaveChangesAsync();
             return Ok(MapToResponse(existingUser));
         }
 

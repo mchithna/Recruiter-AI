@@ -44,7 +44,7 @@ const ActivityLog = () => {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="min-w-full max-w-none space-y-6">
       <div>
         <h3 className="text-h3 font-bold text-secondary-900 dark:text-white">Activity Log</h3>
         <p className="text-secondary-500 dark:text-secondary-400 text-body-sm mt-1">

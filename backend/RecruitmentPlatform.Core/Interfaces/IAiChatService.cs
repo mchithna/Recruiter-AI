@@ -1,8 +1,8 @@
-using RecruitmentPlatform.Core.Entities;
+using RecruitmentPlatform.Core.DTOs;
 
 namespace RecruitmentPlatform.Core.Interfaces;
 
 public interface IAiChatService
 {
-    Task<string> ProcessMessageAsync(ChatSession session, string userMessage);
+    Task<string> GenerateResponseAsync(ChatGenerationRequest request, CancellationToken cancellationToken = default);
 }

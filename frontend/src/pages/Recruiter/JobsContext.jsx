@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RecruiterJobsContext } from './RecruiterJobsContext';
-import { getJobs } from './services/mockData';
+import { recruiterApi } from './services/recruiterApi';
 
 export function RecruiterJobsProvider({ children }) {
   const [jobs, setJobs] = useState([]);
@@ -10,32 +10,32 @@ export function RecruiterJobsProvider({ children }) {
   useEffect(() => {
     let isActive = true;
 
-    getJobs().then((mockJobs) => {
-      if (!isActive) return;
-      setJobs(mockJobs);
-      setIsLoading(false);
-    });
+    recruiterApi.getJobs()
+      .then((loadedJobs) => {
+        if (!isActive) return;
+        setJobs(loadedJobs);
+      })
+      .catch((error) => {
+        console.error('Failed to load recruiter jobs:', error);
+        if (isActive) setJobs([]);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
 
     return () => {
       isActive = false;
     };
   }, []);
 
-  const addJob = useCallback((job) => {
-    const now = new Date().toISOString();
-    const newJob = {
-      ...job,
-      id: `job-${Date.now()}`,
-      status: 'Draft',
-      departmentName: job.departmentName ?? 'Recruiting',
-      createdAt: now,
-    };
-
+  const addJob = useCallback(async (job) => {
+    const newJob = await recruiterApi.createJob(job);
     setJobs((currentJobs) => [newJob, ...currentJobs]);
     return newJob;
   }, []);
 
-  const updateJob = useCallback((jobId, updates) => {
+  const updateJob = useCallback(async (jobId, updates) => {
+    await recruiterApi.updateJob(jobId, updates);
     setJobs((currentJobs) =>
       currentJobs.map((job) => (job.id === jobId ? { ...job, ...updates } : job))
     );

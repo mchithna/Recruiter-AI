@@ -1,0 +1,198 @@
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using RecruitmentPlatform.Core.Interfaces;
+
+namespace RecruitmentPlatform.Infrastructure.Services;
+
+public class GeminiStructuredService : IGeminiStructuredService
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private readonly HttpClient _httpClient;
+    private readonly string _apiKey;
+    private readonly string[] _models;
+    private readonly ILogger<GeminiStructuredService> _logger;
+
+    public GeminiStructuredService(
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<GeminiStructuredService> logger)
+    {
+        _httpClient = httpClient;
+        _apiKey = configuration["GeminiSettings:ApiKey"]
+            ?? configuration["RecruiterGeminiSettings:ApiKey"]
+            ?? configuration["GEMINI_API_KEY"]
+            ?? string.Empty;
+        var configuredModel = configuration["GeminiSettings:Model"]
+            ?? configuration["RecruiterGeminiSettings:Model"]
+            ?? configuration["GEMINI_MODEL"]
+            ?? "gemini-2.5-flash";
+        _models = BuildModelFallbacks(configuredModel);
+        _logger = logger;
+    }
+
+    public async Task<T?> GenerateJsonAsync<T>(
+        string systemInstruction,
+        string userPrompt,
+        int maxOutputTokens = 1200,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+        {
+            _logger.LogWarning("Gemini API key is missing.");
+            return default;
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(25));
+
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var requestBody = new
+                {
+                    system_instruction = new
+                    {
+                        parts = new[] { new { text = systemInstruction } }
+                    },
+                    contents = new[]
+                    {
+                        new
+                        {
+                            role = "user",
+                            parts = new[] { new { text = userPrompt } }
+                        }
+                    },
+                    generationConfig = new
+                    {
+                        temperature = 0.1,
+                        topP = 0.8,
+                        maxOutputTokens,
+                        responseMimeType = "application/json"
+                    }
+                };
+
+                using var response = await SendWithModelFallbacksAsync(requestBody, timeoutCts.Token);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if ((int)response.StatusCode >= 500 && attempt < 3)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), timeoutCts.Token);
+                        continue;
+                    }
+
+                    var errorBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                    _logger.LogWarning("Gemini API returned status code {StatusCode}: {ErrorBody}", response.StatusCode, TruncateForLog(errorBody));
+                    return default;
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                using var document = JsonDocument.Parse(responseBody);
+                var text = document.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+
+                var json = ExtractJson(text);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return default;
+                }
+
+                return JsonSerializer.Deserialize<T>(json, JsonOptions);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Gemini API request timed out on attempt {Attempt}.", attempt);
+                if (attempt == 3) return default;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling Gemini API.");
+                if (attempt == 3) return default;
+            }
+        }
+
+        return default;
+    }
+
+    private async Task<HttpResponseMessage> SendWithModelFallbacksAsync(object requestBody, CancellationToken cancellationToken)
+    {
+        var json = JsonSerializer.Serialize(requestBody);
+        HttpResponseMessage? lastResponse = null;
+
+        foreach (var model in _models)
+        {
+            lastResponse?.Dispose();
+
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
+            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+
+            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+            {
+                return response;
+            }
+
+            _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+            lastResponse = response;
+        }
+
+        return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private static string[] BuildModelFallbacks(string configuredModel)
+    {
+        var models = new[] { configuredModel, "gemini-flash-latest", "gemini-2.0-flash" };
+        return models
+            .Select(NormalizeModel)
+            .Where(model => !string.IsNullOrWhiteSpace(model))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string NormalizeModel(string model)
+    {
+        var normalized = model.Trim().Trim('"');
+        return normalized.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+            ? normalized["models/".Length..]
+            : normalized;
+    }
+
+    private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
+        statusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest;
+
+    private static string TruncateForLog(string value) =>
+        value.Length <= 500 ? value : value[..500];
+
+    private static string? ExtractJson(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            var firstNewLine = trimmed.IndexOf('\n');
+            var lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
+            if (firstNewLine >= 0 && lastFence > firstNewLine)
+            {
+                trimmed = trimmed[(firstNewLine + 1)..lastFence].Trim();
+            }
+        }
+
+        var firstObject = trimmed.IndexOf('{');
+        var lastObject = trimmed.LastIndexOf('}');
+        if (firstObject < 0 || lastObject <= firstObject) return null;
+
+        return trimmed[firstObject..(lastObject + 1)];
+    }
+}

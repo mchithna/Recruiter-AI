@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -26,7 +26,7 @@ import ApplicationDetail from './pages/Recruiter/ApplicationDetail';
 import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
-
+import ChatBot from './components/chat/ChatBot';
 import CandidateHome from './pages/candidate/Home';
 import Profile from './pages/candidate/Profile';
 import Documents from './pages/candidate/Documents';
@@ -35,26 +35,10 @@ import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 
-// Dummy components
 const HiringManagerDashboard = () => (
   <div className="bg-white/60 dark:bg-secondary-900/40 p-6 rounded-2xl shadow-glass border border-white/60 dark:border-white/10">
     <h2 className="text-xl font-bold mb-2 text-secondary-900 dark:text-white">Hiring Manager Dashboard</h2>
     <p className="text-secondary-500 dark:text-secondary-400">Review candidates and manage hiring pipelines.</p>
-  </div>
-);
-
-const RecruiterDashboard = () => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-    <h2 className="text-xl font-bold mb-2">Recruiter Dashboard</h2>
-    <p className="text-slate-500 dark:text-slate-400">Manage candidates and job postings.</p>
-  </div>
-);
-
-
-const AdminDashboard = () => (
-  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-    <h2 className="text-xl font-bold mb-2">Admin Dashboard</h2>
-    <p className="text-slate-500 dark:text-slate-400">Platform overview and settings.</p>
   </div>
 );
 
@@ -65,19 +49,30 @@ const Unauthorized = () => (
   </div>
 );
 
+const PublicChatBotMount = () => {
+  const location = useLocation();
+  const path = location.pathname || '/';
+  const isDashboardPath =
+    path.startsWith('/candidate')
+    || path.startsWith('/recruiter')
+    || path.startsWith('/admin')
+    || path.startsWith('/hiring-manager')
+    || path.startsWith('/dashboard');
+
+  return isDashboardPath ? null : <ChatBot />;
+};
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public pages — Home + marketing */}
           <Route path="/" element={<Home />} />
           <Route path="/features" element={<Features />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
 
-          {/* Guest Routes (auth forms) */}
           <Route element={<GuestLayout />}>
             <Route path="/login" element={<Login />} />
             <Route path="/register/candidate" element={<RegisterCandidate />} />
@@ -85,14 +80,10 @@ function App() {
             <Route path="/invite/accept" element={<AcceptInvite />} />
           </Route>
 
-          {/* Dashboard Layout (Shared shell) */}
           <Route element={<DashboardLayout />}>
-
-            {/* Protected Routes inside Dashboard */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
 
-              {/* Role-specific routes using ProtectedRoute allowedRoles feature */}
               <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
                 <Route path="/hiring-manager" element={<HiringManagerDashboard />} />
               </Route>
@@ -117,7 +108,6 @@ function App() {
               </Route>
             </Route>
 
-            {/* Recruiter-specific Layout */}
             <Route element={<ProtectedRoute allowedRoles={['Recruiter']} />}>
               <Route path="/recruiter" element={<RecruiterRoutes />}>
                 <Route index element={<RecruiterIndexRedirect />} />
@@ -133,11 +123,10 @@ function App() {
             </Route>
           </Route>
 
-          {/* Fallback routes */}
           <Route path="/unauthorized" element={<Unauthorized />} />
-
           <Route path="/style-guide" element={<StyleGuide />} />
         </Routes>
+        <PublicChatBotMount />
       </BrowserRouter>
     </AuthProvider>
   );

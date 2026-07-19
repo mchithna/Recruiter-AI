@@ -5,7 +5,7 @@ import {
   FileUpload
 } from '../../components/ui';
 import { FileText, Star, Trash2, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { getMyDocuments, uploadDocument, deleteDocument, setPrimaryDocument } from './services/mockData';
+import { getMyDocuments, uploadDocument, deleteDocument, setPrimaryDocument } from './services/candidateApi';
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -113,7 +113,7 @@ export default function Documents() {
                       <Star size={10} className="fill-primary-700 dark:fill-primary-300" /> Primary
                     </div>
                   )}
-                  {doc.resume_parse_status && getParseStatusBadge(doc.resume_parse_status)}
+                  {doc.resumeParseStatus && getParseStatusBadge(doc.resumeParseStatus)}
                 </div>
                 <p className="text-caption text-secondary-500 dark:text-secondary-400 mt-1">
                   {doc.documentType} • {doc.fileSizeKb} KB • Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}

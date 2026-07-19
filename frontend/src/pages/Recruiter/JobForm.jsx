@@ -1,4 +1,4 @@
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -15,6 +15,7 @@ import {
   Textarea,
 } from '../../components/ui';
 import { useRecruiterJobs } from './useRecruiterJobs';
+import { recruiterApi } from './services/recruiterApi';
 
 const employmentTypeOptions = [
   { value: 'Full-time', label: 'Full-time' },
@@ -52,6 +53,47 @@ const toStoredDateTime = (value) => {
   return new Date(value).toISOString();
 };
 
+const hasJobDescriptionSeed = ({ title, description, requirements }) =>
+  [title, description, requirements].some((value) => value.trim().length > 0);
+
+const getAiErrorMessage = (error) => {
+  const responseMessage = error?.response?.data?.message;
+  if (responseMessage) return responseMessage;
+
+  if (error?.response?.status === 401) {
+    return 'Your session has expired. Please sign in again before using AI assistance.';
+  }
+
+  if (error?.response?.status === 403) {
+    return 'You do not have permission to use recruiter AI assistance.';
+  }
+
+  if (error?.request && !error?.response) {
+    return 'Could not reach the backend API. Please make sure the backend server is running and try again.';
+  }
+
+  return 'AI could not improve this job description right now.';
+};
+
+const getSubmitErrorMessage = (error) => {
+  const responseMessage = error?.response?.data?.message;
+  if (responseMessage) return responseMessage;
+
+  if (error?.response?.status === 401) {
+    return 'Your session has expired. Please sign in again before creating a job.';
+  }
+
+  if (error?.response?.status === 403) {
+    return 'You do not have permission to create or update recruiter jobs.';
+  }
+
+  if (error?.request && !error?.response) {
+    return 'Could not reach the backend API. Please make sure the backend server is running and try again.';
+  }
+
+  return 'Could not save this job right now. Please review the details and try again.';
+};
+
 export function JobForm() {
   const navigate = useNavigate();
   const { jobId } = useParams();
@@ -62,6 +104,8 @@ export function JobForm() {
     [getJobById, jobId]
   );
   const [formValues, setFormValues] = useState(emptyForm);
+  const [aiState, setAiState] = useState({ loading: false, error: '', disclaimer: '', notes: [] });
+  const [submitState, setSubmitState] = useState({ loading: false, error: '' });
 
   useEffect(() => {
     if (!existingJob) return;
@@ -78,27 +122,83 @@ export function JobForm() {
   }, [existingJob]);
 
   const handleChange = (field) => (event) => {
+    if (submitState.error) {
+      setSubmitState((current) => ({ ...current, error: '' }));
+    }
+    if (aiState.error) {
+      setAiState((current) => ({ ...current, error: '' }));
+    }
+
     setFormValues((currentValues) => ({
       ...currentValues,
       [field]: event.target.value,
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitState({ loading: true, error: '' });
 
     const payload = {
       ...formValues,
       applicationDeadline: toStoredDateTime(formValues.applicationDeadline),
     };
 
-    if (isEditMode) {
-      updateJob(jobId, payload);
-    } else {
-      addJob(payload);
+    try {
+      if (isEditMode) {
+        await updateJob(jobId, payload);
+      } else {
+        await addJob(payload);
+      }
+
+      navigate('/recruiter/jobs');
+    } catch (error) {
+      setSubmitState({ loading: false, error: getSubmitErrorMessage(error) });
+    }
+  };
+
+  const handleImproveWithAi = async () => {
+    if (!hasJobDescriptionSeed(formValues)) {
+      setAiState({
+        loading: false,
+        error: 'Add a title, description, or requirements before using AI assistance.',
+        disclaimer: '',
+        notes: [],
+      });
+      return;
     }
 
-    navigate('/recruiter/jobs');
+    setAiState({ loading: true, error: '', disclaimer: '', notes: [] });
+    try {
+      const response = await recruiterApi.generateJobDescription({
+        jobTitle: formValues.title.trim(),
+        existingDescription: formValues.description.trim(),
+        existingRequirements: formValues.requirements.trim(),
+        employmentType: formValues.employmentType,
+        workMode: formValues.workMode,
+        location: formValues.location,
+      });
+      const result = response.result;
+      setFormValues((current) => ({
+        ...current,
+        title: result?.title || current.title,
+        description: result?.description || current.description,
+        requirements: result?.requirements || current.requirements,
+      }));
+      setAiState({
+        loading: false,
+        error: '',
+        disclaimer: response.disclaimer || '',
+        notes: result?.reviewNotes || [],
+      });
+    } catch (error) {
+      setAiState({
+        loading: false,
+        error: getAiErrorMessage(error),
+        disclaimer: '',
+        notes: [],
+      });
+    }
   };
 
   if (isEditMode && isLoading) {
@@ -191,6 +291,41 @@ export function JobForm() {
               required
             />
 
+            <div className="rounded-xl border border-ai-100 bg-ai-50/70 p-4 dark:border-ai-400/20 dark:bg-ai-500/10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-body-sm font-semibold text-ai-800 dark:text-ai-200">
+                    AI job description assistance
+                  </p>
+                  <p className="mt-1 text-body-sm text-secondary-600 dark:text-secondary-300">
+                    Generate a reviewed draft from the current editable fields.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ai"
+                  leftIcon={<Sparkles size={16} />}
+                  onClick={handleImproveWithAi}
+                  disabled={aiState.loading}
+                >
+                  {aiState.loading ? 'Generating...' : 'Improve with AI'}
+                </Button>
+              </div>
+              {aiState.error && (
+                <p className="mt-3 text-body-sm text-danger-600 dark:text-danger-300">{aiState.error}</p>
+              )}
+              {aiState.disclaimer && (
+                <p className="mt-3 text-caption font-semibold text-secondary-500 dark:text-secondary-300">
+                  {aiState.disclaimer}
+                </p>
+              )}
+              {aiState.notes.length > 0 && (
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-body-sm text-secondary-600 dark:text-secondary-300">
+                  {aiState.notes.map((note) => <li key={note}>{note}</li>)}
+                </ul>
+              )}
+            </div>
+
             <div className="grid gap-5 md:grid-cols-2">
               <Select
                 label="Employment Type"
@@ -224,14 +359,25 @@ export function JobForm() {
             </div>
 
             <div className="flex flex-col-reverse gap-3 border-t border-secondary-100 pt-5 sm:flex-row sm:justify-end">
+              {submitState.error && (
+                <p className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-body-sm font-semibold text-danger-700 dark:border-danger-400/30 dark:bg-danger-500/10 dark:text-danger-200 sm:mr-auto">
+                  {submitState.error}
+                </p>
+              )}
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/recruiter/jobs')}
+                disabled={submitState.loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" leftIcon={<Save size={18} />}>
+              <Button
+                type="submit"
+                variant="primary"
+                leftIcon={<Save size={18} />}
+                isLoading={submitState.loading}
+              >
                 {isEditMode ? 'Save Changes' : 'Create Job'}
               </Button>
             </div>

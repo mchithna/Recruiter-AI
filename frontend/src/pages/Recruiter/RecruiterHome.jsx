@@ -28,7 +28,7 @@ import {
   StatCard,
 } from '../../components/ui';
 import { StatusBadge } from '../../components/ui';
-import { getAllApplications, getAllInterviews, getJobs } from './services/mockData';
+import { recruiterApi } from './services/recruiterApi';
 
 const pipelineOrder = [
   'Applied',
@@ -59,14 +59,10 @@ export default function RecruiterHome() {
       setLoading(true);
 
       try {
-        const [jobs, applications, interviews] = await Promise.all([
-          getJobs(),
-          getAllApplications(),
-          getAllInterviews(),
-        ]);
+        const dashboard = await recruiterApi.getDashboard();
 
         if (!isActive) return;
-        setDashboardData({ jobs, applications, interviews });
+        setDashboardData(dashboard);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
