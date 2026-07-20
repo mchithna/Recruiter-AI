@@ -69,3 +69,26 @@ II. RECRUITER PORTAL (Completed July 20, 2026)
    - Created localized StatusBadge.jsx in pages/Recruiter/components/ mapping arbitrary status strings to badge colors.
    - Aligned other files (InterviewCard.jsx, RecruiterHome.jsx, InterviewsList.jsx, JobsList.jsx, JobApplicationsList.jsx, ApplicationDetail.jsx) to import this local component.
    - Verified that CandidateProfileView and CalendarConnectButton handle local states and styling rules cleanly.
+
+
+III. HISTORICAL ACTION TIMELINE
+-------------------------------
+* July 13, 2026:
+  - 15:17 PM: Created persistent route definitions inside App.jsx for Hiring Manager layouts and subpages.
+  - 15:18 PM: Expanded mock interview database in Hiring Manager's mockData.js and exported getAllInterviews().
+  - 15:18 PM: Created global Hiring Manager Interviews Schedule page (Interviews.jsx) with range filters.
+  - 15:19 PM: Pre-populated initiated packages in Hiring Manager's mockData.js and exported getAllOffers().
+  - 15:19 PM: Created global Hiring Manager Offers Tracker page (Offers.jsx) displaying salaries and start dates.
+  - 15:23 PM: Compiled initial summary.txt documenting Hiring Manager portal completion.
+
+* July 20, 2026:
+  - 04:50 AM: Updated developer rules in context.md outlining backend controllers, builders, and axios guidelines.
+  - 04:56 AM: Created local StatusBadge.jsx inside pages/Recruiter/components/ mapping status configurations.
+  - 04:57 AM: Aligned recruiter subpages and cards (InterviewCard, RecruiterHome, Applications, etc.) to use local StatusBadge.
+  - 04:59 AM: Connected recruiterApi.js query hooks to use in-memory delays and mock arrays from services/mockData.js.
+  - 04:59 AM: Updated default index redirects inside RecruiterRoutes.jsx to point to /recruiter/home.
+  - 05:03 AM: Updated layout specifications in context2.md documenting the recruiter's persistent navigation.
+  - 05:05 AM: Wrapped recruiter sub-routes within RecruiterRoutes.jsx inside the RecruiterLayout navigation shell.
+  - 05:06 AM: Refactored global interviews listing (InterviewsList.jsx) to display loops using the InterviewCard component.
+  - 05:07 AM: Configured RecruiterHome.jsx statistics displaying Open Jobs, Needing Review, and Upcoming Interviews.
+  - 05:09 AM: Appended recruiter achievements and development timeline to summary.txt.
