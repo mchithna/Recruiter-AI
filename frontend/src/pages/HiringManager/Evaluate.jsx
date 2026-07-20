@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, AlertTriangle, Sparkles, Clipboard, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, AlertTriangle, Clipboard, ShieldCheck } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -160,7 +160,7 @@ export function Evaluate() {
 
         {/* Read-Only Evaluation Summary Card */}
         <Card className="overflow-hidden border-none shadow-glass">
-          <div className="h-1.5 w-full bg-gradient-to-r from-success-500 via-primary-500 to-indigo-500" />
+          <div className="h-1.5 w-full bg-gradient-to-r from-success-500 via-primary-500 to-primary-500" />
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Evaluation Record</CardTitle>
             <div className="flex flex-col items-center">
@@ -207,7 +207,7 @@ export function Evaluate() {
               <div className="flex justify-end pt-4 border-t border-secondary-100 dark:border-white/5">
                 <Button
                   variant="primary"
-                  className="bg-gradient-to-r from-indigo-500 to-primary-600 shadow-glow-primary"
+                  className="bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"
                   onClick={() => navigate(`/hiring-manager/applications/${interview.applicationId}/offer`)}
                 >
                   Proceed to Offer Details
@@ -248,7 +248,7 @@ export function Evaluate() {
       {/* Form Card */}
       <Card className="overflow-hidden border-none shadow-glass">
         {/* Top gradient accent */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-indigo-500 to-ai-500" />
+        <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-500 to-ai-500" />
         <CardHeader>
           <CardTitle>Interview Assessment Form</CardTitle>
         </CardHeader>

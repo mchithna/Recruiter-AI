@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { recruiterApi } from './services/recruiterApi';
 
 const pipelineOrder = [
@@ -160,26 +160,33 @@ export default function RecruiterHome() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Open Jobs"
           value={stats.openJobs}
           icon={Briefcase}
-          trend={{ direction: 'up', value: 'active postings' }}
+          trend={{ direction: 'up', value: '+2 this week' }}
           className="glass-card-heavy border-none"
         />
         <StatCard
-          label="Needing Review"
-          value={stats.appsNeedingReview}
+          label="Progressing"
+          value={stats.positiveOutcomes}
           icon={Users}
-          trend={{ direction: 'up', value: 'new submissions' }}
+          trend={{ direction: 'up', value: 'active queue' }}
           className="glass-card-heavy border-none"
         />
         <StatCard
-          label="Upcoming Interviews"
-          value={stats.upcomingInterviews}
-          icon={CalendarClock}
-          trend={{ direction: 'up', value: 'confirmed slots' }}
+          label="Hired"
+          value={stats.hiredCount}
+          icon={Target}
+          trend={{ direction: 'up', value: 'this month' }}
+          className="glass-card-heavy border-none"
+        />
+        <StatCard
+          label="AI Match Quality"
+          value={`${stats.avgAiScore}%`}
+          icon={TrendingUp}
+          trend={{ direction: 'up', value: '+6% vs last batch' }}
           className="glass-card-heavy border-none"
         />
       </section>

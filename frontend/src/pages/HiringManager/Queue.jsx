@@ -101,7 +101,7 @@ export function Queue() {
               </span>
             </div>
           </div>
-          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-indigo-500 text-white shadow-glow-primary sm:flex">
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-primary-500 text-white shadow-glow-primary sm:flex">
             <ClipboardList size={42} strokeWidth={1.5} />
           </div>
         </div>
@@ -171,7 +171,7 @@ export function Queue() {
                     <TableCell className="text-secondary-600 dark:text-secondary-300">
                       {app.scheduledTime ? (
                         <span className="flex items-center gap-1.5">
-                          <Calendar size={14} className="text-indigo-500" />
+                          <Calendar size={14} className="text-primary-500" />
                           {formatScheduledTime(app.scheduledTime)}
                         </span>
                       ) : (

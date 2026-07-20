@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCheck, Calendar, FileCheck, AlertCircle, ChevronRight, Sparkles, ClipboardCheck } from 'lucide-react';
+import { UserCheck, Calendar, FileCheck, AlertCircle, ChevronRight, Sparkles, ClipboardCheck, CheckCircle2 } from 'lucide-react';
 import {
   Badge,
   Card,
@@ -9,7 +9,6 @@ import {
   CardTitle,
   Skeleton,
   StatCard,
-  Button,
 } from '../../components/ui';
 import {
   getShortlistedApplications,
@@ -134,7 +133,7 @@ export function Home() {
       {/* Welcome Banner */}
       <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-6">
         <img
-          src="/images/card-bg-dashboard.png"
+          src="/images/card-bg-live-analytics.png"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover opacity-15 dark:opacity-35 dark:mix-blend-screen"
@@ -149,7 +148,7 @@ export function Home() {
               Review stats, execute pending interview evaluations, and manage active candidate pipelines.
             </p>
           </div>
-          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-indigo-500 text-white shadow-glow-primary sm:flex">
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-primary-500 text-white shadow-glow-primary sm:flex">
             <ClipboardCheck size={42} strokeWidth={1.5} />
           </div>
         </div>
@@ -192,7 +191,7 @@ export function Home() {
       <Card className="glass-card-heavy border-none p-0 overflow-hidden">
         <CardHeader className="p-6 pb-4 border-b border-secondary-100 dark:border-white/5">
           <CardTitle className="flex items-center gap-2 text-h3 text-secondary-900 dark:text-white">
-            <AlertCircle className="text-indigo-500" size={20} /> Action Required
+            <AlertCircle className="text-primary-500" size={20} /> Action Required
           </CardTitle>
           <p className="text-body-sm text-secondary-500 dark:text-secondary-400 mt-1">
             Tasks demanding your attention to proceed with candidate workflows.
@@ -257,10 +256,5 @@ export function Home() {
     </div>
   );
 }
-
-// Dummy placeholder to bypass compiler check if CheckCircle2 is imported inside Stats, but we import CheckCircle2 from lucide-react directly
-const CheckCircle2 = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-);
 
 export default Home;

@@ -1,12 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Video, CalendarClock, CheckCircle2, Clock, Filter, Sparkles } from 'lucide-react';
+import { Calendar, CalendarClock, CheckCircle2, Clock, Filter } from 'lucide-react';
 import {
   Badge,
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Skeleton,
   Select,
   StatCard,
@@ -131,7 +128,7 @@ export function Interviews() {
               Track your upcoming evaluations, panel loops, and historical notes across all active roles.
             </p>
           </div>
-          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-indigo-500 text-white shadow-glow-primary sm:flex">
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-primary-500 text-white shadow-glow-primary sm:flex">
             <CalendarClock size={42} strokeWidth={1.5} />
           </div>
         </div>
