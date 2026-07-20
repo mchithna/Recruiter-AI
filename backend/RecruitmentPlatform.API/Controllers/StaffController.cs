@@ -7,7 +7,7 @@ namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Recruiter")]
 public class StaffController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
@@ -40,6 +40,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<StaffDto>>> GetStaffByDepartment([FromQuery] int departmentId)
     {
         var companyId = GetCompanyId();
@@ -70,7 +71,39 @@ public class StaffController : ControllerBase
         return Ok(staffDtos);
     }
 
+    [HttpGet("hiring-managers")]
+    [Authorize(Roles = "Recruiter")]
+    public async Task<ActionResult<IEnumerable<HiringManagerPickerDto>>> GetHiringManagers()
+    {
+        var companyId = GetCompanyId();
+
+        var hiringManagerRole = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Name == "HiringManager");
+        if (hiringManagerRole == null)
+        {
+            return Ok(Array.Empty<HiringManagerPickerDto>());
+        }
+
+        var hiringManagers = await _unitOfWork.Users.FindAsync(u =>
+            u.CompanyId == companyId &&
+            u.IsActive &&
+            u.RoleId == hiringManagerRole.Id);
+
+        var result = hiringManagers
+            .OrderBy(u => u.FirstName)
+            .ThenBy(u => u.LastName)
+            .Select(u => new HiringManagerPickerDto
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName
+            })
+            .ToList();
+
+        return Ok(result);
+    }
+
     [HttpPut("{userId}/deactivate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Deactivate(int userId)
     {
         var companyId = GetCompanyId();
@@ -110,6 +143,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpPut("{userId}/reactivate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Reactivate(int userId)
     {
         var companyId = GetCompanyId();
@@ -149,6 +183,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpPut("{userId}/reassign-department")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ReassignDepartment(int userId, [FromBody] ReassignStaffDto request)
     {
         var companyId = GetCompanyId();
@@ -192,4 +227,11 @@ public class StaffController : ControllerBase
 
         return Ok(new { message = "Staff member reassigned successfully." });
     }
+}
+
+public class HiringManagerPickerDto
+{
+    public int Id { get; set; }
+    public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
 }

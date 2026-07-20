@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Entities;
+using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
 
 namespace RecruitmentPlatform.API.Controllers;
@@ -14,10 +15,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class RecruiterController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IApplicationStatusService _applicationStatusService;
 
-    public RecruiterController(ApplicationDbContext context)
+    public RecruiterController(ApplicationDbContext context, IApplicationStatusService applicationStatusService)
     {
         _context = context;
+        _applicationStatusService = applicationStatusService;
     }
 
     [HttpGet("dashboard")]
@@ -206,6 +209,53 @@ public class RecruiterController : ControllerBase
         return ToApplicationDetailDto(application);
     }
 
+    [HttpPut("applications/{applicationId:int}/status")]
+    public async Task<IActionResult> UpdateApplicationStatus(int applicationId, [FromBody] RecruiterApplicationStatusUpdateDto request, CancellationToken cancellationToken)
+    {
+        if (!TryGetCompanyId(out var companyId))
+        {
+            return MissingRecruiterCompany();
+        }
+
+        if (!TryGetUserId(out var userId))
+        {
+            return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
+        }
+
+        var hasAccess = await _context.Applications
+            .AsNoTracking()
+            .AnyAsync(a => a.Id == applicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (!hasAccess)
+        {
+            return NotFound(new { message = "Application not found." });
+        }
+
+        try
+        {
+            var updatedApplication = await _applicationStatusService.ChangeStatusAsync(
+                applicationId,
+                request.NewStatus,
+                userId,
+                request.Notes);
+
+            return Ok(new
+            {
+                updatedApplication.Id,
+                updatedApplication.Status,
+                updatedApplication.UpdatedAt
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "Application not found." });
+        }
+    }
+
     [HttpGet("messages/conversations")]
     public async Task<ActionResult<List<RecruiterConversationDto>>> GetConversations(CancellationToken cancellationToken)
     {
@@ -226,6 +276,98 @@ public class RecruiterController : ControllerBase
                 Unread = !m.IsRead && m.SenderId == m.Application.CandidateId
             })
             .ToListAsync(cancellationToken);
+    }
+
+    [HttpGet("applications/{applicationId:int}/messages")]
+    public async Task<ActionResult<List<RecruiterApplicationMessageDto>>> GetMessages(int applicationId, CancellationToken cancellationToken)
+    {
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+        if (!TryGetUserId(out var userId)) return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
+
+        var hasAccess = await _context.Applications
+            .AsNoTracking()
+            .AnyAsync(a => a.Id == applicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (!hasAccess) return NotFound(new { message = "Application not found." });
+
+        var unreadMessages = await _context.CommunicationMessages
+            .Where(m => m.ApplicationId == applicationId && m.RecipientId == userId && !m.IsRead)
+            .ToListAsync(cancellationToken);
+
+        if (unreadMessages.Count > 0)
+        {
+            foreach (var message in unreadMessages)
+            {
+                message.IsRead = true;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        var messages = await _context.CommunicationMessages
+            .AsNoTracking()
+            .Where(m => m.ApplicationId == applicationId)
+            .OrderBy(m => m.SentAt)
+            .Select(m => new RecruiterApplicationMessageDto
+            {
+                Id = m.Id,
+                SenderName = m.Sender.FirstName + " " + m.Sender.LastName,
+                Body = m.Body,
+                SentAt = m.SentAt,
+                IsMine = m.SenderId == userId
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(messages);
+    }
+
+    [HttpPost("applications/{applicationId:int}/messages")]
+    public async Task<ActionResult<RecruiterApplicationMessageDto>> SendMessage(int applicationId, [FromBody] RecruiterMessageCreateDto request, CancellationToken cancellationToken)
+    {
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+        if (!TryGetUserId(out var userId)) return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
+
+        var application = await _context.Applications
+            .AsNoTracking()
+            .Include(a => a.Candidate)
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (application == null) return NotFound(new { message = "Application not found." });
+
+        var body = Clamp(request.Body, 4000);
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return BadRequest(new { message = "Message body is required." });
+        }
+
+        var message = new CommunicationMessage
+        {
+            ApplicationId = application.Id,
+            SenderId = userId,
+            RecipientId = application.CandidateId,
+            Subject = "Recruiter message",
+            Body = body,
+            IsRead = false,
+            SentAt = DateTime.UtcNow
+        };
+
+        _context.CommunicationMessages.Add(message);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var sender = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.FirstName, u.LastName })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return Ok(new RecruiterApplicationMessageDto
+        {
+            Id = message.Id,
+            SenderName = sender == null ? "Recruiter" : $"{sender.FirstName} {sender.LastName}",
+            Body = message.Body,
+            SentAt = message.SentAt,
+            IsMine = true
+        });
     }
 
     private IQueryable<Job> RecruiterJobs(int companyId) =>
@@ -433,6 +575,26 @@ public class RecruiterApplicationDetailDto : RecruiterApplicationListDto
     public RecruiterAiScreeningDto? ScreeningResult { get; set; }
     public List<RecruiterInterviewDto> Interviews { get; set; } = new();
     public List<RecruiterMessageDto> Messages { get; set; } = new();
+}
+
+public class RecruiterApplicationStatusUpdateDto
+{
+    public string NewStatus { get; set; } = "";
+    public string? Notes { get; set; }
+}
+
+public class RecruiterMessageCreateDto
+{
+    public string? Body { get; set; }
+}
+
+public class RecruiterApplicationMessageDto
+{
+    public int Id { get; set; }
+    public string SenderName { get; set; } = "";
+    public string Body { get; set; } = "";
+    public DateTime SentAt { get; set; }
+    public bool IsMine { get; set; }
 }
 
 public class RecruiterCandidateProfileDto

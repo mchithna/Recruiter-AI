@@ -48,7 +48,6 @@ public class RecruiterAiController : ControllerBase
         if (!IsRateAllowed("cv")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
-        if (!HasCandidateData(application)) return BadRequest(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<CvAnalysisResultDto>(
             SafetySystemInstruction,
@@ -64,7 +63,7 @@ public class RecruiterAiController : ControllerBase
         if (!IsRateAllowed("match")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
-        if (!HasCandidateData(application) || string.IsNullOrWhiteSpace(application.Job.Description))
+        if (application == null || string.IsNullOrWhiteSpace(application.Job.Description))
         {
             return BadRequest(new { message = RecruiterAiMessages.MissingData });
         }
@@ -102,7 +101,7 @@ public class RecruiterAiController : ControllerBase
     {
         if (!IsRateAllowed("summary")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
-        if (application == null || !HasCandidateData(application)) return NotFound(new { message = RecruiterAiMessages.MissingData });
+        if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<CandidateSummaryResultDto>(
             SafetySystemInstruction,
@@ -167,7 +166,7 @@ public class RecruiterAiController : ControllerBase
     {
         if (!IsRateAllowed("interview")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
-        if (application == null || !HasCandidateData(application)) return NotFound(new { message = RecruiterAiMessages.MissingData });
+        if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<InterviewQuestionResultDto>(
             SafetySystemInstruction,
@@ -255,7 +254,7 @@ public class RecruiterAiController : ControllerBase
 
     private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return BadRequest(new { message = failureMessage ?? RecruiterAiMessages.MissingData });
+        if (result == null) return StatusCode(StatusCodes.Status500InternalServerError, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 
