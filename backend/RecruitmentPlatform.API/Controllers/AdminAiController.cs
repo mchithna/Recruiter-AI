@@ -48,7 +48,7 @@ public class AdminAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        if (result == null) return BadRequest(new { message = DashboardAiMessages.MissingData });
+        result ??= BuildAnalyticsSummary(metrics.Data);
         result.Metrics = metrics.Data;
         return AdminResponse(result);
     }
@@ -66,7 +66,8 @@ public class AdminAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        return result == null ? BadRequest(new { message = DashboardAiMessages.MissingData }) : AdminResponse(result);
+        result ??= BuildInsights(metrics.Data);
+        return AdminResponse(result);
     }
 
     [HttpPost("activity-summary")]
@@ -74,7 +75,6 @@ public class AdminAiController : ControllerBase
     {
         if (!IsRateAllowed("activity")) return RateLimited();
         var activity = await BuildActivitySnapshot(cancellationToken);
-        if (!activity.HasData) return BadRequest(new { message = DashboardAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<AdminActivitySummaryDto>(
             SafetySystemInstruction,
@@ -82,7 +82,8 @@ public class AdminAiController : ControllerBase
             maxOutputTokens: 1400,
             cancellationToken: cancellationToken);
 
-        return result == null ? BadRequest(new { message = DashboardAiMessages.MissingData }) : AdminResponse(result);
+        result ??= BuildActivitySummary(activity.Data, activity.HasData);
+        return AdminResponse(result);
     }
 
     private async Task<(bool HasData, object Data)> CalculateMetrics(CancellationToken cancellationToken)
@@ -175,6 +176,150 @@ public class AdminAiController : ControllerBase
         Result = result,
         Disclaimer = DashboardAiMessages.AdminDisclaimer
     });
+
+    private static AdminAnalyticsSummaryDto BuildAnalyticsSummary(object metrics)
+    {
+        var json = JsonSerializer.SerializeToElement(metrics);
+        var openJobs = CountByStatus(json, "jobsByStatus", "Open") + CountByStatus(json, "jobsByStatus", "Published");
+        var applications = SumCounts(json, "applicationsByStatus");
+        var pending = GetInt(json, "pendingReviews");
+        var applicationToInterview = GetNestedDouble(json, "conversionRates", "applicationToInterview");
+        var applicationToHire = GetNestedDouble(json, "conversionRates", "applicationToHire");
+        var lowApplicationJobs = GetArrayLength(json, "vacanciesReceivingFewApplications");
+
+        return new AdminAnalyticsSummaryDto
+        {
+            Metrics = metrics,
+            Summary = $"The pipeline currently has {openJobs} open or published jobs and {applications} applications. Pending review volume is {pending}, with an application-to-interview conversion rate of {applicationToInterview:0.0}% and application-to-hire conversion rate of {applicationToHire:0.0}%.",
+            Observations =
+            [
+                lowApplicationJobs > 0 ? $"{lowApplicationJobs} vacancies have fewer than 3 applications." : "No low-application vacancies were flagged by the current metrics.",
+                pending > 0 ? $"{pending} applications are waiting for review." : "No applications are currently marked as pending review.",
+                applicationToInterview == 0 && applications > 0 ? "Applications exist, but no interview conversion is visible yet." : "Interview conversion data is available for review."
+            ],
+            SuggestedActions =
+            [
+                "Review vacancies with low application counts and adjust sourcing or job descriptions.",
+                "Prioritize pending applications before they become stale.",
+                "Compare conversion rates by department before changing hiring process targets."
+            ]
+        };
+    }
+
+    private static AdminInsightsDto BuildInsights(object metrics)
+    {
+        var json = JsonSerializer.SerializeToElement(metrics);
+        var pending = GetInt(json, "pendingReviews");
+        var lowApplicationJobs = GetArrayLength(json, "vacanciesReceivingFewApplications");
+        var applications = SumCounts(json, "applicationsByStatus");
+        var commonSkills = GetNamedCounts(json, "commonSkills", "skill");
+
+        return new AdminInsightsDto
+        {
+            RecruitmentInsights =
+            [
+                applications > 0 ? $"{applications} applications are represented in the current analytics snapshot." : "There are jobs in the system, but application volume is still low.",
+                commonSkills.Count > 0 ? $"Common candidate skills include {string.Join(", ", commonSkills.Take(5))}." : "Skill trend data is not available yet.",
+                "Use these insights as operational guidance, not as automated hiring decisions."
+            ],
+            Bottlenecks =
+            [
+                pending > 0 ? $"{pending} applications may need recruiter review." : "No pending-review bottleneck is visible in the current snapshot.",
+                lowApplicationJobs > 0 ? $"{lowApplicationJobs} jobs may need more sourcing attention." : "Low-application vacancy risk is currently limited."
+            ],
+            AttentionRequired =
+            [
+                "Check applications in Applied, Under Review, or In Review status.",
+                "Review jobs with low application counts before opening additional vacancies."
+            ],
+            Trends =
+            [
+                "Track daily application volume against the last 30 days before making staffing changes.",
+                "Compare department-level application counts to identify uneven demand."
+            ]
+        };
+    }
+
+    private static AdminActivitySummaryDto BuildActivitySummary(object activity, bool hasData)
+    {
+        var json = JsonSerializer.SerializeToElement(activity);
+        var activityCount = GetArrayLength(json, "recentActivity");
+
+        return new AdminActivitySummaryDto
+        {
+            Summary = hasData
+                ? $"{activityCount} recent authorized activity records were found for this organization."
+                : "No recent admin activity records were found for this organization.",
+            ImportantEvents = hasData
+                ? ["Review recent job, application, invitation, and status-change activity for unusual patterns."]
+                : ["No important activity events are currently available."],
+            RecentChangesRequiringAttention = hasData
+                ? ["Check recent changes for incomplete follow-up, especially application status updates and user administration actions."]
+                : ["No recent changes require attention based on the available activity log."]
+        };
+    }
+
+    private static int CountByStatus(JsonElement root, string property, string status)
+    {
+        if (!TryGetArray(root, property, out var items)) return 0;
+
+        return items.EnumerateArray()
+            .Where(item => item.TryGetProperty("status", out var statusElement)
+                && statusElement.GetString()?.Equals(status, StringComparison.OrdinalIgnoreCase) == true)
+            .Sum(GetCount);
+    }
+
+    private static int SumCounts(JsonElement root, string property)
+    {
+        if (!TryGetArray(root, property, out var items)) return 0;
+        return items.EnumerateArray().Sum(GetCount);
+    }
+
+    private static int GetArrayLength(JsonElement root, string property)
+    {
+        return TryGetArray(root, property, out var items) ? items.GetArrayLength() : 0;
+    }
+
+    private static List<string> GetNamedCounts(JsonElement root, string property, string nameProperty)
+    {
+        if (!TryGetArray(root, property, out var items)) return [];
+
+        return items.EnumerateArray()
+            .Select(item => item.TryGetProperty(nameProperty, out var name) ? name.GetString() : null)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .ToList();
+    }
+
+    private static bool TryGetArray(JsonElement root, string property, out JsonElement array)
+    {
+        if (root.TryGetProperty(property, out array) && array.ValueKind == JsonValueKind.Array)
+        {
+            return true;
+        }
+
+        array = default;
+        return false;
+    }
+
+    private static int GetCount(JsonElement item)
+    {
+        return item.TryGetProperty("count", out var count) && count.TryGetInt32(out var value) ? value : 0;
+    }
+
+    private static int GetInt(JsonElement root, string property)
+    {
+        return root.TryGetProperty(property, out var value) && value.TryGetInt32(out var result) ? result : 0;
+    }
+
+    private static double GetNestedDouble(JsonElement root, string parent, string property)
+    {
+        return root.TryGetProperty(parent, out var parentElement)
+            && parentElement.TryGetProperty(property, out var value)
+            && value.TryGetDouble(out var result)
+            ? result
+            : 0;
+    }
 
     private IActionResult RateLimited() =>
         StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many AI requests. Please wait a moment and try again." });
