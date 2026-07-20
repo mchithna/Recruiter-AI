@@ -137,7 +137,7 @@ ConnectionStrings__DefaultConnection=
 JwtSettings__SupabaseJwtSecret=
 JwtSettings__SupabaseUrl=
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash
 EmailSettings__AppPassword=
 ```
 
@@ -171,7 +171,7 @@ Environment variables are intentionally kept out of source control. Use local `.
 | Backend | `JwtSettings__SupabaseJwtSecret` | Supabase JWT signing secret |
 | Backend | `JwtSettings__SupabaseUrl` | Supabase issuer URL for JWT validation |
 | Backend | `GEMINI_API_KEY` | Gemini API key used by all backend AI features |
-| Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-2.5-flash-lite` |
+| Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-3.5-flash` |
 | Backend | `EmailSettings__AppPassword` | App password for email notifications |
 
 Never commit `.env` files, API keys, database credentials, JWT secrets, or email passwords.
@@ -182,7 +182,7 @@ The chatbot and dashboard AI features send Gemini requests only from the ASP.NET
 
 ```env
 GEMINI_API_KEY=your-real-key
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
 Do not put a real Gemini key in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.

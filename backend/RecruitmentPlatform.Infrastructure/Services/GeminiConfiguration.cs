@@ -4,11 +4,13 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 internal static class GeminiConfiguration
 {
-    public const string DefaultModel = "gemini-2.5-flash-lite";
+    public const string DefaultModel = "gemini-3.5-flash";
 
     private static readonly string[] ModelFallbacks =
     [
         DefaultModel,
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
         "gemini-flash-latest",
         "gemini-2.0-flash"
     ];

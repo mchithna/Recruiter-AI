@@ -21,7 +21,7 @@ Keep the real Gemini key in local `.env`, user secrets, or deployment secrets on
 
 ```env
 GEMINI_API_KEY=your-real-key
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
 ## Chatbot flow
