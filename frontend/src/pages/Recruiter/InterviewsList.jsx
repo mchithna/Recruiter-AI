@@ -6,10 +6,8 @@ import {
   CheckCircle2,
   Clock,
   Filter,
-  Video,
 } from 'lucide-react';
 import {
-  Avatar,
   Badge,
   Card,
   EmptyState,
@@ -17,30 +15,8 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import { StatusBadge } from '../../components/ui';
+import InterviewCard from './components/InterviewCard';
 import { recruiterApi } from './services/recruiterApi';
-
-const formatScheduledTime = (scheduledTime) => {
-  if (!scheduledTime) return 'Not scheduled';
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(scheduledTime));
-};
-
-const formatRelativeDay = (scheduledTime) => {
-  if (!scheduledTime) return '';
-  const now = new Date();
-  const date = new Date(scheduledTime);
-  const diffMs = date - now;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
-  if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
-  return '';
-};
 
 export default function InterviewsList() {
   const [interviews, setInterviews] = useState([]);
@@ -151,7 +127,7 @@ export default function InterviewsList() {
             </p>
           </div>
           <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 to-ai-600 text-white shadow-glow-primary sm:flex">
-            <Video size={42} strokeWidth={1.5} />
+            <Calendar size={42} strokeWidth={1.5} />
           </div>
         </div>
       </section>
@@ -223,95 +199,22 @@ export default function InterviewsList() {
         </div>
       ) : filteredInterviews.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredInterviews.map((interview, index) => {
-            const relDay = formatRelativeDay(interview.scheduledTime);
-
-            return (
-              <div
-                key={interview.id}
-                onClick={() => navigate(`/recruiter/applications/${interview.applicationId}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    navigate(`/recruiter/applications/${interview.applicationId}`);
-                  }
-                }}
-                role="link"
-                tabIndex={0}
-                className="group relative block h-full cursor-pointer overflow-hidden rounded-[20px] bg-[#0f1225] border border-white/5 p-0 transition-all duration-base hover:-translate-y-1 shadow-xl"
-                style={{ animationDelay: `${index * 60}ms` }}
-              >
-                {/* Gradient accent bar */}
-                <div className="absolute top-0 left-0 right-0 h-[6px] bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#6366f1]" />
-
-                {/* Sublte glass shine in the background */}
-                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-40 w-40 rotate-12 rounded-[2rem] border-[1.5px] border-white/5 bg-white/[0.01] opacity-50 mix-blend-overlay" />
-
-                <div className="relative p-6 pt-7">
-                  <div className="mb-5 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {/* Avatar with specific style for dark UI */}
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold tracking-wide text-[#2563eb] shadow-sm">
-                        {interview.candidateName
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .substring(0, 2)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-[16px] font-bold text-white transition-colors group-hover:text-primary-300">
-                          {interview.candidateName}
-                        </h3>
-                        <p className="truncate text-[13px] font-medium text-[#94a3b8] mt-0.5">
-                          {interview.jobTitle}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <StatusBadge status={interview.status?.toLowerCase().replace(/ /g, '_')} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Inner Time Block */}
-                    <div className="flex items-center gap-3 rounded-2xl bg-[#191e36] p-4 border border-white/[0.03]">
-                      <CalendarClock
-                        size={18}
-                        strokeWidth={2}
-                        className="shrink-0 text-[#8b5cf6]"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-bold text-white">
-                          {formatScheduledTime(interview.scheduledTime)}
-                        </p>
-                        <p className="text-[12px] font-medium text-[#94a3b8] mt-0.5">
-                          {interview.durationMinutes} min · {interview.interviewType}
-                        </p>
-                      </div>
-                      {relDay && (
-                        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-[#8b5cf6] shadow-sm">
-                          {relDay}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bottom Row */}
-                    <div className="flex items-center justify-between pl-1">
-                      <p className="text-[13px] font-medium text-[#64748b]">
-                        with {interview.interviewerName}
-                      </p>
-                      {interview.meetingLink && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
-                          <Video size={14} strokeWidth={2.5} />
-                          Video
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {filteredInterviews.map((interview) => (
+            <div
+              key={interview.id}
+              onClick={() => navigate(`/recruiter/applications/${interview.applicationId}`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  navigate(`/recruiter/applications/${interview.applicationId}`);
+                }
+              }}
+              role="link"
+              tabIndex={0}
+              className="cursor-pointer transition-transform hover:-translate-y-1 focus:outline-none"
+            >
+              <InterviewCard interview={interview} />
+            </div>
+          ))}
         </div>
       ) : (
         <Card className="glass-card-heavy border-none">
@@ -325,3 +228,4 @@ export default function InterviewsList() {
     </div>
   );
 }
+

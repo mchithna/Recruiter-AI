@@ -50,7 +50,7 @@ export function InterviewCard({ interview }) {
               </p>
             </div>
           </div>
-          <StatusBadge status={status?.toLowerCase().replace(/ /g, '_')} />
+          <StatusBadge status={status} />
         </div>
       </CardHeader>
 

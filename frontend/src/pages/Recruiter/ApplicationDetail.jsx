@@ -18,7 +18,7 @@ import {
 import CalendarConnectButton from './components/CalendarConnectButton';
 import CandidateProfileView from './components/CandidateProfileView';
 import InterviewCard from './components/InterviewCard';
-import { StatusBadge } from '../../components/ui';
+import StatusBadge from './components/StatusBadge';
 import { recruiterApi } from './services/recruiterApi';
 import { MessagingThread } from './components/MessagingThread';
 

@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui';
-import { StatusBadge } from '../../components/ui';
+import StatusBadge from './components/StatusBadge';
 import { recruiterApi } from './services/recruiterApi';
 import { useRecruiterJobs } from './useRecruiterJobs';
 
