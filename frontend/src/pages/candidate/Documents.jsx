@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { 
   Button, 
   Spinner,
-  FileUpload
+  FileUpload,
+  Input
 } from '../../components/ui';
 import { FileText, Star, Trash2, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { getMyDocuments, uploadDocument, deleteDocument, setPrimaryDocument } from './services/candidateApi';
+import { supabase } from '../../supabaseClient';
+import { useToast } from '../../lib/ToastContext';
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [customFileName, setCustomFileName] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     loadDocuments();
@@ -23,30 +29,92 @@ export default function Documents() {
     setLoading(false);
   };
 
-  const handleUpload = async (file) => {
-    if (!file) return;
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    if (file) {
+      setCustomFileName(file.name);
+    } else {
+      setCustomFileName('');
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile) return;
     setUploading(true);
-    const newDoc = {
-      documentType: 'Resume',
-      fileName: file.name,
-      fileUrl: '#',
-      fileSizeKb: Math.round(file.size / 1024),
-      isPrimary: documents.length === 0,
-    };
-    await uploadDocument(newDoc);
-    await loadDocuments();
-    setUploading(false);
+    try {
+      const originalExt = selectedFile.name.split('.').pop();
+      let finalName = customFileName.trim();
+
+      if (!finalName) {
+        throw new Error('Please enter a valid file name.');
+      }
+
+      // Ensure the file ends with the correct extension
+      if (!finalName.toLowerCase().endsWith(`.${originalExt.toLowerCase()}`)) {
+        finalName = `${finalName}.${originalExt}`;
+      }
+
+      const uniqueFileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${originalExt}`;
+      
+      // Upload to Supabase Storage resumes bucket
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(uniqueFileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('resumes')
+        .getPublicUrl(uniqueFileName);
+
+      const fileUrl = urlData.publicUrl;
+
+      const newDoc = {
+        documentType: 'Resume',
+        fileName: finalName,
+        fileUrl: fileUrl,
+        fileSizeKb: Math.round(selectedFile.size / 1024),
+        isPrimary: documents.length === 0,
+      };
+
+      await uploadDocument(newDoc);
+      await loadDocuments();
+      setSelectedFile(null);
+      setCustomFileName('');
+      try { toast({ title: 'Document uploaded successfully.', variant: 'success' }); } catch (e) {}
+    } catch (error) {
+      console.error('File upload error:', error);
+      try { toast({ title: error.message || 'Failed to upload document.', variant: 'danger' }); } catch (e) {}
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this document?')) return;
-    await deleteDocument(id);
-    await loadDocuments();
+    try {
+      await deleteDocument(id);
+      await loadDocuments();
+      try { toast({ title: 'Document deleted successfully.', variant: 'success' }); } catch (e) {}
+    } catch (error) {
+      console.error('Delete error:', error);
+      try { toast({ title: error.message || 'Failed to delete document.', variant: 'danger' }); } catch (e) {}
+    }
   };
 
   const handleSetPrimary = async (id) => {
-    await setPrimaryDocument(id);
-    await loadDocuments();
+    try {
+      await setPrimaryDocument(id);
+      await loadDocuments();
+      try { toast({ title: 'Primary document updated.', variant: 'success' }); } catch (e) {}
+    } catch (error) {
+      console.error('Set primary error:', error);
+      try { toast({ title: error.message || 'Failed to set primary document.', variant: 'danger' }); } catch (e) {}
+    }
   };
 
   const getParseStatusBadge = (status) => {
@@ -91,9 +159,42 @@ export default function Documents() {
       <div className="rounded-2xl border border-white/60 bg-white/75 p-4 sm:p-8 shadow-glass backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
         <h3 className="text-h3 text-secondary-900 dark:text-white mb-6">Upload New Document</h3>
         <FileUpload 
-          onFileSelect={handleUpload}
+          onFileSelect={handleFileSelect}
+          currentFile={selectedFile}
           accept=".pdf,.doc,.docx"
         />
+        {selectedFile && (
+          <div className="mt-6 p-4 rounded-2xl border border-secondary-200 bg-secondary-50/50 dark:border-secondary-700/50 dark:bg-secondary-900/30 space-y-4">
+            <h4 className="text-body-sm font-semibold text-secondary-800 dark:text-secondary-200">Confirm Upload Details</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-end">
+              <Input
+                label="Document Name"
+                value={customFileName}
+                onChange={(e) => setCustomFileName(e.target.value)}
+                placeholder="Enter file name"
+              />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleConfirmUpload} 
+                  disabled={uploading || !customFileName.trim()} 
+                  isLoading={uploading}
+                  variant="primary"
+                  className="flex-1"
+                >
+                  Confirm Upload
+                </Button>
+                <Button 
+                  onClick={() => handleFileSelect(null)} 
+                  disabled={uploading} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         {uploading && <div className="mt-4 flex items-center gap-2 text-primary-600"><Spinner size="sm"/> Uploading...</div>}
       </div>
 

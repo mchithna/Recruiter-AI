@@ -127,5 +127,16 @@ public class MessageDraftResultDto
 {
     public string Subject { get; set; } = "";
     public string Body { get; set; } = "";
-    public List<string> ReviewChecklist { get; set; } = new();
+}
+
+public class JobSkillsExtractionRequestDto
+{
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Requirements { get; set; } = "";
+}
+
+public class JobSkillsExtractionResultDto
+{
+    public List<string> ExtractedSkills { get; set; } = new();
 }

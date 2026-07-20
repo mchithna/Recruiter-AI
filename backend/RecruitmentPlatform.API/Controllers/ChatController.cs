@@ -60,6 +60,7 @@ public class ChatController : ControllerBase
         return Ok(_contextResolver.ToMetadata(resolved));
     }
 
+
     [AllowAnonymous]
     [HttpGet("sessions")]
     public async Task<ActionResult<IEnumerable<ChatSessionDto>>> GetSessions([FromQuery] string? contextKey)

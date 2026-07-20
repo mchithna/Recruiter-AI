@@ -48,7 +48,7 @@ const navItemsByRole = {
   ],
   HiringManager: [
     { name: 'Home', path: '/hiring-manager/home', icon: Home },
-    { name: 'Shortlist', path: '/hiring-manager/queue', icon: UserCheck },
+    { name: 'Jobs', path: '/hiring-manager/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/hiring-manager/interviews', icon: Calendar },
     { name: 'Offers', path: '/hiring-manager/offers', icon: FileCheck },
   ],

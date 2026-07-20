@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { supabase } from './supabaseClient';
+import { requireEnv } from './lib/env';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5120/api',
+  baseURL: requireEnv('VITE_API_BASE_URL'),
 });
 
 api.interceptors.request.use(async (config) => {

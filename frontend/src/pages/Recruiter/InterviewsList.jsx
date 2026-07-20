@@ -56,11 +56,11 @@ export default function InterviewsList() {
       setLoading(true);
 
       try {
-        const data = await recruiterApi.getDashboard();
+        const data = await recruiterApi.getInterviews();
         if (!isActive) return;
 
         setInterviews(
-          [...(data.interviews || [])].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
+          [...(data || [])].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
         );
       } catch (error) {
         console.error('Failed to fetch interviews:', error);

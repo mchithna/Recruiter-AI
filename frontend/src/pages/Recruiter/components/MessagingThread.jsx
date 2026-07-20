@@ -17,7 +17,9 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
       <CardContent className="flex flex-1 min-h-0 flex-col space-y-3.5">
         <div className="flex-1 space-y-3 overflow-y-auto pr-1">
           {messages.map((message) => {
-            const isRecruiter = message.sender !== application.candidateName;
+            const isRecruiter = typeof message.isMine === 'boolean'
+              ? message.isMine
+              : message.sender !== application.candidateName;
 
             return (
               <article

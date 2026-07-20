@@ -125,7 +125,8 @@ public sealed class ChatScopeClassifier : IChatScopeClassifier
         if (context.Config.ContextKey == ChatAssistantConfigProvider.Home)
         {
             var publicTopic = context.Config.AllowedTopics.Any(topic => lower.Contains(topic.ToLowerInvariant()));
-            var generalHelp = lower.Contains("what is") || lower.Contains("how do") || lower.Contains("which dashboard") || lower.Contains("help") || lower.Contains("contact");
+            var generalHelp = lower.Contains("what is") || lower.Contains("how do") || lower.Contains("which dashboard") || lower.Contains("help") || lower.Contains("contact")
+                || lower.Contains("hello") || lower.Contains("hi") || lower.Contains("hey");
             if (!publicTopic && !generalHelp)
             {
                 return new ChatScopeResult(false, context.Config.OutOfScopeResponse);
@@ -138,7 +139,8 @@ public sealed class ChatScopeClassifier : IChatScopeClassifier
             var dashboardIntent = lower.Contains("match") || lower.Contains("missing") || lower.Contains("improve")
                 || lower.Contains("summarize") || lower.Contains("prepare") || lower.Contains("progress")
                 || lower.Contains("trend") || lower.Contains("attention") || lower.Contains("compare")
-                || lower.Contains("slow") || lower.Contains("low application") || lower.Contains("activity");
+                || lower.Contains("slow") || lower.Contains("low application") || lower.Contains("activity")
+                || lower.Contains("hello") || lower.Contains("hi") || lower.Contains("hey");
 
             if (!dashboardTopic && !dashboardIntent)
             {

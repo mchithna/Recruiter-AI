@@ -48,7 +48,6 @@ public class RecruiterAiController : ControllerBase
         if (!IsRateAllowed("cv")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
-        if (!HasCandidateData(application)) return BadRequest(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<CvAnalysisResultDto>(
             SafetySystemInstruction,
@@ -64,7 +63,7 @@ public class RecruiterAiController : ControllerBase
         if (!IsRateAllowed("match")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
-        if (!HasCandidateData(application) || string.IsNullOrWhiteSpace(application.Job.Description))
+        if (application == null || string.IsNullOrWhiteSpace(application.Job.Description))
         {
             return BadRequest(new { message = RecruiterAiMessages.MissingData });
         }
@@ -102,7 +101,7 @@ public class RecruiterAiController : ControllerBase
     {
         if (!IsRateAllowed("summary")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
-        if (application == null || !HasCandidateData(application)) return NotFound(new { message = RecruiterAiMessages.MissingData });
+        if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<CandidateSummaryResultDto>(
             SafetySystemInstruction,
@@ -162,12 +161,35 @@ public class RecruiterAiController : ControllerBase
         return ToAiResponse(result, RecruiterAiMessages.JobDescriptionGenerationFailed);
     }
 
+    [HttpPost("extract-job-skills")]
+    public async Task<IActionResult> ExtractJobSkills([FromBody] JobSkillsExtractionRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!IsRateAllowed("job-description")) return RateLimited();
+        var hasInput = !string.IsNullOrWhiteSpace(request.Title) || !string.IsNullOrWhiteSpace(request.Description) || !string.IsNullOrWhiteSpace(request.Requirements);
+        if (!hasInput) return BadRequest(new { message = "Add a job title, description, or requirements before extracting skills." });
+
+        try
+        {
+            var result = await _gemini.GenerateJsonAsync<JobSkillsExtractionResultDto>(
+                SafetySystemInstruction,
+                BuildPrompt("Extract the core skills and technologies required for this job. Return a flat list of normalized skill names.", request),
+                maxOutputTokens: 800,
+                cancellationToken: cancellationToken);
+
+            return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "AI service is currently unavailable or rate limited. Please try again later." });
+        }
+    }
+
     [HttpPost("applications/{applicationId:int}/interview-questions")]
     public async Task<IActionResult> GenerateInterviewQuestions(int applicationId, CancellationToken cancellationToken)
     {
         if (!IsRateAllowed("interview")) return RateLimited();
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
-        if (application == null || !HasCandidateData(application)) return NotFound(new { message = RecruiterAiMessages.MissingData });
+        if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
         var result = await _gemini.GenerateJsonAsync<InterviewQuestionResultDto>(
             SafetySystemInstruction,
@@ -255,7 +277,7 @@ public class RecruiterAiController : ControllerBase
 
     private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return BadRequest(new { message = failureMessage ?? RecruiterAiMessages.MissingData });
+        if (result == null) return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 

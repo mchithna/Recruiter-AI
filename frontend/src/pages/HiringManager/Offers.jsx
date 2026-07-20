@@ -18,7 +18,7 @@ import {
   EmptyState,
 } from '../../components/ui';
 import StatusBadge from './components/StatusBadge';
-import { getAllOffers } from './services/mockData';
+import { getAllOffers } from './services/hiringManagerApi';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Not set';
