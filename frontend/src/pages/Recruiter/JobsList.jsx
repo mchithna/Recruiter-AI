@@ -64,10 +64,16 @@ export function JobsList() {
     setIsPublishing(true);
     try {
       await updateJob(jobToPublish.id, { status: 'Open' });
-      toast.success(`Job "${jobToPublish.title}" published successfully!`);
+      toast({
+        title: `Job "${jobToPublish.title}" published successfully!`,
+        variant: 'success',
+      });
       setJobToPublish(null);
     } catch (error) {
-      toast.error(error.message || 'Failed to publish job.');
+      toast({
+        title: error.message || 'Failed to publish job.',
+        variant: 'danger',
+      });
     } finally {
       setIsPublishing(false);
     }
