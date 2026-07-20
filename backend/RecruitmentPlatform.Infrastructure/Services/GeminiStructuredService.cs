@@ -24,19 +24,9 @@ public class GeminiStructuredService : IGeminiStructuredService
         ILogger<GeminiStructuredService> logger)
     {
         _httpClient = httpClient;
-        var keys = new[]
-        {
-            configuration["GeminiSettings:ApiKey"],
-            configuration["RecruiterGeminiSettings:ApiKey"],
-            configuration["GEMINI_API_KEY"]
-        }.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct().ToArray();
-        _apiKeys = keys.Length > 0 ? keys : new[] { string.Empty };
-
-        var configuredModel = configuration["GeminiSettings:Model"]
-            ?? configuration["RecruiterGeminiSettings:Model"]
-            ?? configuration["GEMINI_MODEL"]
-            ?? "gemini-2.5-flash";
-        _models = BuildModelFallbacks(configuredModel);
+        var apiKey = GeminiConfiguration.GetApiKey(configuration);
+        _apiKeys = string.IsNullOrWhiteSpace(apiKey) ? [string.Empty] : [apiKey];
+        _models = GeminiConfiguration.GetModels(configuration);
         _logger = logger;
     }
 
@@ -167,24 +157,6 @@ public class GeminiStructuredService : IGeminiStructuredService
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
-    }
-
-    private static string[] BuildModelFallbacks(string configuredModel)
-    {
-        var models = new[] { configuredModel, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-flash-latest" };
-        return models
-            .Select(NormalizeModel)
-            .Where(model => !string.IsNullOrWhiteSpace(model))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-    }
-
-    private static string NormalizeModel(string model)
-    {
-        var normalized = model.Trim().Trim('"');
-        return normalized.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
-            ? normalized["models/".Length..]
-            : normalized;
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>

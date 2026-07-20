@@ -7,7 +7,8 @@
    - `ConnectionStrings__DefaultConnection`
    - `JwtSettings__SupabaseJwtSecret`
    - `JwtSettings__SupabaseUrl`
-   - `GeminiSettings__ApiKey` or `GEMINI_API_KEY`
+   - `GEMINI_API_KEY`
+   - `GEMINI_MODEL`
 3. Start the API:
 
 ```powershell
@@ -16,11 +17,11 @@ dotnet run --launch-profile http
 
 The API loads `.env` automatically in development and also accepts user secrets or standard environment variables.
 
-Keep the real Gemini key in local `.env`, user secrets, or deployment secrets only. Do not commit real keys, paste them into frontend files, or log them. The backend accepts either:
+Keep the real Gemini key in local `.env`, user secrets, or deployment secrets only. Do not commit real keys, paste them into frontend files, or log them. The backend uses one Gemini key for all AI features:
 
 ```env
-GeminiSettings__ApiKey=your-real-key
 GEMINI_API_KEY=your-real-key
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
 ## Chatbot flow
@@ -37,7 +38,8 @@ Use the same keys as the `.env` file:
 - `ConnectionStrings__DefaultConnection`
 - `JwtSettings__SupabaseJwtSecret`
 - `JwtSettings__SupabaseUrl`
-- `GeminiSettings__ApiKey` or `GEMINI_API_KEY`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
 
 ## Swagger
 
