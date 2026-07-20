@@ -27,15 +27,14 @@ import InterviewsList from './pages/Recruiter/InterviewsList';
 import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
 import HiringManagerRoutes, { HiringManagerIndexRedirect } from './pages/HiringManager/HiringManagerRoutes';
+import HiringManagerHome from './pages/HiringManager/Home';
 import Queue from './pages/HiringManager/Queue';
 import HiringManagerApplicationDetail from './pages/HiringManager/ApplicationDetail';
+import HiringManagerInterviews from './pages/HiringManager/Interviews';
 import HiringManagerInterviewDetail from './pages/HiringManager/InterviewDetail';
 import HiringManagerEvaluate from './pages/HiringManager/Evaluate';
 import HiringManagerOffer from './pages/HiringManager/Offer';
-import HiringManagerHome from './pages/HiringManager/Home';
-import HiringManagerInterviews from './pages/HiringManager/Interviews';
 import HiringManagerOffers from './pages/HiringManager/Offers';
-
 import ChatBot from './components/chat/ChatBot';
 import CandidateHome from './pages/candidate/Home';
 import Profile from './pages/candidate/Profile';
@@ -44,13 +43,6 @@ import Jobs from './pages/candidate/JobSearch';
 import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
-
-const HiringManagerDashboard = () => (
-  <div className="bg-white/60 dark:bg-secondary-900/40 p-6 rounded-2xl shadow-glass border border-white/60 dark:border-white/10">
-    <h2 className="text-xl font-bold mb-2 text-secondary-900 dark:text-white">Hiring Manager Dashboard</h2>
-    <p className="text-secondary-500 dark:text-secondary-400">Review candidates and manage hiring pipelines.</p>
-  </div>
-);
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -95,7 +87,17 @@ function App() {
               <Route path="/dashboard" element={<div className="text-xl font-medium">Welcome to the Dashboard!</div>} />
 
               <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
-                <Route path="/hiring-manager" element={<HiringManagerDashboard />} />
+                <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
+                  <Route index element={<HiringManagerIndexRedirect />} />
+                  <Route path="home" element={<HiringManagerHome />} />
+                  <Route path="queue" element={<Queue />} />
+                  <Route path="applications/:applicationId" element={<HiringManagerApplicationDetail />} />
+                  <Route path="interviews" element={<HiringManagerInterviews />} />
+                  <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
+                  <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
+                  <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
+                  <Route path="offers" element={<HiringManagerOffers />} />
+                </Route>
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Candidate']} />}>
@@ -132,47 +134,6 @@ function App() {
               </Route>
             </Route>
           </Route>
-          
-          {/* Recruiter-specific Layout (Temp Unprotected for UI Testing) */}
-          <Route path="/recruiter" element={<RecruiterRoutes />}>
-            <Route index element={<RecruiterIndexRedirect />} />
-            <Route path="home" element={<RecruiterHome />} />
-            <Route path="jobs" element={<JobsList />} />
-            <Route path="jobs/new" element={<JobForm />} />
-            <Route path="jobs/:jobId/edit" element={<JobForm />} />
-            <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
-            <Route path="applications/:applicationId" element={<ApplicationDetail />} />
-            <Route path="interviews" element={<InterviewsList />} />
-            <Route path="messages" element={<MessagesList />} />
-          </Route>
-
-          {/* Hiring Manager-specific Layout (Temp Unprotected for UI Testing) */}
-          <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
-            <Route index element={<HiringManagerIndexRedirect />} />
-            <Route path="home" element={<HiringManagerHome />} />
-            <Route path="queue" element={<Queue />} />
-            <Route path="applications/:applicationId" element={<HiringManagerApplicationDetail />} />
-            <Route path="interviews" element={<HiringManagerInterviews />} />
-            <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
-            <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
-            <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
-            <Route path="offers" element={<HiringManagerOffers />} />
-          </Route>
-
-          {/* Candidate-specific Layout */}
-          <Route path="/candidate">
-            <Route index element={<CandidateHome />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="documents" element={<Documents />} />
-            <Route path="jobs" element={<Jobs />} />
-            <Route path="jobs/:jobId" element={<JobDetail />} />
-            <Route path="applications" element={<Applications />} />
-            <Route path="applications/:applicationId" element={<CandidateApplicationDetail />} />
-          </Route>
-
-          {/* Chat bot route */}
-          <Route path="/chat" element={<ChatBot />} />
-          
 
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/style-guide" element={<StyleGuide />} />

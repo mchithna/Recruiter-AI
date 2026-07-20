@@ -15,7 +15,9 @@ import {
   BarChart2,
   ClipboardList,
   FileText,
+  FileCheck,
   User,
+  UserCheck,
   X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -45,7 +47,10 @@ const navItemsByRole = {
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
   ],
   HiringManager: [
-    { name: 'Dashboard', path: '/hiring-manager', icon: Home },
+    { name: 'Home', path: '/hiring-manager/home', icon: Home },
+    { name: 'Shortlist', path: '/hiring-manager/queue', icon: UserCheck },
+    { name: 'Interviews', path: '/hiring-manager/interviews', icon: Calendar },
+    { name: 'Offers', path: '/hiring-manager/offers', icon: FileCheck },
   ],
   Guest: [
     { name: 'Overview', path: '/dashboard', icon: Home },
@@ -76,7 +81,7 @@ export default function DashboardLayout() {
     Candidate: '/candidate/profile',
     Admin: '/admin/company',
     Recruiter: '/recruiter/home',
-    HiringManager: '/hiring-manager',
+    HiringManager: '/hiring-manager/home',
   };
   const profilePath = profilePathByRole[role] || '/dashboard';
 

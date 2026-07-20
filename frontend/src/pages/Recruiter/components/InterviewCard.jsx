@@ -7,7 +7,7 @@ import {
   CardContent,
   CardHeader,
 } from '../../../components/ui';
-import StatusBadge from './StatusBadge';
+import { StatusBadge } from '../../../components/ui';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';

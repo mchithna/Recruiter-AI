@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import {
   Badge,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Skeleton,
   Button,
 } from '../../components/ui';

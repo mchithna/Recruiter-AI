@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, AlertTriangle, Sparkles, Send, ShieldCheck, DollarSign, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, Check, AlertTriangle, Send, DollarSign, Calendar, FileText } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -190,9 +190,9 @@ export function Offer() {
 
         {/* Confirmation Success Banner (only visible immediately on submit) */}
         {(justSubmitted || offer.status === 'Pending') && (
-          <Card className="border-none bg-gradient-to-br from-indigo-500/10 via-primary-500/5 to-transparent shadow-glass">
+          <Card className="border-none bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent shadow-glass">
             <CardContent className="p-6 flex items-start gap-4">
-              <div className="rounded-2xl bg-indigo-500 text-white p-3 shadow-glow-primary shrink-0">
+              <div className="rounded-2xl bg-primary-500 text-white p-3 shadow-glow-primary shrink-0">
                 <Send size={24} />
               </div>
               <div className="space-y-1">
@@ -209,7 +209,7 @@ export function Offer() {
 
         {/* Read-Only Offer card */}
         <Card className="overflow-hidden border-none shadow-glass">
-          <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-primary-500 to-ai-500" />
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-500 to-ai-500" />
           <CardHeader>
             <CardTitle>Details of Proposed Package</CardTitle>
           </CardHeader>
@@ -229,7 +229,7 @@ export function Offer() {
               {/* Start Date */}
               <div className="rounded-2xl bg-secondary-50 dark:bg-white/5 border border-secondary-100 dark:border-white/5 p-5">
                 <h4 className="text-body-sm font-bold text-secondary-500 dark:text-secondary-400 mb-1 flex items-center gap-1.5">
-                  <Calendar size={16} className="text-indigo-500" /> Start Date
+                  <Calendar size={16} className="text-primary-500" /> Start Date
                 </h4>
                 <p className="text-body-lg font-bold text-secondary-900 dark:text-white mt-1">
                   {formatDateTime(offer.proposedStartDate)}
@@ -292,7 +292,7 @@ export function Offer() {
       {/* Form Card */}
       <Card className="overflow-hidden border-none shadow-glass">
         {/* Top gradient accent */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-indigo-500 to-ai-500" />
+        <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-500 to-ai-500" />
         <CardHeader>
           <CardTitle>Draft Package Details</CardTitle>
         </CardHeader>

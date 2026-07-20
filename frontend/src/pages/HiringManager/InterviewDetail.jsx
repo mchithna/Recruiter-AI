@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Video, FileText, Check, X, Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
-  Badge,
   Card,
   CardContent,
   CardHeader,
@@ -133,7 +132,7 @@ export function InterviewDetail() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden border-none shadow-glass">
             {/* Top gradient accent */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-primary-500 to-ai-500" />
+            <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-500 to-ai-500" />
             <CardHeader>
               <CardTitle>Interview Details</CardTitle>
             </CardHeader>
@@ -141,7 +140,7 @@ export function InterviewDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* Time & Duration */}
                 <div className="flex items-start gap-3 rounded-2xl bg-secondary-50 dark:bg-white/5 p-4 border border-secondary-100 dark:border-white/5">
-                  <Calendar size={20} className="text-indigo-500 mt-0.5 shrink-0" />
+                  <Calendar size={20} className="text-primary-500 mt-0.5 shrink-0" />
                   <div>
                     <h4 className="text-body-sm font-bold text-secondary-800 dark:text-white">Date & Time</h4>
                     <p className="mt-1 text-body-md text-secondary-600 dark:text-secondary-300">
@@ -195,7 +194,7 @@ export function InterviewDetail() {
           {evaluation && (
             <Card className="overflow-hidden border-none shadow-glass">
               {/* Green/success accent for evaluation */}
-              <div className="h-1.5 w-full bg-gradient-to-r from-success-500 via-primary-500 to-indigo-500" />
+              <div className="h-1.5 w-full bg-gradient-to-r from-success-500 via-primary-500 to-primary-500" />
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Submitted Evaluation Record</CardTitle>
                 <div className="flex flex-col items-center">
@@ -272,7 +271,7 @@ export function InterviewDetail() {
                     {evaluation.hireRecommendation ? (
                       <Button
                         variant="primary"
-                        className="w-full bg-gradient-to-r from-indigo-500 to-primary-600 shadow-glow-primary"
+                        className="w-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"
                         leftIcon={<Sparkles size={16} />}
                         onClick={() => navigate(`/hiring-manager/applications/${interview.applicationId}/offer`)}
                       >
@@ -336,7 +335,7 @@ export function InterviewDetail() {
                         </div>
                         <Button
                           variant="primary"
-                          className="w-full bg-gradient-to-r from-indigo-500 to-primary-600 shadow-glow-primary"
+                          className="w-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"
                           leftIcon={<Sparkles size={16} />}
                           onClick={() => navigate(`/hiring-manager/interviews/${interviewId}/evaluate`)}
                         >

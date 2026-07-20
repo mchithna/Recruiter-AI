@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, FileCheck, Sparkles, ChevronRight, AlertCircle } from 'lucide-react';
+import { FileCheck, Sparkles, ChevronRight } from 'lucide-react';
 import {
   Badge,
   Card,
@@ -65,7 +65,7 @@ export function Offers() {
       {/* Banner */}
       <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-6">
         <img
-          src="/images/card-bg-dashboard.png"
+          src="/images/card-bg-live-analytics.png"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover opacity-15 dark:opacity-35 dark:mix-blend-screen"
@@ -80,7 +80,7 @@ export function Offers() {
               Track the compensation package details, start dates, and lifecycle statuses of offers you have initiated.
             </p>
           </div>
-          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-indigo-500 text-white shadow-glow-primary sm:flex">
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-primary-500 text-white shadow-glow-primary sm:flex">
             <FileCheck size={42} strokeWidth={1.5} />
           </div>
         </div>

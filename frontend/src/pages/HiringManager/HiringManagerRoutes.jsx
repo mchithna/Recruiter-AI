@@ -1,10 +1,7 @@
-import { Navigate } from 'react-router-dom';
-import HiringManagerLayout from './HiringManagerLayout';
+import { Navigate, Outlet } from 'react-router-dom';
 
 export function HiringManagerRoutes() {
-  return (
-    <HiringManagerLayout />
-  );
+  return <Outlet />;
 }
 
 export function HiringManagerIndexRedirect() {

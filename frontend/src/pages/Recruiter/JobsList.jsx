@@ -14,7 +14,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
+import { StatusBadge } from '../../components/ui';
 import { useRecruiterJobs } from './useRecruiterJobs';
 
 const formatDeadline = (deadline) => {
