@@ -27,7 +27,7 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import { StatusBadge } from '../../components/ui';
+import StatusBadge from './components/StatusBadge';
 import { recruiterApi } from './services/recruiterApi';
 
 const pipelineOrder = [
