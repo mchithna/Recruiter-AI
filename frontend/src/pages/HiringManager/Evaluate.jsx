@@ -13,7 +13,7 @@ import {
   Switch,
   Badge,
 } from '../../components/ui';
-import { getInterview, getEvaluationForInterview, submitEvaluation } from './services/mockData';
+import { getInterview, getEvaluationForInterview, submitEvaluation } from './services/hiringManagerApi';
 
 export function Evaluate() {
   const { interviewId } = useParams();

@@ -38,6 +38,7 @@ const emptyForm = {
   workMode: 'Hybrid',
   location: '',
   applicationDeadline: '',
+  skills: [],
 };
 
 const toDateTimeInputValue = (value) => {
@@ -105,7 +106,10 @@ export function JobForm() {
   );
   const [formValues, setFormValues] = useState(emptyForm);
   const [aiState, setAiState] = useState({ loading: false, error: '', disclaimer: '', notes: [] });
+  const [extractAiState, setExtractAiState] = useState({ loading: false, error: '' });
   const [submitState, setSubmitState] = useState({ loading: false, error: '' });
+  const [skillsExtracted, setSkillsExtracted] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
     if (!existingJob) return;
@@ -118,7 +122,9 @@ export function JobForm() {
       workMode: existingJob.workMode ?? 'Hybrid',
       location: existingJob.location ?? '',
       applicationDeadline: toDateTimeInputValue(existingJob.applicationDeadline),
+      skills: existingJob.skills ?? [],
     });
+    setSkillsExtracted((existingJob.skills ?? []).length > 0);
   }, [existingJob]);
 
   const handleChange = (field) => (event) => {
@@ -127,6 +133,9 @@ export function JobForm() {
     }
     if (aiState.error) {
       setAiState((current) => ({ ...current, error: '' }));
+    }
+    if (extractAiState.error) {
+      setExtractAiState((current) => ({ ...current, error: '' }));
     }
 
     setFormValues((currentValues) => ({
@@ -197,6 +206,29 @@ export function JobForm() {
         error: getAiErrorMessage(error),
         disclaimer: '',
         notes: [],
+      });
+    }
+  };
+
+  const handleExtractSkills = async () => {
+    if (!hasJobDescriptionSeed(formValues)) return;
+    setExtractAiState({ loading: true, error: '' });
+    try {
+      const response = await recruiterApi.extractJobSkills({
+        title: formValues.title.trim(),
+        description: formValues.description.trim(),
+        requirements: formValues.requirements.trim(),
+      });
+      setFormValues((current) => ({
+        ...current,
+        skills: response.result?.extractedSkills || [],
+      }));
+      setSkillsExtracted(true);
+      setExtractAiState({ loading: false, error: '' });
+    } catch (error) {
+      setExtractAiState({
+        loading: false,
+        error: getAiErrorMessage(error),
       });
     }
   };
@@ -358,6 +390,75 @@ export function JobForm() {
               />
             </div>
 
+            <div className="rounded-xl border border-secondary-200 p-5 dark:border-white/10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div>
+                  <p className="text-body-md font-semibold text-secondary-900 dark:text-white">Required Skills</p>
+                  <p className="mt-1 text-body-sm text-secondary-500">Extract skills from job description using AI, then edit as needed before saving.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ai"
+                  leftIcon={<Sparkles size={16} />}
+                  onClick={handleExtractSkills}
+                  disabled={extractAiState.loading || !hasJobDescriptionSeed(formValues)}
+                >
+                  {extractAiState.loading ? 'Extracting...' : 'Extract Skills'}
+                </Button>
+              </div>
+
+              {extractAiState.error && (
+                <p className="mb-4 text-body-sm text-danger-600 dark:text-danger-300">
+                  {extractAiState.error}
+                </p>
+              )}
+
+              {formValues.skills.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {formValues.skills.map((skill, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 border border-primary-100 dark:border-primary-900/30 dark:bg-primary-900/20 dark:text-primary-300">
+                      {skill}
+                      <button type="button" onClick={() => {
+                        const newSkills = [...formValues.skills];
+                        newSkills.splice(i, 1);
+                        handleChange('skills')({ target: { value: newSkills } });
+                        if (newSkills.length === 0) setSkillsExtracted(false);
+                      }} className="ml-1 hover:text-danger-500 rounded-full w-5 h-5 flex items-center justify-center bg-primary-100 dark:bg-primary-900/50">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a skill manually..."
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newSkill.trim() && !formValues.skills.includes(newSkill.trim())) {
+                        handleChange('skills')({ target: { value: [...formValues.skills, newSkill.trim()] } });
+                        setNewSkill('');
+                        setSkillsExtracted(true);
+                      }
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={() => {
+                  if (newSkill.trim() && !formValues.skills.includes(newSkill.trim())) {
+                    handleChange('skills')({ target: { value: [...formValues.skills, newSkill.trim()] } });
+                    setNewSkill('');
+                    setSkillsExtracted(true);
+                  }
+                }}>Add</Button>
+              </div>
+              {!skillsExtracted && (
+                <p className="mt-3 text-body-sm font-semibold text-warning-600 dark:text-warning-400">
+                  ⚠️ You must extract or add skills before saving the job.
+                </p>
+              )}
+            </div>
+
             <div className="flex flex-col-reverse gap-3 border-t border-secondary-100 pt-5 sm:flex-row sm:justify-end">
               {submitState.error && (
                 <p className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-body-sm font-semibold text-danger-700 dark:border-danger-400/30 dark:bg-danger-500/10 dark:text-danger-200 sm:mr-auto">
@@ -377,6 +478,7 @@ export function JobForm() {
                 variant="primary"
                 leftIcon={<Save size={18} />}
                 isLoading={submitState.loading}
+                disabled={!skillsExtracted}
               >
                 {isEditMode ? 'Save Changes' : 'Create Job'}
               </Button>

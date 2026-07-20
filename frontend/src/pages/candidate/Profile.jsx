@@ -4,10 +4,24 @@ import {
   Input, 
   Textarea, 
   Spinner,
-  ProgressBar
+  ProgressBar,
+  Modal
 } from '../../components/ui';
 import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw } from 'lucide-react';
-import { candidateAiApi, getMyProfile, updateMyProfile } from './services/candidateApi';
+import { 
+  candidateAiApi, 
+  getMyProfile, 
+  updateMyProfile,
+  addProfileSkill,
+  deleteProfileSkill,
+  addProfileExperience,
+  updateProfileExperience,
+  deleteProfileExperience,
+  addProfileEducation,
+  updateProfileEducation,
+  deleteProfileEducation
+} from './services/candidateApi';
+import { useToast } from '../../lib/ToastContext';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -19,13 +33,19 @@ export default function Profile() {
   // Edit states for lists
   const [editingEducation, setEditingEducation] = useState(null);
   const [editingExperience, setEditingExperience] = useState(null);
+  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
+  const [isExperienceModalOpen, setIsExperienceModalOpen] = useState(false);
+  const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
+
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadProfile();
+    loadProfile(true);
   }, []);
 
-  const loadProfile = async () => {
-    setLoading(true);
+  const loadProfile = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     const data = await getMyProfile();
     setProfile(data);
     setLoading(false);
@@ -36,15 +56,22 @@ export default function Profile() {
   };
 
   const handleSaveBasicInfo = async () => {
-    await updateMyProfile({
-      summaryText: profile.summaryText,
-      portfolioUrl: profile.portfolioUrl,
-      linkedinUrl: profile.linkedinUrl,
-      githubUrl: profile.githubUrl,
-      locationCity: profile.locationCity,
-      locationCountry: profile.locationCountry,
-      yearsOfExperience: profile.yearsOfExperience,
-    });
+    setSaving(true);
+    try {
+      await updateMyProfile({
+        summaryText: profile.summaryText,
+        portfolioUrl: profile.portfolioUrl,
+        linkedinUrl: profile.linkedinUrl,
+        githubUrl: profile.githubUrl,
+        locationCity: profile.locationCity,
+        yearsOfExperience: profile.yearsOfExperience ? parseInt(profile.yearsOfExperience, 10) : null,
+      });
+      try { toast({ title: 'Profile saved successfully.', variant: 'success' }); } catch(e) {}
+    } catch (err) {
+      try { toast({ title: 'Failed to save profile.', variant: 'danger' }); } catch(e) {}
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAnalyzeProfile = async () => {
@@ -64,9 +91,108 @@ export default function Profile() {
     if (skill.extractedByAi) {
       if (!window.confirm('This skill was extracted from your resume by AI. Are you sure you want to remove it?')) return;
     }
-    const updatedSkills = profile.skills.filter(s => s.id !== skill.id);
-    setProfile(prev => ({ ...prev, skills: updatedSkills }));
-    await updateMyProfile({ skills: updatedSkills });
+    try {
+      await deleteProfileSkill(skill.id);
+      await loadProfile();
+    } catch (e) {
+      toast({ title: 'Failed to remove skill', variant: 'danger' });
+    }
+  };
+
+  const handleAddSkillSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const skillData = {
+      name: formData.get('name'),
+      proficiencyLevel: formData.get('proficiencyLevel') || 'Intermediate',
+      yearsOfExperience: parseInt(formData.get('yearsOfExperience')) || null
+    };
+    try {
+      await addProfileSkill(skillData);
+      setIsSkillModalOpen(false);
+      await loadProfile();
+      toast({ title: 'Skill added', variant: 'success' });
+    } catch (err) {
+      toast({ title: err?.response?.data?.message || 'Failed to add skill', variant: 'danger' });
+    }
+  };
+
+  const handleSaveExperience = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const expData = {
+      companyName: formData.get('companyName'),
+      jobTitle: formData.get('jobTitle'),
+      location: formData.get('location'),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate') || null,
+      isCurrent: formData.get('isCurrent') === 'on',
+      description: formData.get('description')
+    };
+
+    try {
+      if (editingExperience?.id) {
+        await updateProfileExperience(editingExperience.id, expData);
+      } else {
+        await addProfileExperience(expData);
+      }
+      setIsExperienceModalOpen(false);
+      setEditingExperience(null);
+      await loadProfile();
+      toast({ title: 'Experience saved', variant: 'success' });
+    } catch (err) {
+      toast({ title: err?.response?.data?.message || 'Failed to save experience', variant: 'danger' });
+    }
+  };
+
+  const handleDeleteExperience = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this experience?')) return;
+    try {
+      await deleteProfileExperience(id);
+      await loadProfile();
+      toast({ title: 'Experience deleted', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Failed to delete experience', variant: 'danger' });
+    }
+  };
+
+  const handleSaveEducation = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const eduData = {
+      institutionName: formData.get('institutionName'),
+      degree: formData.get('degree'),
+      fieldOfStudy: formData.get('fieldOfStudy'),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate') || null,
+      isCurrent: formData.get('isCurrent') === 'on',
+      grade: formData.get('grade')
+    };
+
+    try {
+      if (editingEducation?.id) {
+        await updateProfileEducation(editingEducation.id, eduData);
+      } else {
+        await addProfileEducation(eduData);
+      }
+      setIsEducationModalOpen(false);
+      setEditingEducation(null);
+      await loadProfile();
+      toast({ title: 'Education saved', variant: 'success' });
+    } catch (err) {
+      toast({ title: err?.response?.data?.message || 'Failed to save education', variant: 'danger' });
+    }
+  };
+
+  const handleDeleteEducation = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this education?')) return;
+    try {
+      await deleteProfileEducation(id);
+      await loadProfile();
+      toast({ title: 'Education deleted', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Failed to delete education', variant: 'danger' });
+    }
   };
 
   const handleAddSkill = async () => {
@@ -97,7 +223,7 @@ export default function Profile() {
           </div>
           <div>
             <h2 className="text-h2 text-secondary-900 dark:text-white">{profile.firstName} {profile.lastName}</h2>
-            <p className="text-body-sm text-secondary-500 dark:text-secondary-400">{profile.email} • {profile.locationCity}, {profile.locationCountry}</p>
+            <p className="text-body-sm text-secondary-500 dark:text-secondary-400">{profile.email} â€¢ {profile.locationCity}, {profile.locationCountry}</p>
           </div>
         </div>
       </div>
@@ -149,14 +275,18 @@ export default function Profile() {
       </section>
 
       <section className="space-y-6">
-        <h3 className="text-h3 text-secondary-900 dark:text-white">Basic Information</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-h3 text-secondary-900 dark:text-white">Basic Information</h3>
+          <Button type="button" onClick={handleSaveBasicInfo} disabled={saving} isLoading={saving} variant="primary">
+            Save Changes
+          </Button>
+        </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="col-span-1 md:col-span-2">
             <Textarea 
               label="Professional Summary" 
               value={profile.summaryText || ''} 
               onChange={(e) => handleBasicInfoChange('summaryText', e.target.value)}
-              onBlur={handleSaveBasicInfo}
               rows={4}
             />
           </div>
@@ -164,38 +294,32 @@ export default function Profile() {
             label="Location (City)" 
             value={profile.locationCity || ''} 
             onChange={(e) => handleBasicInfoChange('locationCity', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Location (Country)" 
             value={profile.locationCountry || ''} 
             onChange={(e) => handleBasicInfoChange('locationCountry', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Years of Experience" 
             type="number"
             value={profile.yearsOfExperience || ''} 
             onChange={(e) => handleBasicInfoChange('yearsOfExperience', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="Portfolio URL" 
             value={profile.portfolioUrl || ''} 
             onChange={(e) => handleBasicInfoChange('portfolioUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="LinkedIn URL" 
             value={profile.linkedinUrl || ''} 
             onChange={(e) => handleBasicInfoChange('linkedinUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
           <Input 
             label="GitHub URL" 
             value={profile.githubUrl || ''} 
             onChange={(e) => handleBasicInfoChange('githubUrl', e.target.value)}
-            onBlur={handleSaveBasicInfo}
           />
         </div>
       </section>
@@ -204,7 +328,7 @@ export default function Profile() {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-h3 text-secondary-900 dark:text-white">Skills</h3>
-          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />} onClick={handleAddSkill}>Add Skill</Button>
+          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />} onClick={() => setIsSkillModalOpen(true)}>Add Skill</Button>
         </div>
         <div className="flex flex-wrap gap-3">
           {profile.skills.map(skill => (
@@ -234,25 +358,10 @@ export default function Profile() {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-h3 text-secondary-900 dark:text-white">Work Experience</h3>
-          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />} onClick={() => setEditingExperience({})}>Add Experience</Button>
+          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />} onClick={() => { setEditingExperience({}); setIsExperienceModalOpen(true); }}>Add Experience</Button>
         </div>
         
         <div className="space-y-4">
-          {editingExperience && (
-             <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-6 dark:border-primary-900/30 dark:bg-primary-950/20">
-               <h4 className="text-body-sm font-semibold mb-4 text-primary-700 dark:text-primary-300">Edit Experience</h4>
-               {/* Quick inline form placeholder for simplicity */}
-               <div className="grid grid-cols-2 gap-4 mb-4">
-                 <Input label="Company Name" defaultValue={editingExperience.companyName} />
-                 <Input label="Job Title" defaultValue={editingExperience.jobTitle} />
-               </div>
-               <div className="flex gap-2">
-                 <Button size="sm" onClick={() => setEditingExperience(null)}>Cancel</Button>
-                 <Button size="sm" variant="primary">Save</Button>
-               </div>
-             </div>
-          )}
-
           {profile.experience.map(exp => (
             <div key={exp.id} className="group relative flex justify-between overflow-hidden rounded-2xl border border-white/60 bg-white/75 p-6 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
               <div>
@@ -268,10 +377,10 @@ export default function Profile() {
                 {exp.description && <p className="mt-3 text-body-sm text-secondary-700 dark:text-secondary-300">{exp.description}</p>}
               </div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="icon" variant="ghost" onClick={() => setEditingExperience(exp)}>
+                <Button size="icon" variant="ghost" onClick={() => { setEditingExperience(exp); setIsExperienceModalOpen(true); }}>
                   <Edit2 size={16} />
                 </Button>
-                <Button size="icon" variant="ghost" className="text-red-500">
+                <Button size="icon" variant="ghost" className="text-red-500" onClick={() => handleDeleteExperience(exp.id)}>
                   <Trash2 size={16} />
                 </Button>
               </div>
@@ -284,7 +393,7 @@ export default function Profile() {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-h3 text-secondary-900 dark:text-white">Education</h3>
-          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />}>Add Education</Button>
+          <Button variant="outline" size="sm" leftIcon={<Plus size={16} />} onClick={() => { setEditingEducation({}); setIsEducationModalOpen(true); }}>Add Education</Button>
         </div>
         <div className="space-y-4">
           {profile.education.map(edu => (
@@ -295,13 +404,102 @@ export default function Profile() {
                   <GraduationCap size={14} /> {edu.institutionName}
                 </p>
                 <p className="text-caption text-secondary-500 dark:text-secondary-500 mt-2">
-                  {edu.startDate} - {edu.endDate} {edu.grade && `• Grade: ${edu.grade}`}
+                  {edu.startDate} - {edu.endDate} {edu.grade && `â€¢ Grade: ${edu.grade}`}
                 </p>
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button size="icon" variant="ghost" onClick={() => { setEditingEducation(edu); setIsEducationModalOpen(true); }}>
+                  <Edit2 size={16} />
+                </Button>
+                <Button size="icon" variant="ghost" className="text-red-500" onClick={() => handleDeleteEducation(edu.id)}>
+                  <Trash2 size={16} />
+                </Button>
               </div>
             </div>
           ))}
         </div>
       </section>
+
+      <Modal 
+        isOpen={isSkillModalOpen} 
+        onClose={() => setIsSkillModalOpen(false)} 
+        title="Add Skill"
+      >
+        <form onSubmit={handleAddSkillSubmit} className="space-y-4">
+          <Input label="Skill Name" name="name" required placeholder="e.g. React, C#" />
+          <div>
+            <label className="mb-1 block text-body-sm font-medium text-secondary-700 dark:text-secondary-300">Proficiency Level</label>
+            <select name="proficiencyLevel" className="w-full rounded-xl border border-secondary-200 bg-white px-4 py-2.5 text-body text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 dark:border-secondary-800 dark:bg-secondary-900 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400/10 transition-all shadow-sm-border">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+          <Input label="Years of Experience" name="yearsOfExperience" type="number" min="0" placeholder="e.g. 3" />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsSkillModalOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="primary">Save</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal 
+        isOpen={isExperienceModalOpen} 
+        onClose={() => { setIsExperienceModalOpen(false); setEditingExperience(null); }} 
+        title={editingExperience?.id ? "Edit Experience" : "Add Experience"}
+        size="lg"
+      >
+        <form onSubmit={handleSaveExperience} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Job Title" name="jobTitle" defaultValue={editingExperience?.jobTitle} required />
+            <Input label="Company Name" name="companyName" defaultValue={editingExperience?.companyName} required />
+          </div>
+          <Input label="Location" name="location" defaultValue={editingExperience?.location} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Start Date" name="startDate" type="month" defaultValue={editingExperience?.startDate?.substring(0,7)} required />
+            <Input label="End Date" name="endDate" type="month" defaultValue={editingExperience?.endDate?.substring(0,7)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="isCurrent" id="isCurrentExp" defaultChecked={editingExperience?.isCurrent} className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500" />
+            <label htmlFor="isCurrentExp" className="text-body-sm text-secondary-700 dark:text-secondary-300">I currently work here</label>
+          </div>
+          <Textarea label="Description" name="description" rows={3} defaultValue={editingExperience?.description} />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => { setIsExperienceModalOpen(false); setEditingExperience(null); }}>Cancel</Button>
+            <Button type="submit" variant="primary">Save</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal 
+        isOpen={isEducationModalOpen} 
+        onClose={() => { setIsEducationModalOpen(false); setEditingEducation(null); }} 
+        title={editingEducation?.id ? "Edit Education" : "Add Education"}
+        size="lg"
+      >
+        <form onSubmit={handleSaveEducation} className="space-y-4">
+          <Input label="Institution Name" name="institutionName" defaultValue={editingEducation?.institutionName} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Degree" name="degree" placeholder="e.g. Bachelor of Science" defaultValue={editingEducation?.degree} required />
+            <Input label="Field of Study" name="fieldOfStudy" placeholder="e.g. Computer Science" defaultValue={editingEducation?.fieldOfStudy} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Start Date" name="startDate" type="month" defaultValue={editingEducation?.startDate?.substring(0,7)} required />
+            <Input label="End Date" name="endDate" type="month" defaultValue={editingEducation?.endDate?.substring(0,7)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="isCurrent" id="isCurrentEdu" defaultChecked={editingEducation?.isCurrent} className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500" />
+            <label htmlFor="isCurrentEdu" className="text-body-sm text-secondary-700 dark:text-secondary-300">I currently study here</label>
+          </div>
+          <Input label="Grade / GPA" name="grade" defaultValue={editingEducation?.grade} />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => { setIsEducationModalOpen(false); setEditingEducation(null); }}>Cancel</Button>
+            <Button type="submit" variant="primary">Save</Button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   );
 }
@@ -321,6 +519,9 @@ function AiList({ title, items }) {
           </li>
         ))}
       </ul>
+
+
+
     </div>
   );
 }

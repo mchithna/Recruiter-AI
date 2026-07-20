@@ -11,7 +11,7 @@ import {
 } from '../../components/ui';
 import StatusBadge from './components/StatusBadge';
 import CalendarConnectButton from './components/CalendarConnectButton';
-import { getInterview, getEvaluationForInterview } from './services/mockData';
+import { getInterview, getEvaluationForInterview } from './services/hiringManagerApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';

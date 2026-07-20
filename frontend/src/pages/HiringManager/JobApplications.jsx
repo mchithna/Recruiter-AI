@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, ClipboardList, Sparkles, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Calendar, ClipboardList, ChevronRight, ArrowLeft } from 'lucide-react';
 import {
-  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '../../components/ui';
 import StatusBadge from './components/StatusBadge';
-import { getShortlistedApplications, getInterviewsForApplication } from './services/hiringManagerApi';
+import { getJobApplications, getInterviewsForApplication } from './services/hiringManagerApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -28,22 +28,23 @@ const formatScheduledTime = (scheduledTime) => {
   }).format(new Date(scheduledTime));
 };
 
-export function Queue() {
+export function JobApplications() {
   const navigate = useNavigate();
+  const { jobId } = useParams();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadQueueData() {
+    async function loadApplications() {
       try {
         setIsLoading(true);
-        const shortlisted = await getShortlistedApplications();
+        const apps = await getJobApplications(jobId);
         
         // Fetch interviews for each application to extract scheduledTime if it exists
         const appsWithInterviews = await Promise.all(
-          shortlisted.map(async (app) => {
+          apps.map(async (app) => {
             const interviews = await getInterviewsForApplication(app.id);
             // Select active or first available interview
             const activeInterview = interviews.find(
@@ -62,64 +63,49 @@ export function Queue() {
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Failed to load hiring manager queue data', error);
+        console.error('Failed to load job applications', error);
         if (isActive) {
           setIsLoading(false);
         }
       }
     }
 
-    loadQueueData();
+    if (jobId) {
+      loadApplications();
+    }
 
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [jobId]);
 
   return (
     <div className="relative z-10 space-y-6 animate-slide-up">
-      {/* Header section with background cover */}
-      <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-6">
-        <img
-          src="/images/card-bg-candidate.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover opacity-15 dark:opacity-35 dark:mix-blend-screen"
-        />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Badge variant="ai" size="sm" icon={<Sparkles size={12} strokeWidth={1.75} />}>
-              Hiring Manager Queue
-            </Badge>
-            <h1 className="mt-3 text-h1 text-secondary-900 dark:text-white">Review & Decision Queue</h1>
-            <p className="mt-2 max-w-2xl text-body-sm text-secondary-500 dark:text-secondary-300">
-              Manage candidates who are shortlisted or scheduled for interviews. Click on any row to view full details and submit decisions.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <span className="rounded-full bg-white/70 px-3 py-1 text-caption font-semibold text-primary-700 dark:bg-white/10 dark:text-primary-300">
-                {applications.length} candidates pending review
-              </span>
-            </div>
-          </div>
-          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-primary-500 text-white shadow-glow-primary sm:flex">
-            <ClipboardList size={42} strokeWidth={1.5} />
-          </div>
-        </div>
-      </section>
+      {/* Back button */}
+      <div>
+        <Button
+          variant="ghost"
+          leftIcon={<ArrowLeft size={16} />}
+          onClick={() => navigate('/hiring-manager/jobs')}
+          className="text-secondary-500 hover:text-secondary-900 dark:text-secondary-400 dark:hover:text-white"
+        >
+          Back to Jobs
+        </Button>
+      </div>
 
       {/* Main Table Card */}
       <Card className="glass-card-heavy overflow-hidden border-none p-0">
-        <CardHeader className="mb-0 p-6 pb-4">
+        <CardHeader className="mb-0 p-6 pb-4 border-b border-secondary-100 dark:border-white/10">
           <div>
-            <CardTitle>Shortlisted Candidates</CardTitle>
+            <CardTitle>Job Applicants</CardTitle>
             <CardDescription>
-              A complete list of active applicants assigned to your decision workflow.
+              Review candidates in your pipeline for this specific role.
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-3 p-6 pt-0">
+            <div className="space-y-3 p-6 pt-0 mt-4">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
@@ -129,9 +115,9 @@ export function Queue() {
               <div className="rounded-full bg-secondary-100 p-3 text-secondary-500 dark:bg-white/5 dark:text-secondary-400">
                 <ClipboardList size={24} />
               </div>
-              <h3 className="mt-4 text-body-lg font-semibold text-secondary-900 dark:text-white">Queue is empty</h3>
+              <h3 className="mt-4 text-body-lg font-semibold text-secondary-900 dark:text-white">No candidates yet</h3>
               <p className="mt-2 text-body-sm text-secondary-500 dark:text-secondary-400">
-                There are no shortlisted candidates to review at this time.
+                There are no candidates in the pipeline for this job.
               </p>
             </div>
           ) : (
@@ -139,7 +125,7 @@ export function Queue() {
               <TableHeader>
                 <TableRow isHeader>
                   <TableHead>Candidate</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>AI Match</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Interview Schedule</TableHead>
                   <TableHead className="w-10"></TableHead>
@@ -162,8 +148,26 @@ export function Queue() {
                     <TableCell className="font-semibold text-secondary-900 dark:text-white">
                       {app.candidateName}
                     </TableCell>
-                    <TableCell className="text-secondary-600 dark:text-secondary-300">
-                      {app.jobTitle}
+                    <TableCell>
+                      {app.aiMatchScore != null ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-16 overflow-hidden rounded-full bg-secondary-100 dark:bg-secondary-800">
+                            <div
+                              className={`h-full rounded-full ${
+                                app.aiMatchScore >= 80 ? 'bg-success-500'
+                                : app.aiMatchScore >= 60 ? 'bg-warning-500'
+                                : 'bg-danger-500'
+                              }`}
+                              style={{ width: `${app.aiMatchScore}%` }}
+                            />
+                          </div>
+                          <span className="text-body-sm font-semibold text-secondary-700 dark:text-secondary-300">
+                            {app.aiMatchScore}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-secondary-400 italic">Pending</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={app.status} />
@@ -192,4 +196,4 @@ export function Queue() {
   );
 }
 
-export default Queue;
+export default JobApplications;

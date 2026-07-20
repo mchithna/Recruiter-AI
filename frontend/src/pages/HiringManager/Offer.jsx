@@ -14,7 +14,7 @@ import {
   Badge,
 } from '../../components/ui';
 import DateTimeInput from '../../components/ui/DateTimeInput';
-import { getApplication, getOfferForApplication, submitOffer } from './services/mockData';
+import { getApplication, getOfferForApplication, submitOffer } from './services/hiringManagerApi';
 
 const formatDateTime = (dateTimeString) => {
   if (!dateTimeString) return '';

@@ -7,7 +7,7 @@ import { useToast } from '../../lib/ToastContext';
 import api from '../../api';
 
 const CompanyProfile = () => {
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,14 +54,14 @@ const CompanyProfile = () => {
           subscriptionStatus: data.subscriptionStatus || 'Active',
         });
       } catch (error) {
-        showToast('Failed to load company profile.', 'danger');
+        try { toast({ title: 'Failed to load company profile.', variant: 'danger' }); } catch (e) {}
       } finally {
         setLoading(false);
       }
     };
     
     fetchCompany();
-  }, [showToast]);
+  }, [toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,9 +87,9 @@ const CompanyProfile = () => {
         address: addressJson
       });
       
-      showToast('Company profile updated successfully.', 'success');
+      try { toast({ title: 'Company profile updated successfully.', variant: 'success' }); } catch (e) {}
     } catch (error) {
-      showToast('Failed to update company profile.', 'danger');
+      try { toast({ title: 'Failed to update company profile.', variant: 'danger' }); } catch (e) {}
     } finally {
       setSaving(false);
     }

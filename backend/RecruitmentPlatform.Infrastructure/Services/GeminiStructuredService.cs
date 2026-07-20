@@ -14,7 +14,7 @@ public class GeminiStructuredService : IGeminiStructuredService
     };
 
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+    private readonly string[] _apiKeys;
     private readonly string[] _models;
     private readonly ILogger<GeminiStructuredService> _logger;
 
@@ -24,10 +24,14 @@ public class GeminiStructuredService : IGeminiStructuredService
         ILogger<GeminiStructuredService> logger)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["GeminiSettings:ApiKey"]
-            ?? configuration["RecruiterGeminiSettings:ApiKey"]
-            ?? configuration["GEMINI_API_KEY"]
-            ?? string.Empty;
+        var keys = new[]
+        {
+            configuration["GeminiSettings:ApiKey"],
+            configuration["RecruiterGeminiSettings:ApiKey"],
+            configuration["GEMINI_API_KEY"]
+        }.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct().ToArray();
+        _apiKeys = keys.Length > 0 ? keys : new[] { string.Empty };
+
         var configuredModel = configuration["GeminiSettings:Model"]
             ?? configuration["RecruiterGeminiSettings:Model"]
             ?? configuration["GEMINI_MODEL"]
@@ -42,7 +46,7 @@ public class GeminiStructuredService : IGeminiStructuredService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_apiKey))
+        if (_apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return default;
@@ -130,21 +134,36 @@ public class GeminiStructuredService : IGeminiStructuredService
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
 
-        foreach (var model in _models)
+        foreach (var apiKey in _apiKeys)
         {
-            lastResponse?.Dispose();
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
-            var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+            foreach (var model in _models)
             {
-                return response;
-            }
+                lastResponse?.Dispose();
 
-            _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
-            lastResponse = response;
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
+                var response = await _httpClient.PostAsync(url, content, cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return response;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    _logger.LogWarning("Gemini API key rate limited. Trying next key.");
+                    lastResponse = response;
+                    break; 
+                }
+
+                if (!IsModelUnavailable(response.StatusCode))
+                {
+                    return response;
+                }
+
+                _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                lastResponse = response;
+            }
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
@@ -152,7 +171,7 @@ public class GeminiStructuredService : IGeminiStructuredService
 
     private static string[] BuildModelFallbacks(string configuredModel)
     {
-        var models = new[] { configuredModel, "gemini-flash-latest", "gemini-2.0-flash" };
+        var models = new[] { configuredModel, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-flash-latest" };
         return models
             .Select(NormalizeModel)
             .Where(model => !string.IsNullOrWhiteSpace(model))

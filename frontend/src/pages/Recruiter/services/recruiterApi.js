@@ -23,6 +23,14 @@ const normalizeApplication = (application) => ({
     : null,
 });
 
+const normalizeInterview = (interview) => ({
+  ...interview,
+  id: String(interview.id),
+  applicationId: String(interview.applicationId),
+  interviewerId: String(interview.interviewerId),
+  durationMinutes: Number(interview.durationMinutes ?? 0),
+});
+
 export const recruiterApi = {
   async getDashboard() {
     const { data } = await api.get('/recruiter/dashboard');
@@ -57,12 +65,58 @@ export const recruiterApi = {
     return normalizeApplication(data);
   },
 
+  async updateApplicationStatus(applicationId, payload) {
+    const { data } = await api.put(`/recruiter/applications/${applicationId}/status`, payload);
+    return data;
+  },
+
   async getConversations() {
     const { data } = await api.get('/recruiter/messages/conversations');
     return (data || []).map((conversation) => ({
       ...conversation,
       applicationId: String(conversation.applicationId),
     }));
+  },
+
+  async getInterviews() {
+    const { data } = await api.get('/interviews');
+    return (data || []).map(normalizeInterview);
+  },
+
+  async getInterviewsByApplication(applicationId) {
+    const { data } = await api.get(`/interviews/application/${applicationId}`);
+    return (data || []).map(normalizeInterview);
+  },
+
+  async createInterview(payload) {
+    const { data } = await api.post('/interviews', payload);
+    return normalizeInterview(data);
+  },
+
+  async getHiringManagers() {
+    const { data } = await api.get('/staff/hiring-managers');
+    return (data || []).map((manager) => ({
+      ...manager,
+      id: String(manager.id),
+    }));
+  },
+
+  async getApplicationMessages(applicationId) {
+    const { data } = await api.get(`/recruiter/applications/${applicationId}/messages`);
+    return (data || []).map((message) => ({
+      ...message,
+      id: String(message.id),
+      sender: message.senderName,
+    }));
+  },
+
+  async sendApplicationMessage(applicationId, payload) {
+    const { data } = await api.post(`/recruiter/applications/${applicationId}/messages`, payload);
+    return {
+      ...data,
+      id: String(data.id),
+      sender: data.senderName,
+    };
   },
 
   async analyzeCv(applicationId) {
@@ -98,6 +152,16 @@ export const recruiterApi = {
   async generateJobDescription(payload) {
     const { data } = await api.post('/recruiter/ai/job-description', payload);
     return data;
+  },
+
+  async extractJobSkills(payload) {
+    try {
+      const { data } = await api.post('/recruiter/ai/extract-job-skills', payload);
+      return data;
+    } catch (error) {
+      console.error('Server Error during skill extraction:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   async draftMessage(payload) {

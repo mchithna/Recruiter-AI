@@ -16,7 +16,7 @@ import {
   getAllOffers,
   getEvaluationForInterview,
   getInterviewsForApplication,
-} from './services/mockData';
+} from './services/hiringManagerApi';
 
 const formatDateTime = (dateTimeString) => {
   if (!dateTimeString) return '';

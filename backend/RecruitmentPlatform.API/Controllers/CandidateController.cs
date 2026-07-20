@@ -13,10 +13,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class CandidateController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public CandidateController(ApplicationDbContext context)
+    public CandidateController(ApplicationDbContext context, IServiceScopeFactory scopeFactory)
     {
         _context = context;
+        _scopeFactory = scopeFactory;
     }
 
     [HttpGet("profile")]
@@ -48,6 +50,174 @@ public class CandidateController : ControllerBase
         profile.LocationCity = Clamp(request.LocationCity, 100);
         profile.YearsOfExperience = request.YearsOfExperience is < 0 or > 80 ? null : request.YearsOfExperience;
         profile.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+
+    [HttpPost("profile/skills")]
+    public async Task<IActionResult> AddProfileSkill([FromBody] CandidateSkillCreateDto request, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var hasProfile = await _context.CandidateProfiles.AnyAsync(p => p.UserId == userId, cancellationToken);
+        if (!hasProfile) return NotFound(new { message = "Candidate profile not found." });
+
+        if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest(new { message = "Skill name is required." });
+        
+        var nameLower = request.Name.Trim().ToLower();
+        var skill = await _context.Skills.FirstOrDefaultAsync(s => s.Name.ToLower() == nameLower, cancellationToken);
+        if (skill == null)
+        {
+            skill = new Skill { Name = request.Name.Trim() };
+            _context.Skills.Add(skill);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        var exists = await _context.CandidateSkills.AnyAsync(cs => cs.CandidateId == userId && cs.SkillId == skill.Id, cancellationToken);
+        if (exists) return Conflict(new { message = "Skill already added." });
+
+        var candidateSkill = new CandidateSkill
+        {
+            CandidateId = userId,
+            SkillId = skill.Id,
+            ProficiencyLevel = Clamp(request.ProficiencyLevel, 50) ?? "Intermediate",
+            YearsOfExperience = request.YearsOfExperience,
+            ExtractedByAi = false
+        };
+
+        _context.CandidateSkills.Add(candidateSkill);
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok();
+    }
+
+    [HttpDelete("profile/skills/{skillId:int}")]
+    public async Task<IActionResult> DeleteProfileSkill(int skillId, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var candidateSkill = await _context.CandidateSkills.FirstOrDefaultAsync(cs => cs.CandidateId == userId && cs.SkillId == skillId, cancellationToken);
+        if (candidateSkill == null) return NotFound(new { message = "Skill not found on profile." });
+        
+        _context.CandidateSkills.Remove(candidateSkill);
+        await _context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("profile/experience")]
+    public async Task<IActionResult> AddProfileExperience([FromBody] CandidateExperienceCreateDto request, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var hasProfile = await _context.CandidateProfiles.AnyAsync(p => p.UserId == userId, cancellationToken);
+        if (!hasProfile) return NotFound(new { message = "Candidate profile not found." });
+
+        if (string.IsNullOrWhiteSpace(request.CompanyName) || string.IsNullOrWhiteSpace(request.JobTitle))
+            return BadRequest(new { message = "Company name and job title are required." });
+
+        var exp = new CandidateWorkExperience
+        {
+            CandidateId = userId,
+            CompanyName = Clamp(request.CompanyName, 255)!,
+            JobTitle = Clamp(request.JobTitle, 255)!,
+            Location = Clamp(request.Location, 255),
+            StartDate = ParseDate(request.StartDate) ?? default,
+            EndDate = ParseDate(request.EndDate),
+            IsCurrent = request.IsCurrent,
+            Description = Clamp(request.Description, 2000)
+        };
+        _context.CandidateWorkExperiences.Add(exp);
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok();
+    }
+
+    [HttpPut("profile/experience/{id:int}")]
+    public async Task<IActionResult> UpdateProfileExperience(int id, [FromBody] CandidateExperienceCreateDto request, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var exp = await _context.CandidateWorkExperiences.FirstOrDefaultAsync(e => e.Id == id && e.CandidateId == userId, cancellationToken);
+        if (exp == null) return NotFound(new { message = "Experience not found." });
+
+        if (string.IsNullOrWhiteSpace(request.CompanyName) || string.IsNullOrWhiteSpace(request.JobTitle))
+            return BadRequest(new { message = "Company name and job title are required." });
+
+        exp.CompanyName = Clamp(request.CompanyName, 255)!;
+        exp.JobTitle = Clamp(request.JobTitle, 255)!;
+        exp.Location = Clamp(request.Location, 255);
+        exp.StartDate = ParseDate(request.StartDate) ?? exp.StartDate;
+        exp.EndDate = ParseDate(request.EndDate);
+        exp.IsCurrent = request.IsCurrent;
+        exp.Description = Clamp(request.Description, 2000);
+        
+        await _context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("profile/experience/{id:int}")]
+    public async Task<IActionResult> DeleteProfileExperience(int id, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var exp = await _context.CandidateWorkExperiences.FirstOrDefaultAsync(e => e.Id == id && e.CandidateId == userId, cancellationToken);
+        if (exp == null) return NotFound(new { message = "Experience not found." });
+        
+        _context.CandidateWorkExperiences.Remove(exp);
+        await _context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("profile/education")]
+    public async Task<IActionResult> AddProfileEducation([FromBody] CandidateEducationCreateDto request, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var hasProfile = await _context.CandidateProfiles.AnyAsync(p => p.UserId == userId, cancellationToken);
+        if (!hasProfile) return NotFound(new { message = "Candidate profile not found." });
+
+        if (string.IsNullOrWhiteSpace(request.InstitutionName) || string.IsNullOrWhiteSpace(request.Degree))
+            return BadRequest(new { message = "Institution name and degree are required." });
+
+        var edu = new CandidateEducation
+        {
+            CandidateId = userId,
+            InstitutionName = Clamp(request.InstitutionName, 255)!,
+            Degree = Clamp(request.Degree, 255)!,
+            FieldOfStudy = Clamp(request.FieldOfStudy, 255) ?? "",
+            StartDate = ParseDate(request.StartDate) ?? default,
+            EndDate = ParseDate(request.EndDate),
+            IsCurrent = request.IsCurrent,
+            Grade = Clamp(request.Grade, 50)
+        };
+        _context.CandidateEducations.Add(edu);
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok();
+    }
+
+    [HttpPut("profile/education/{id:int}")]
+    public async Task<IActionResult> UpdateProfileEducation(int id, [FromBody] CandidateEducationCreateDto request, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var edu = await _context.CandidateEducations.FirstOrDefaultAsync(e => e.Id == id && e.CandidateId == userId, cancellationToken);
+        if (edu == null) return NotFound(new { message = "Education not found." });
+
+        if (string.IsNullOrWhiteSpace(request.InstitutionName) || string.IsNullOrWhiteSpace(request.Degree))
+            return BadRequest(new { message = "Institution name and degree are required." });
+
+        edu.InstitutionName = Clamp(request.InstitutionName, 255)!;
+        edu.Degree = Clamp(request.Degree, 255)!;
+        edu.FieldOfStudy = Clamp(request.FieldOfStudy, 255) ?? "";
+        edu.StartDate = ParseDate(request.StartDate) ?? edu.StartDate;
+        edu.EndDate = ParseDate(request.EndDate);
+        edu.IsCurrent = request.IsCurrent;
+        edu.Grade = Clamp(request.Grade, 50);
+        
+        await _context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("profile/education/{id:int}")]
+    public async Task<IActionResult> DeleteProfileEducation(int id, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var edu = await _context.CandidateEducations.FirstOrDefaultAsync(e => e.Id == id && e.CandidateId == userId, cancellationToken);
+        if (edu == null) return NotFound(new { message = "Education not found." });
+        
+        _context.CandidateEducations.Remove(edu);
         await _context.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
@@ -170,8 +340,106 @@ public class CandidateController : ControllerBase
             UpdatedAt = DateTime.UtcNow
         };
         _context.Applications.Add(app);
+
+        var history = new ApplicationStatusHistory
+        {
+            Application = app,
+            ChangedBy = userId,
+            OldStatus = null,
+            NewStatus = "Applied",
+            ChangedAt = DateTime.UtcNow
+        };
+        _context.ApplicationStatusHistories.Add(history);
+
         await _context.SaveChangesAsync(cancellationToken);
+
+        var appId = app.Id;
+        _ = Task.Run(async () => await ProcessAiMatchingAsync(appId));
+
         return Ok(new { app.Id, app.JobId, JobTitle = job.Title, app.AppliedAt, app.Status, app.AiMatchScore });
+    }
+
+    private async Task ProcessAiMatchingAsync(int applicationId)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gemini = scope.ServiceProvider.GetRequiredService<RecruitmentPlatform.Core.Interfaces.IGeminiStructuredService>();
+
+            var app = await db.Applications
+                .Include(a => a.Job).ThenInclude(j => j.JobSkills).ThenInclude(s => s.Skill)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateEducations)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateWorkExperiences)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateSkills).ThenInclude(s => s.Skill)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (app == null || string.IsNullOrWhiteSpace(app.Job.Description)) return;
+
+            var jobSnapshot = new
+            {
+                app.Job.Id,
+                app.Job.Title,
+                description = Clamp(app.Job.Description, 3000),
+                requirements = Clamp(app.Job.Requirements, 3000),
+                app.Job.EmploymentType,
+                app.Job.WorkMode,
+                app.Job.Location,
+                mandatorySkills = app.Job.JobSkills.Where(s => s.IsMandatory).Select(s => s.Skill.Name),
+                preferredSkills = app.Job.JobSkills.Where(s => !s.IsMandatory).Select(s => s.Skill.Name)
+            };
+
+            var profile = app.Candidate.CandidateProfile;
+            var candidateSnapshot = new
+            {
+                applicationId = app.Id,
+                candidateName = app.Candidate.FirstName + " " + app.Candidate.LastName,
+                profileSummary = Clamp(profile?.SummaryText, 2500),
+                profile?.YearsOfExperience,
+                skills = profile?.CandidateSkills.Select(s => new { s.Skill.Name, s.ProficiencyLevel, s.YearsOfExperience }),
+                education = profile?.CandidateEducations.Select(e => new { e.InstitutionName, e.Degree, e.FieldOfStudy, e.IsCurrent }),
+                experience = profile?.CandidateWorkExperiences.Select(e => new { e.CompanyName, e.JobTitle, e.IsCurrent, description = Clamp(e.Description, 1200) })
+            };
+
+            var prompt = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                task = "Compare the candidate against this vacancy. Scores must be 0-100 integers.",
+                authorizedData = new { applicationId = app.Id, job = jobSnapshot, candidate = candidateSnapshot }
+            });
+
+            var result = await gemini.GenerateJsonAsync<RecruitmentPlatform.Core.DTOs.CandidateJobMatchResultDto>(
+                "You are Hirely AI. Return valid JSON only. Scores must be 0-100 integers.",
+                prompt);
+
+            if (result != null)
+            {
+                result.OverallMatchScore = Math.Clamp(result.OverallMatchScore, 0, 100);
+                result.SkillMatchScore = Math.Clamp(result.SkillMatchScore, 0, 100);
+                result.ExperienceMatchScore = Math.Clamp(result.ExperienceMatchScore, 0, 100);
+                result.EducationMatchScore = Math.Clamp(result.EducationMatchScore, 0, 100);
+
+                var screening = new AiScreeningResult
+                {
+                    ApplicationId = app.Id,
+                    OverallScore = result.OverallMatchScore,
+                    SkillsMatchScore = result.SkillMatchScore,
+                    ExperienceMatchScore = result.ExperienceMatchScore,
+                    EducationMatchScore = result.EducationMatchScore,
+                    ScreeningSummary = result.Explanation,
+                    ProcessedAt = DateTime.UtcNow
+                };
+
+                db.AiScreeningResults.Add(screening);
+                app.AiMatchScore = result.OverallMatchScore;
+                app.UpdatedAt = DateTime.UtcNow;
+
+                await db.SaveChangesAsync();
+            }
+        }
+        catch
+        {
+            // Background task failure ignored
+        }
     }
 
     [HttpGet("applications")]
@@ -325,6 +593,13 @@ public class CandidateController : ControllerBase
         if (string.IsNullOrWhiteSpace(text)) return null;
         return text.Length <= maxLength ? text : text[..maxLength];
     }
+    private DateOnly? ParseDate(string? dateStr)
+    {
+        if (string.IsNullOrWhiteSpace(dateStr)) return null;
+        if (dateStr.Length == 7 && dateStr[4] == '-') dateStr += "-01";
+        if (DateOnly.TryParse(dateStr, out var d)) return d;
+        return null;
+    }
 }
 
 public class CandidateProfileUpdateDto
@@ -437,4 +712,33 @@ public class CandidateApplicationDto
 public class CandidateMessageCreateDto
 {
     public string? Body { get; set; }
+}
+
+public class CandidateSkillCreateDto
+{
+    public string Name { get; set; } = "";
+    public string? ProficiencyLevel { get; set; }
+    public int? YearsOfExperience { get; set; }
+}
+
+public class CandidateExperienceCreateDto
+{
+    public string CompanyName { get; set; } = "";
+    public string JobTitle { get; set; } = "";
+    public string? Location { get; set; }
+    public string StartDate { get; set; } = "";
+    public string? EndDate { get; set; }
+    public bool IsCurrent { get; set; }
+    public string? Description { get; set; }
+}
+
+public class CandidateEducationCreateDto
+{
+    public string InstitutionName { get; set; } = "";
+    public string Degree { get; set; } = "";
+    public string FieldOfStudy { get; set; } = "";
+    public string StartDate { get; set; } = "";
+    public string? EndDate { get; set; }
+    public bool IsCurrent { get; set; }
+    public string? Grade { get; set; }
 }

@@ -9,7 +9,7 @@ import { Plus, Edit2, Trash2, Network } from 'lucide-react';
 import DepartmentDetailModal from './DepartmentDetailModal';
 
 const OrgChartBuilder = () => {
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalState, setModalState] = useState({
@@ -32,7 +32,7 @@ const OrgChartBuilder = () => {
       const response = await api.get('/departments');
       setDepartments(response.data);
     } catch {
-      showToast('Failed to load departments.', 'danger');
+      try { toast({ title: 'Failed to load departments.', variant: 'danger' }); } catch (e) {}
     } finally {
       setLoading(false);
     }
@@ -66,19 +66,20 @@ const OrgChartBuilder = () => {
         const payload = { name: modalState.name };
         if (modalState.parentId) payload.parentId = modalState.parentId;
         await api.post('/departments', payload);
-        showToast('Department added successfully.', 'success');
+        handleCloseModal();
+        fetchDepartments();
+        try { toast({ title: 'Department added successfully.', variant: 'success' }); } catch (e) {}
       } else {
         await api.put(`/departments/${modalState.id}`, {
           name: modalState.name,
           parentId: modalState.parentId,
         });
-        showToast('Department updated successfully.', 'success');
+        handleCloseModal();
+        fetchDepartments();
+        try { toast({ title: 'Department updated successfully.', variant: 'success' }); } catch (e) {}
       }
-
-      handleCloseModal();
-      fetchDepartments();
     } catch (error) {
-      showToast(error.response?.data?.message || error.response?.data || 'Failed to save department.', 'danger');
+      try { toast({ title: error.response?.data?.message || error.response?.data || 'Failed to save department.', variant: 'danger' }); } catch (e) {}
     } finally {
       setSaving(false);
     }
@@ -89,11 +90,11 @@ const OrgChartBuilder = () => {
 
     try {
       await api.delete(`/departments/${id}`);
-      showToast('Department deleted successfully.', 'success');
       fetchDepartments();
+      try { toast({ title: 'Department deleted successfully.', variant: 'success' }); } catch (e) {}
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data || 'Failed to delete department.';
-      showToast(typeof errorMsg === 'string' ? errorMsg : 'Failed to delete department.', 'danger');
+      try { toast({ title: typeof errorMsg === 'string' ? errorMsg : 'Failed to delete department.', variant: 'danger' }); } catch (e) {}
     }
   };
 

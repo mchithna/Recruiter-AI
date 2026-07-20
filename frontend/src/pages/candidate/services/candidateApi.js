@@ -9,6 +9,38 @@ export const updateMyProfile = async (updates) => {
   await api.put('/candidate/profile', updates);
 };
 
+export const addProfileSkill = async (skill) => {
+  await api.post('/candidate/profile/skills', skill);
+};
+
+export const deleteProfileSkill = async (id) => {
+  await api.delete(`/candidate/profile/skills/${id}`);
+};
+
+export const addProfileExperience = async (experience) => {
+  await api.post('/candidate/profile/experience', experience);
+};
+
+export const updateProfileExperience = async (id, experience) => {
+  await api.put(`/candidate/profile/experience/${id}`, experience);
+};
+
+export const deleteProfileExperience = async (id) => {
+  await api.delete(`/candidate/profile/experience/${id}`);
+};
+
+export const addProfileEducation = async (education) => {
+  await api.post('/candidate/profile/education', education);
+};
+
+export const updateProfileEducation = async (id, education) => {
+  await api.put(`/candidate/profile/education/${id}`, education);
+};
+
+export const deleteProfileEducation = async (id) => {
+  await api.delete(`/candidate/profile/education/${id}`);
+};
+
 export const getMyDocuments = async () => {
   const response = await api.get('/candidate/documents');
   return response.data;
