@@ -1,8 +1,10 @@
 # Recruitment Platform - Dashboard Navigation & Layout Context (Phase 2)
 
 ## Architectural & Navigation Framework
-The earlier phase established the core pages (job management, applicant review, interview scheduling, evaluations, and offers) but lacked unified wrapping and persistent navigation. This phase adds sidebar, tabs, persistent navigation, and new landing tabs for the Hiring Manager dashboard.
-- **Default Landing Page**: The default landing page changes from `/hiring-manager/queue` to the new Home/Overview landing page (`/hiring-manager/home`).
+The earlier phase established the core pages (job management, applicant review, interview scheduling, evaluations, and offers) but lacked unified wrapping and persistent navigation. This phase adds sidebar, tabs, persistent navigation, and new landing tabs for the dashboards.
+
+- **Hiring Manager Default Landing Page**: The default landing page changes from `/hiring-manager/queue` to the new Home/Overview landing page (`/hiring-manager/home`).
+- **Recruiter Default Landing Page**: The default landing page changes from `/recruiter/jobs` to the new Home/Overview landing page (`/recruiter/home`).
 
 ---
 
@@ -14,16 +16,21 @@ The earlier phase established the core pages (job management, applicant review, 
 - **Interviews** (`/hiring-manager/interviews`) – New global interviews schedule overview.
 - **Offers** (`/hiring-manager/offers`) – New global offers tracking view.
 
+### Recruiter
+- **Home** (`/recruiter/home`) – New landing overview page.
+- **Jobs** (`/recruiter/jobs`) – Existing jobs listing.
+- **Interviews** (`/recruiter/interviews`) – New global interviews list.
+- **Messages** (`/recruiter/messages`) – Existing recruiter messages.
+
 ---
 
 ## Backend Development Rules
-- **Clean Architecture**: Follow Clean Architecture boundaries strictly.
-- **No Raw SQL**: Write database queries only using the `_unitOfWork` provided in the dependency injection (DI) container.
-- **Database Schema Integrity**: Do NOT modify `ApplicationDbContext.cs` or Entities. Do NOT run `dotnet ef migrations`. If a feature requires new tables or columns, consult the PM.
-- **Code Locations**: Implement backend endpoints primarily inside: `backend/RecruitmentPlatform.API/Controllers/`.
+- **No Raw SQL**: You must use the `_unitOfWork` provided in the DI container.
+- **Database Schema Integrity**: Do NOT edit `ApplicationDbContext.cs` or Entities. If you need a new database column or table for your feature, ask the PM. DO NOT run `dotnet ef migrations`.
+- **Code Locations**: You will spend 99% of your backend time inside `backend/RecruitmentPlatform.API/Controllers/` creating your endpoints.
 - **Design Patterns**:
-  - Use the **Builder Pattern** for complex objects (such as a `Job`).
-  - Use the **NotificationFactory** for triggering emails, SMS, or other notifications.
+  - If you are building a complex object (like a Job), use the Builder pattern.
+  - If you trigger an email/SMS, use the NotificationFactory.
 
 ---
 
@@ -37,8 +44,8 @@ The earlier phase established the core pages (job management, applicant review, 
   ```jsx
   <Button variant="primary" type="submit">Save Profile</Button>
   ```
-- **Component Modifications**: Do not modify the shared/original UI components directly if you need custom tweaks. Instead, duplicate the component into a separate library named after your specific dashboard.
-- **API Calls**: Do NOT use `fetch` or import `axios` directly. Import and use the centralized API instance that handles authorization tokens automatically:
+- **Component Modifications**: You can have some tweaks that you want in existing components but don't change the original component. Get a copy and create a library named after your dashboard to store the components that you want.
+- **API Calls**: Do not use fetch. Do not import axios directly. You must import our centralized API instance which handles tokens automatically:
   ```javascript
   import api from '../../api';
   ```
