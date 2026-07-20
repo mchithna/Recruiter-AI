@@ -10,7 +10,7 @@ export function RecruiterRoutes() {
 }
 
 export function RecruiterIndexRedirect() {
-  return <Navigate to="/recruiter/home" replace />;
+  return <Navigate to="/recruiter/jobs" replace />;
 }
 
 export default RecruiterRoutes;

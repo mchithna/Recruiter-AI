@@ -1,4 +1,4 @@
-import api from '../../../api';
+import * as mockData from './mockData';
 
 const normalizeJob = (job) => ({
   ...job,
@@ -25,88 +25,114 @@ const normalizeApplication = (application) => ({
 
 export const recruiterApi = {
   async getDashboard() {
-    const { data } = await api.get('/recruiter/dashboard');
+    const jobs = await mockData.getJobs();
+    const applications = await mockData.getAllApplications();
+    const interviews = await mockData.getAllInterviews();
     return {
-      jobs: (data.jobs || []).map(normalizeJob),
-      applications: (data.applications || []).map(normalizeApplication),
-      interviews: data.interviews || [],
+      jobs: (jobs || []).map(normalizeJob),
+      applications: (applications || []).map(normalizeApplication),
+      interviews: interviews || [],
     };
   },
 
   async getJobs() {
-    const { data } = await api.get('/recruiter/jobs');
-    return (data || []).map(normalizeJob);
+    const jobs = await mockData.getJobs();
+    return (jobs || []).map(normalizeJob);
   },
 
   async createJob(payload) {
-    const { data } = await api.post('/recruiter/jobs', payload);
-    return normalizeJob(data);
+    const jobs = await mockData.getJobs();
+    const nextId = jobs.length + 1;
+    const newJob = {
+      id: `job-00${nextId}`,
+      createdAt: new Date().toISOString(),
+      status: 'Open',
+      departmentName: 'Product Engineering',
+      ...payload,
+    };
+    return normalizeJob(newJob);
   },
 
   async updateJob(jobId, payload) {
-    await api.put(`/recruiter/jobs/${jobId}`, payload);
+    return Promise.resolve();
   },
 
   async getApplicationsByJob(jobId) {
-    const { data } = await api.get(`/recruiter/jobs/${jobId}/applications`);
-    return (data || []).map(normalizeApplication);
+    const applications = await mockData.getApplicationsByJob(jobId);
+    return (applications || []).map(normalizeApplication);
   },
 
   async getApplication(applicationId) {
-    const { data } = await api.get(`/recruiter/applications/${applicationId}`);
-    return normalizeApplication(data);
+    const application = await mockData.getApplication(applicationId);
+    return normalizeApplication(application);
   },
 
   async getConversations() {
-    const { data } = await api.get('/recruiter/messages/conversations');
-    return (data || []).map((conversation) => ({
+    const conversations = await mockData.getAllConversations();
+    return (conversations || []).map((conversation) => ({
       ...conversation,
       applicationId: String(conversation.applicationId),
     }));
   },
 
   async analyzeCv(applicationId) {
-    const { data } = await api.post(`/recruiter/ai/applications/${applicationId}/cv-analysis`);
-    return data;
+    const screening = await mockData.getAiScreeningResult(applicationId);
+    return screening;
   },
 
   async matchCandidate(applicationId) {
-    const { data } = await api.post(`/recruiter/ai/applications/${applicationId}/match`);
-    return data;
+    const screening = await mockData.getAiScreeningResult(applicationId);
+    return screening;
   },
 
   async summarizeCandidate(applicationId) {
-    const { data } = await api.post(`/recruiter/ai/applications/${applicationId}/summary`);
-    return data;
+    const screening = await mockData.getAiScreeningResult(applicationId);
+    return screening;
   },
 
   async compareCandidates(jobId) {
-    const { data } = await api.post(`/recruiter/ai/jobs/${jobId}/compare-candidates`);
-    return data;
+    return {
+      success: true,
+      comparison: 'Candidates evaluated successfully using mock AI.'
+    };
   },
 
   async screeningAssistance(jobId) {
-    const { data } = await api.post(`/recruiter/ai/jobs/${jobId}/screening`);
-    return data;
+    return {
+      success: true,
+      screeningFeedback: 'Screening processed via mock AI pipeline.'
+    };
   },
 
   async generateInterviewQuestions(applicationId) {
-    const { data } = await api.post(`/recruiter/ai/applications/${applicationId}/interview-questions`);
-    return data;
+    return {
+      questions: [
+        'How do you manage states in a complex React tree?',
+        'Can you describe your experience optimizing accessibility in design systems?'
+      ]
+    };
   },
 
   async generateJobDescription(payload) {
-    const { data } = await api.post('/recruiter/ai/job-description', payload);
-    return data;
+    return {
+      result: {
+        title: payload.jobTitle || 'Enhanced Role',
+        description: `${payload.existingDescription || 'Role description'} - improved with AI.`,
+        requirements: `${payload.existingRequirements || 'Core requirements'} - refined by AI.`
+      },
+      disclaimer: 'AI disclaimer: Mock output for review.'
+    };
   },
 
   async draftMessage(payload) {
-    const { data } = await api.post('/recruiter/ai/message-draft', payload);
-    return data;
+    return {
+      draft: `Hi, thank you for your interest. We'd love to invite you to our next screening stage.`
+    };
   },
 
   async summarizeAnalytics() {
-    const { data } = await api.post('/recruiter/ai/analytics/summary');
-    return data;
+    return {
+      summary: 'Recruiting analytics processed successfully.'
+    };
   },
 };
