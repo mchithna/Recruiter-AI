@@ -1,8 +1,24 @@
-import api from '../../../services/api';
+import api from '../../../api';
+
+export const getJobs = async () => {
+  const response = await api.get('/hiring-manager/jobs');
+  return response.data;
+};
+
+export const getJobApplications = async (jobId) => {
+  const response = await api.get(`/hiring-manager/jobs/${jobId}/applications`);
+  return response.data;
+};
 
 export const getShortlistedApplications = async () => {
-  const response = await api.get('/hiring-manager/queue');
-  return response.data;
+  // Aggregate shortlisted applications from all accessible jobs
+  const jobs = await getJobs();
+  const allShortlisted = [];
+  for (const job of jobs) {
+    const apps = await getJobApplications(job.id);
+    allShortlisted.push(...apps.filter(a => a.status === 'Shortlisted'));
+  }
+  return allShortlisted;
 };
 
 export const getApplication = async (applicationId) => {

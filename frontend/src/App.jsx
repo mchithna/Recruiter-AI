@@ -28,7 +28,8 @@ import RecruiterHome from './pages/Recruiter/RecruiterHome';
 import MessagesList from './pages/Recruiter/MessagesList';
 import HiringManagerRoutes, { HiringManagerIndexRedirect } from './pages/HiringManager/HiringManagerRoutes';
 import HiringManagerHome from './pages/HiringManager/Home';
-import Queue from './pages/HiringManager/Queue';
+import HiringManagerJobsList from './pages/HiringManager/JobsList';
+import HiringManagerJobApplications from './pages/HiringManager/JobApplications';
 import HiringManagerApplicationDetail from './pages/HiringManager/ApplicationDetail';
 import HiringManagerInterviews from './pages/HiringManager/Interviews';
 import HiringManagerInterviewDetail from './pages/HiringManager/InterviewDetail';
@@ -90,7 +91,8 @@ function App() {
                 <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
                   <Route index element={<HiringManagerIndexRedirect />} />
                   <Route path="home" element={<HiringManagerHome />} />
-                  <Route path="queue" element={<Queue />} />
+                  <Route path="jobs" element={<HiringManagerJobsList />} />
+                  <Route path="jobs/:jobId/applications" element={<HiringManagerJobApplications />} />
                   <Route path="applications/:applicationId" element={<HiringManagerApplicationDetail />} />
                   <Route path="interviews" element={<HiringManagerInterviews />} />
                   <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />

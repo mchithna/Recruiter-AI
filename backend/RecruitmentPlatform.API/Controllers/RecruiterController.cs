@@ -41,7 +41,8 @@ public class RecruiterController : ControllerBase
                 Status = j.Status,
                 DepartmentName = j.Department.Name,
                 CreatedAt = j.CreatedAt,
-                ApplicationCount = j.Applications.Count
+                ApplicationCount = j.Applications.Count,
+                Skills = j.JobSkills.Select(s => s.Skill.Name).ToList()
             })
             .ToListAsync(cancellationToken);
 
@@ -93,7 +94,8 @@ public class RecruiterController : ControllerBase
                 Status = j.Status,
                 DepartmentName = j.Department.Name,
                 CreatedAt = j.CreatedAt,
-                ApplicationCount = j.Applications.Count
+                ApplicationCount = j.Applications.Count,
+                Skills = j.JobSkills.Select(s => s.Skill.Name).ToList()
             })
             .ToListAsync(cancellationToken);
     }
@@ -127,6 +129,39 @@ public class RecruiterController : ControllerBase
         };
 
         _context.Jobs.Add(job);
+
+        // Process Job Skills
+        if (request.Skills != null && request.Skills.Count > 0)
+        {
+            var uniqueSkillNames = request.Skills.Select(s => s.Trim().ToLower()).Distinct().ToList();
+            var existingSkills = await _context.Skills
+                .Where(s => uniqueSkillNames.Contains(s.Name.ToLower()))
+                .ToListAsync(cancellationToken);
+
+            var existingSkillNames = existingSkills.Select(s => s.Name.ToLower()).ToHashSet();
+            var newSkills = uniqueSkillNames
+                .Where(name => !existingSkillNames.Contains(name))
+                .Select(name => new Skill { Name = name })
+                .ToList();
+
+            if (newSkills.Count > 0)
+            {
+                _context.Skills.AddRange(newSkills);
+                await _context.SaveChangesAsync(cancellationToken); // Save to generate IDs
+                existingSkills.AddRange(newSkills);
+            }
+
+            foreach (var skill in existingSkills)
+            {
+                _context.JobSkills.Add(new JobSkill
+                {
+                    Job = job,
+                    SkillId = skill.Id,
+                    IsMandatory = true
+                });
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetJobs), null, new RecruiterJobDto
@@ -140,7 +175,8 @@ public class RecruiterController : ControllerBase
             Location = job.Location,
             ApplicationDeadline = job.ApplicationDeadline,
             Status = job.Status,
-            CreatedAt = job.CreatedAt
+            CreatedAt = job.CreatedAt,
+            Skills = job.JobSkills.Select(s => s.Skill.Name).ToList()
         });
     }
 
@@ -151,6 +187,7 @@ public class RecruiterController : ControllerBase
 
         var job = await _context.Jobs
             .Include(j => j.Department)
+            .Include(j => j.JobSkills)
             .FirstOrDefaultAsync(j => j.Id == jobId && j.Department.CompanyId == companyId, cancellationToken);
 
         if (job == null) return NotFound(new { message = "Job not found." });
@@ -169,6 +206,43 @@ public class RecruiterController : ControllerBase
         }
 
         job.UpdatedAt = DateTime.UtcNow;
+
+        // Process Job Skills
+        if (request.Skills != null)
+        {
+            _context.JobSkills.RemoveRange(job.JobSkills);
+            
+            if (request.Skills.Count > 0)
+            {
+                var uniqueSkillNames = request.Skills.Select(s => s.Trim().ToLower()).Distinct().ToList();
+                var existingSkills = await _context.Skills
+                    .Where(s => uniqueSkillNames.Contains(s.Name.ToLower()))
+                    .ToListAsync(cancellationToken);
+
+                var existingSkillNames = existingSkills.Select(s => s.Name.ToLower()).ToHashSet();
+                var newSkills = uniqueSkillNames
+                    .Where(name => !existingSkillNames.Contains(name))
+                    .Select(name => new Skill { Name = name })
+                    .ToList();
+
+                if (newSkills.Count > 0)
+                {
+                    _context.Skills.AddRange(newSkills);
+                    await _context.SaveChangesAsync(cancellationToken); // Save to generate IDs
+                    existingSkills.AddRange(newSkills);
+                }
+
+                foreach (var skill in existingSkills)
+                {
+                    _context.JobSkills.Add(new JobSkill
+                    {
+                        JobId = job.Id,
+                        SkillId = skill.Id,
+                        IsMandatory = true
+                    });
+                }
+            }
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
         return NoContent();
@@ -539,6 +613,7 @@ public class SaveRecruiterJobDto
     public string? Location { get; set; }
     public string? ApplicationDeadline { get; set; }
     public string? Status { get; set; }
+    public List<string> Skills { get; set; } = new();
 }
 
 public class RecruiterJobDto
@@ -555,6 +630,7 @@ public class RecruiterJobDto
     public string? DepartmentName { get; set; }
     public DateTime CreatedAt { get; set; }
     public int ApplicationCount { get; set; }
+    public List<string> Skills { get; set; } = new();
 }
 
 public class RecruiterApplicationListDto

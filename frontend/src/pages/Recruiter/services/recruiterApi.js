@@ -154,6 +154,16 @@ export const recruiterApi = {
     return data;
   },
 
+  async extractJobSkills(payload) {
+    try {
+      const { data } = await api.post('/recruiter/ai/extract-job-skills', payload);
+      return data;
+    } catch (error) {
+      console.error('Server Error during skill extraction:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   async draftMessage(payload) {
     const { data } = await api.post('/recruiter/ai/message-draft', payload);
     return data;

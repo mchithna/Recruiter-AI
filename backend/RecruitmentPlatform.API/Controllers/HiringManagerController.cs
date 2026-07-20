@@ -19,15 +19,38 @@ public class HiringManagerController : ControllerBase
         _context = context;
     }
 
-    [HttpGet("queue")]
-    public async Task<ActionResult<List<HiringManagerApplicationListDto>>> GetQueue(CancellationToken cancellationToken)
+    [HttpGet("jobs")]
+    public async Task<ActionResult<List<HiringManagerJobDto>>> GetJobs(CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var jobs = await _context.Jobs
+            .AsNoTracking()
+            .Where(j => j.Department.CompanyId == companyId)
+            .Where(j => j.HiringManagerId == userId || j.Applications.Any(a => a.Interviews.Any(i => i.InterviewerId == userId)))
+            .Select(j => new HiringManagerJobDto
+            {
+                Id = j.Id,
+                Title = j.Title,
+                DepartmentName = j.Department.Name,
+                ShortlistedCount = j.Applications.Count(a => a.Status == "Shortlisted"),
+                InterviewingCount = j.Applications.Count(a => a.Status == "Interview Scheduled")
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(jobs);
+    }
+
+    [HttpGet("jobs/{jobId:int}/applications")]
+    public async Task<ActionResult<List<HiringManagerApplicationListDto>>> GetJobApplications(int jobId, CancellationToken cancellationToken)
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
 
         var applications = await _context.Applications
             .AsNoTracking()
-            .Where(a => a.Job.Department.CompanyId == companyId)
+            .Where(a => a.JobId == jobId && a.Job.Department.CompanyId == companyId)
             .Where(a => a.Job.HiringManagerId == userId || a.Interviews.Any(i => i.InterviewerId == userId))
             .Where(a => a.Status == "Shortlisted" || a.Status == "Interview Scheduled" || a.Status == "Offer Extended" || a.Status == "Hired" || a.Status == "Rejected")
             .OrderByDescending(a => a.AppliedAt)
@@ -145,6 +168,15 @@ public class HiringManagerController : ControllerBase
         if (int.TryParse(value, out var userId)) return userId;
         throw new UnauthorizedAccessException("User ID claim is missing or invalid.");
     }
+}
+
+public class HiringManagerJobDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+    public string DepartmentName { get; set; } = "";
+    public int ShortlistedCount { get; set; }
+    public int InterviewingCount { get; set; }
 }
 
 public class HiringManagerApplicationListDto

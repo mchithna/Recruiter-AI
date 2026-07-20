@@ -161,6 +161,29 @@ public class RecruiterAiController : ControllerBase
         return ToAiResponse(result, RecruiterAiMessages.JobDescriptionGenerationFailed);
     }
 
+    [HttpPost("extract-job-skills")]
+    public async Task<IActionResult> ExtractJobSkills([FromBody] JobSkillsExtractionRequestDto request, CancellationToken cancellationToken)
+    {
+        if (!IsRateAllowed("job-description")) return RateLimited();
+        var hasInput = !string.IsNullOrWhiteSpace(request.Title) || !string.IsNullOrWhiteSpace(request.Description) || !string.IsNullOrWhiteSpace(request.Requirements);
+        if (!hasInput) return BadRequest(new { message = "Add a job title, description, or requirements before extracting skills." });
+
+        try
+        {
+            var result = await _gemini.GenerateJsonAsync<JobSkillsExtractionResultDto>(
+                SafetySystemInstruction,
+                BuildPrompt("Extract the core skills and technologies required for this job. Return a flat list of normalized skill names.", request),
+                maxOutputTokens: 800,
+                cancellationToken: cancellationToken);
+
+            return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "AI service is currently unavailable or rate limited. Please try again later." });
+        }
+    }
+
     [HttpPost("applications/{applicationId:int}/interview-questions")]
     public async Task<IActionResult> GenerateInterviewQuestions(int applicationId, CancellationToken cancellationToken)
     {
@@ -254,7 +277,7 @@ public class RecruiterAiController : ControllerBase
 
     private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return StatusCode(StatusCodes.Status500InternalServerError, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
+        if (result == null) return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 

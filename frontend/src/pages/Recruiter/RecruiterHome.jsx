@@ -273,7 +273,11 @@ export default function RecruiterHome() {
             </div>
             {closestDeadlineJob ? (
               <div className="mt-4">
-                <p className="text-h4 text-secondary-900 dark:text-white">{closestDeadlineJob.title}</p>
+                <Link to={`/recruiter/jobs/${closestDeadlineJob.id}/applications`} className="group/link block">
+                  <p className="text-h4 text-secondary-900 dark:text-white transition-colors group-hover/link:text-primary-600">
+                    {closestDeadlineJob.title}
+                  </p>
+                </Link>
                 <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
                   Deadline {formatDate(closestDeadlineJob.applicationDeadline)}
                 </p>

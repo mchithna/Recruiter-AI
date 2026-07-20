@@ -13,10 +13,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class CandidateController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public CandidateController(ApplicationDbContext context)
+    public CandidateController(ApplicationDbContext context, IServiceScopeFactory scopeFactory)
     {
         _context = context;
+        _scopeFactory = scopeFactory;
     }
 
     [HttpGet("profile")]
@@ -350,7 +352,94 @@ public class CandidateController : ControllerBase
         _context.ApplicationStatusHistories.Add(history);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var appId = app.Id;
+        _ = Task.Run(async () => await ProcessAiMatchingAsync(appId));
+
         return Ok(new { app.Id, app.JobId, JobTitle = job.Title, app.AppliedAt, app.Status, app.AiMatchScore });
+    }
+
+    private async Task ProcessAiMatchingAsync(int applicationId)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gemini = scope.ServiceProvider.GetRequiredService<RecruitmentPlatform.Core.Interfaces.IGeminiStructuredService>();
+
+            var app = await db.Applications
+                .Include(a => a.Job).ThenInclude(j => j.JobSkills).ThenInclude(s => s.Skill)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateEducations)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateWorkExperiences)
+                .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateSkills).ThenInclude(s => s.Skill)
+                .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+            if (app == null || string.IsNullOrWhiteSpace(app.Job.Description)) return;
+
+            var jobSnapshot = new
+            {
+                app.Job.Id,
+                app.Job.Title,
+                description = Clamp(app.Job.Description, 3000),
+                requirements = Clamp(app.Job.Requirements, 3000),
+                app.Job.EmploymentType,
+                app.Job.WorkMode,
+                app.Job.Location,
+                mandatorySkills = app.Job.JobSkills.Where(s => s.IsMandatory).Select(s => s.Skill.Name),
+                preferredSkills = app.Job.JobSkills.Where(s => !s.IsMandatory).Select(s => s.Skill.Name)
+            };
+
+            var profile = app.Candidate.CandidateProfile;
+            var candidateSnapshot = new
+            {
+                applicationId = app.Id,
+                candidateName = app.Candidate.FirstName + " " + app.Candidate.LastName,
+                profileSummary = Clamp(profile?.SummaryText, 2500),
+                profile?.YearsOfExperience,
+                skills = profile?.CandidateSkills.Select(s => new { s.Skill.Name, s.ProficiencyLevel, s.YearsOfExperience }),
+                education = profile?.CandidateEducations.Select(e => new { e.InstitutionName, e.Degree, e.FieldOfStudy, e.IsCurrent }),
+                experience = profile?.CandidateWorkExperiences.Select(e => new { e.CompanyName, e.JobTitle, e.IsCurrent, description = Clamp(e.Description, 1200) })
+            };
+
+            var prompt = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                task = "Compare the candidate against this vacancy. Scores must be 0-100 integers.",
+                authorizedData = new { applicationId = app.Id, job = jobSnapshot, candidate = candidateSnapshot }
+            });
+
+            var result = await gemini.GenerateJsonAsync<RecruitmentPlatform.Core.DTOs.CandidateJobMatchResultDto>(
+                "You are Hirely AI. Return valid JSON only. Scores must be 0-100 integers.",
+                prompt);
+
+            if (result != null)
+            {
+                result.OverallMatchScore = Math.Clamp(result.OverallMatchScore, 0, 100);
+                result.SkillMatchScore = Math.Clamp(result.SkillMatchScore, 0, 100);
+                result.ExperienceMatchScore = Math.Clamp(result.ExperienceMatchScore, 0, 100);
+                result.EducationMatchScore = Math.Clamp(result.EducationMatchScore, 0, 100);
+
+                var screening = new AiScreeningResult
+                {
+                    ApplicationId = app.Id,
+                    OverallScore = result.OverallMatchScore,
+                    SkillsMatchScore = result.SkillMatchScore,
+                    ExperienceMatchScore = result.ExperienceMatchScore,
+                    EducationMatchScore = result.EducationMatchScore,
+                    ScreeningSummary = result.Explanation,
+                    ProcessedAt = DateTime.UtcNow
+                };
+
+                db.AiScreeningResults.Add(screening);
+                app.AiMatchScore = result.OverallMatchScore;
+                app.UpdatedAt = DateTime.UtcNow;
+
+                await db.SaveChangesAsync();
+            }
+        }
+        catch
+        {
+            // Background task failure ignored
+        }
     }
 
     [HttpGet("applications")]
