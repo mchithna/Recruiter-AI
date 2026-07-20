@@ -159,7 +159,13 @@ public class RecruiterAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result, RecruiterAiMessages.JobDescriptionGenerationFailed);
+        if (HasJobDescriptionDraft(result))
+        {
+            return ToAiResponse(NormalizeJobDescriptionDraft(result!, request), RecruiterAiMessages.JobDescriptionGenerationFailed);
+        }
+
+        var fallback = GenerateJobDescriptionLocally(request);
+        return Ok(new RecruiterAiResponse<JobDescriptionResultDto> { Result = fallback });
     }
 
     [HttpPost("extract-job-skills")]
@@ -447,6 +453,96 @@ public class RecruiterAiController : ControllerBase
         };
     }
 
+    private static bool HasJobDescriptionDraft(JobDescriptionResultDto? result)
+    {
+        return result != null
+            && (!string.IsNullOrWhiteSpace(result.Title)
+                || !string.IsNullOrWhiteSpace(result.Description)
+                || !string.IsNullOrWhiteSpace(result.Requirements));
+    }
+
+    private static JobDescriptionResultDto NormalizeJobDescriptionDraft(JobDescriptionResultDto result, JobDescriptionRequestDto request)
+    {
+        result.Title = FirstText(result.Title, request.JobTitle, "New Role");
+        result.Description = FirstText(result.Description, request.ExistingDescription, BuildFallbackDescription(request));
+        result.Requirements = FirstText(result.Requirements, request.ExistingRequirements, BuildFallbackRequirements(request));
+        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
+        return result;
+    }
+
+    private static JobDescriptionResultDto GenerateJobDescriptionLocally(JobDescriptionRequestDto request)
+    {
+        return new JobDescriptionResultDto
+        {
+            Title = FirstText(request.JobTitle, "New Role"),
+            Description = BuildFallbackDescription(request),
+            Requirements = BuildFallbackRequirements(request),
+            ReviewNotes =
+            [
+                "Generated from the current form fields because the AI service did not return a draft.",
+                "Review responsibilities, required skills, seniority, compensation details, and compliance language before publishing."
+            ]
+        };
+    }
+
+    private static string BuildFallbackDescription(JobDescriptionRequestDto request)
+    {
+        var title = FirstText(request.JobTitle, "this role");
+        var location = FirstText(request.Location, "the assigned location");
+        var employmentType = FirstText(request.EmploymentType, "full-time");
+        var workMode = FirstText(request.WorkMode, "onsite or hybrid");
+        var responsibilities = FirstText(request.Responsibilities, request.ExistingDescription);
+
+        var lines = new List<string>
+        {
+            $"We are hiring {ArticleFor(title)} {title} to join our team and contribute to high-quality hiring outcomes.",
+            $"This is a {employmentType} role based in {location} with a {workMode} work arrangement."
+        };
+
+        if (!string.IsNullOrWhiteSpace(responsibilities))
+        {
+            lines.Add($"Key responsibilities include {TrimSentence(responsibilities)}");
+        }
+        else
+        {
+            lines.Add("The successful candidate will collaborate with cross-functional teams, manage assigned responsibilities, communicate clearly with stakeholders, and deliver reliable results.");
+        }
+
+        lines.Add("The recruiter should tailor this draft to the company culture, team structure, seniority level, and final approval requirements.");
+        return string.Join(Environment.NewLine + Environment.NewLine, lines);
+    }
+
+    private static string BuildFallbackRequirements(JobDescriptionRequestDto request)
+    {
+        var requirements = new List<string>();
+
+        AddRequirement(requirements, request.RequiredSkills, "Required skills");
+        AddRequirement(requirements, request.PreferredSkills, "Preferred skills");
+        AddRequirement(requirements, request.Experience, "Experience");
+        AddRequirement(requirements, request.Education, "Education");
+        AddRequirement(requirements, request.ExistingRequirements, "Additional requirements");
+
+        if (requirements.Count == 0)
+        {
+            requirements.Add("Relevant experience in a similar role or demonstrated ability to perform the responsibilities.");
+            requirements.Add("Strong communication, collaboration, problem-solving, and time-management skills.");
+            requirements.Add("Ability to work independently, follow agreed processes, and adapt to changing business needs.");
+        }
+
+        return string.Join(Environment.NewLine, requirements.Select(requirement => $"- {requirement}"));
+    }
+
+    private static void AddRequirement(List<string> requirements, string? value, string label)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        var cleaned = TrimSentence(value);
+        if (!string.IsNullOrWhiteSpace(cleaned))
+        {
+            requirements.Add($"{label}: {cleaned}");
+        }
+    }
+
     private static List<string> NormalizeSkillList(IEnumerable<string> skills)
     {
         return skills
@@ -455,6 +551,24 @@ public class RecruiterAiController : ControllerBase
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(skill => skill)
             .ToList();
+    }
+
+    private static string FirstText(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? "";
+    }
+
+    private static string TrimSentence(string value)
+    {
+        var cleaned = Regex.Replace(value.Trim(), @"\s+", " ");
+        return cleaned.EndsWith('.') ? cleaned : cleaned + ".";
+    }
+
+    private static string ArticleFor(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) && "aeiou".Contains(char.ToLowerInvariant(value.Trim()[0]))
+            ? "an"
+            : "a";
     }
 
     private static readonly (string Skill, string Pattern)[] SkillPatterns =
