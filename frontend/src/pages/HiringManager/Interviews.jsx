@@ -10,7 +10,7 @@ import {
   EmptyState,
 } from '../../components/ui';
 import InterviewCard from './components/InterviewCard';
-import { getAllInterviews } from './services/mockData';
+import { getAllInterviews } from './services/hiringManagerApi';
 
 export function Interviews() {
   const navigate = useNavigate();

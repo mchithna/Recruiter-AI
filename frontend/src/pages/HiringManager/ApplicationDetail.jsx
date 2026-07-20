@@ -11,7 +11,7 @@ import {
 import CandidateProfileView from './components/CandidateProfileView';
 import InterviewCard from './components/InterviewCard';
 import StatusBadge from './components/StatusBadge';
-import { getApplication, getInterviewsForApplication } from './services/mockData';
+import { getApplication, getInterviewsForApplication } from './services/hiringManagerApi';
 
 export function ApplicationDetail() {
   const { applicationId } = useParams();

@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '../../components/ui';
 import StatusBadge from './components/StatusBadge';
-import { getShortlistedApplications, getInterviewsForApplication } from './services/mockData';
+import { getShortlistedApplications, getInterviewsForApplication } from './services/hiringManagerApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
