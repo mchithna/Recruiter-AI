@@ -5,11 +5,9 @@ import {
   Home,
   LogOut,
   MessageSquare,
-  Moon,
   Sparkles,
-  Sun,
 } from 'lucide-react';
-import { Avatar, Badge, Button, Tooltip } from '../../components/ui';
+import { Avatar, Badge, Button, Tooltip, ThemeToggle } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -34,10 +32,7 @@ export default function RecruiterLayout() {
   const profileName = `${profile?.firstName || 'Recruiter'} ${profile?.lastName || ''}`.trim();
 
   return (
-    <div className="recruiter-shell mesh-bg relative flex min-h-screen overflow-hidden text-secondary-900 dark:text-white">
-      <div className="particle h-20 w-20 left-[8%]" style={{ animationDuration: '28s' }} />
-      <div className="particle h-32 w-32 left-[54%]" style={{ animationDuration: '34s', animationDelay: '4s' }} />
-      <div className="particle h-16 w-16 left-[82%]" style={{ animationDuration: '22s', animationDelay: '9s' }} />
+    <div className="recruiter-shell relative flex min-h-screen overflow-hidden text-secondary-900 dark:text-white">
 
       <aside className="relative z-10 flex w-72 shrink-0 flex-col border-r border-white/60 bg-white/75 shadow-glass backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
         <div className="relative shrink-0 overflow-hidden border-b border-secondary-100 p-6 dark:border-white/10">
@@ -117,21 +112,7 @@ export default function RecruiterLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              <Button
-                type="button"
-                variant="glass"
-                size="sm"
-                leftIcon={
-                  theme === 'dark'
-                    ? <Sun size={16} strokeWidth={1.75} />
-                    : <Moon size={16} strokeWidth={1.75} />
-                }
-                onClick={toggleTheme}
-              >
-                {theme === 'dark' ? 'Light' : 'Dark'}
-              </Button>
-            </Tooltip>
+            <ThemeToggle />
             <Button
               type="button"
               variant="ghost"
@@ -146,10 +127,6 @@ export default function RecruiterLayout() {
         </header>
 
         <div className="relative flex-1 overflow-y-auto p-8">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -right-32 top-10 h-[420px] w-[420px] rounded-full bg-primary-500/[0.08] blur-[90px] dark:bg-primary-400/[0.14]" />
-            <div className="absolute -left-24 bottom-10 h-[360px] w-[360px] rounded-full bg-ai-500/[0.08] blur-[90px] dark:bg-ai-400/[0.14]" />
-          </div>
           <Outlet />
         </div>
       </main>

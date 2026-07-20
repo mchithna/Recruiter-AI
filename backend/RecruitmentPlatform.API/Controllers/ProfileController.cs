@@ -144,7 +144,8 @@ public class ProfileController : ControllerBase
             CompanyId = user.CompanyId,
             DepartmentId = user.DepartmentId,
             FirstName = user.FirstName,
-            LastName = user.LastName
+            LastName = user.LastName,
+            ProfilePictureUrl = user.ProfilePictureUrl
         };
     }
 }
@@ -170,4 +171,5 @@ public class ProfileResponse
     public int? DepartmentId { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
+    public string? ProfilePictureUrl { get; set; }
 }

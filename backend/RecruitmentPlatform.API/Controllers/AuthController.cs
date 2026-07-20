@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecruitmentPlatform.Core.Entities;
 using RecruitmentPlatform.Core.Interfaces;
+using RecruitmentPlatform.Core.Helpers;
 
 namespace RecruitmentPlatform.API.Controllers;
 
@@ -25,7 +26,7 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrEmpty(token)) return BadRequest(new { message = "Token is required." });
 
-        var tokenHash = HashToken(token);
+        var tokenHash = SecurityHelper.HashToken(token);
         
         var invitation = await _unitOfWork.UserInvitations.FirstOrDefaultAsync(
             i => i.InvitationTokenHash == tokenHash,
@@ -66,7 +67,7 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrEmpty(request.Token)) return BadRequest(new { message = "Token is required." });
 
-        var tokenHash = HashToken(request.Token);
+        var tokenHash = SecurityHelper.HashToken(request.Token);
         
         var invitation = await _unitOfWork.UserInvitations.FirstOrDefaultAsync(
             i => i.InvitationTokenHash == tokenHash,
@@ -100,13 +101,25 @@ public class AuthController : ControllerBase
         var existingUser = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, u => u.Role);
         if (existingUser != null)
         {
-            // If they already have a user row, just mark accepted if it isn't
+            existingUser.RoleId = invitation.RoleId;
+            existingUser.Role = invitation.Role;
+            existingUser.CompanyId = invitation.CompanyId;
+            existingUser.DepartmentId = invitation.DepartmentId;
+            existingUser.FirstName = request.FirstName;
+            existingUser.LastName = request.LastName;
+            existingUser.Email = invitation.Email;
+            existingUser.IsActive = true;
+            existingUser.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Users.Update(existingUser);
+
+            // If they already have a user row, repair it from the invitation and mark accepted.
             if (invitation.Status == "Pending")
             {
                 invitation.Status = "Accepted";
                 _unitOfWork.UserInvitations.Update(invitation);
-                await _unitOfWork.SaveChangesAsync();
             }
+
+            await _unitOfWork.SaveChangesAsync();
             return Ok(MapToResponse(existingUser));
         }
 
@@ -134,15 +147,6 @@ public class AuthController : ControllerBase
 
         return Ok(MapToResponse(newUser));
     }
-
-    private string HashToken(string token)
-    {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(token);
-        var hash = sha256.ComputeHash(bytes);
-        return Convert.ToBase64String(hash);
-    }
-
     private AuthProfileResponse MapToResponse(User user)
     {
         return new AuthProfileResponse

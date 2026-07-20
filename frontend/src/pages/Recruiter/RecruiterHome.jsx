@@ -27,8 +27,8 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
-import { getAllApplications, getAllInterviews, getJobs } from './services/mockData';
+import { StatusBadge } from '../../components/ui';
+import { recruiterApi } from './services/recruiterApi';
 
 const pipelineOrder = [
   'Applied',
@@ -59,14 +59,10 @@ export default function RecruiterHome() {
       setLoading(true);
 
       try {
-        const [jobs, applications, interviews] = await Promise.all([
-          getJobs(),
-          getAllApplications(),
-          getAllInterviews(),
-        ]);
+        const dashboard = await recruiterApi.getDashboard();
 
         if (!isActive) return;
-        setDashboardData({ jobs, applications, interviews });
+        setDashboardData(dashboard);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -154,85 +150,15 @@ export default function RecruiterHome() {
     dashboard;
 
   return (
-    <div className="relative z-10 mx-auto max-w-7xl space-y-8 animate-slide-up">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary-900 via-secondary-950 to-secondary-900 p-0 shadow-2xl dark:from-secondary-950 dark:via-[#0c1029] dark:to-secondary-950">
-        {/* Subtle gradient orbs instead of images */}
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-500/15 blur-[100px]" />
-        <div className="absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-ai-500/12 blur-[100px]" />
-        <div className="absolute left-0 top-0 h-full w-full bg-[radial-gradient(ellipse_at_top_left,rgba(99,102,241,0.08),transparent_50%)]" />
-
-        <div className="relative grid gap-8 p-8 lg:grid-cols-[minmax(0,1.2fr)_380px] lg:p-10">
-          <div className="flex flex-col justify-between gap-8">
-            <div>
-              <Badge variant="ai" className="inline-flex items-center gap-2 uppercase tracking-widest">
-                <span className="h-1.5 w-1.5 rounded-full bg-ai-500 animate-pulse" />
-                AI Hiring Command Center
-              </Badge>
-              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
-                Build your shortlist with{' '}
-                <span className="bg-gradient-to-r from-primary-400 via-ai-400 to-primary-300 bg-clip-text text-transparent">clarity and speed.</span>
-              </h1>
-              <p className="mt-5 max-w-2xl text-body-lg leading-relaxed text-secondary-300">
-                Monitor candidate momentum, AI match quality, interviews, and priority actions from one polished recruiter workspace.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link to="/recruiter/jobs">
-                <Button
-                  type="button"
-                  variant="glass"
-                  size="lg"
-                  className="rounded-xl"
-                  leftIcon={<Briefcase size={18} strokeWidth={1.75} />}
-                >
-                  Manage Jobs
-                </Button>
-              </Link>
-              <Link to="/recruiter/interviews">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl border-white/20 text-white hover:bg-white/10"
-                  leftIcon={<CalendarClock size={18} strokeWidth={1.75} />}
-                >
-                  View Interviews
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Stats panel — clean glass, no background image */}
-          <div className="flex flex-col justify-center gap-5 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-caption font-semibold uppercase tracking-wide text-primary-300">
-                  Avg. AI match
-                </p>
-                <p className="mt-1 text-5xl font-black tabular-nums text-white">{stats.avgAiScore}%</p>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/20 text-primary-300 shadow-lg shadow-primary-500/10">
-                <Bot size={28} strokeWidth={1.75} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <p className="text-2xl font-black tabular-nums text-white">{stats.openJobs}</p>
-                <p className="text-caption text-secondary-400">Open</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <p className="text-2xl font-black tabular-nums text-white">{stats.positiveOutcomes}</p>
-                <p className="text-caption text-secondary-400">Progressing</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <p className="text-2xl font-black tabular-nums text-white">{stats.hiredCount}</p>
-                <p className="text-caption text-secondary-400">Hired</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+      <header>
+        <h1 className="text-h2 font-bold text-secondary-900 dark:text-white">
+          Dashboard Overview
+        </h1>
+        <p className="mt-1 text-body-lg text-secondary-500 dark:text-secondary-400">
+          Monitor candidate momentum, AI match quality, and priority actions.
+        </p>
+      </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -240,29 +166,28 @@ export default function RecruiterHome() {
           value={stats.openJobs}
           icon={Briefcase}
           trend={{ direction: 'up', value: '+2 this week' }}
-          className="animate-counter glass-card-heavy border-none"
+          className="glass-card-heavy border-none"
         />
         <StatCard
-          label="Needs Review"
-          value={stats.appsNeedingReview}
+          label="Progressing"
+          value={stats.positiveOutcomes}
           icon={Users}
           trend={{ direction: 'up', value: 'active queue' }}
-          className="animate-counter glass-card-heavy border-none"
+          className="glass-card-heavy border-none"
         />
         <StatCard
-          label="Upcoming Interviews"
-          value={stats.upcomingInterviews}
-          icon={CalendarClock}
-          trend={{ direction: 'down', value: 'next 7 days' }}
-          trendUpIsGood={false}
-          className="animate-counter glass-card-heavy border-none"
+          label="Hired"
+          value={stats.hiredCount}
+          icon={Target}
+          trend={{ direction: 'up', value: 'this month' }}
+          className="glass-card-heavy border-none"
         />
         <StatCard
           label="AI Match Quality"
           value={`${stats.avgAiScore}%`}
           icon={TrendingUp}
           trend={{ direction: 'up', value: '+6% vs last batch' }}
-          className="animate-counter glass-card-heavy border-none"
+          className="glass-card-heavy border-none"
         />
       </section>
 
@@ -287,7 +212,7 @@ export default function RecruiterHome() {
               return (
                 <div key={item.status} className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)_48px] sm:items-center">
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={item.status} />
+                    <StatusBadge status={item.status?.toLowerCase().replace(/ /g, '_')} />
                   </div>
                   <ProgressBar value={value} size="md" />
                   <p className="text-right text-body-sm font-semibold tabular-nums text-secondary-800 dark:text-white">
@@ -321,7 +246,7 @@ export default function RecruiterHome() {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <Badge variant="ai" size="sm">{topCandidate.aiMatchScore}% AI match</Badge>
-                      <StatusBadge status={topCandidate.status} />
+                      <StatusBadge status={topCandidate.status?.toLowerCase().replace(/ /g, '_')} />
                     </div>
                   </div>
                 </div>
@@ -452,7 +377,7 @@ export default function RecruiterHome() {
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
-                  <StatusBadge status={application.status} />
+                  <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
                   <ChevronRight
                     size={20}
                     strokeWidth={1.75}

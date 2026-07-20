@@ -38,3 +38,4 @@ export { Tooltip } from './Tooltip';
 export { DropdownMenu, DropdownMenuItem } from './DropdownMenu';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { Pagination } from './Pagination';
+export { ThemeToggle } from './ThemeToggle';

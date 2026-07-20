@@ -7,6 +7,7 @@ const SIZE_CLASSES = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
 };
 
 /**
@@ -117,7 +118,7 @@ export function Modal({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={[
-          'relative w-full bg-surface rounded-xl shadow-modal',
+          'relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden bg-surface rounded-xl shadow-modal',
           'z-modal',
           SIZE_CLASSES[size],
           // Transition classes — enters from scale-95/opacity-0
@@ -128,7 +129,7 @@ export function Modal({
         aria-hidden="false"
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 px-6 pt-6 pb-4 border-b border-secondary-100">
+        <div className="flex shrink-0 items-center justify-between gap-4 px-6 pt-6 pb-4 border-b border-secondary-100">
           <h2 id={titleId} className="text-h3 text-secondary-900">
             {title}
           </h2>
@@ -147,11 +148,11 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 text-body-lg text-secondary-800">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-body-lg text-secondary-800">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 pb-6 pt-4 border-t border-secondary-100 flex items-center justify-end gap-3">
+          <div className="shrink-0 px-6 pb-6 pt-4 border-t border-secondary-100 flex items-center justify-end gap-3">
             {footer}
           </div>
         )}
@@ -165,7 +166,7 @@ Modal.propTypes = {
   onClose: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   children: PropTypes.node,
-  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', '2xl']),
   footer: PropTypes.node,
 };
 

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Interfaces;
 
 namespace RecruitmentPlatform.API.Authentication;
@@ -15,8 +16,9 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
-        // Avoid adding claims multiple times if TransformAsync is called multiple times
-        if (principal.HasClaim(c => c.Type == "app_user_id"))
+        // Avoid adding claims multiple times if TransformAsync is called multiple times.
+        // Still allow repair when older/partial principals have an app user but no company.
+        if (principal.HasClaim(c => c.Type == "app_user_id") && principal.HasClaim(c => c.Type == "company_id"))
         {
             return principal;
         }
@@ -37,6 +39,26 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
         if (user == null)
         {
             return principal;
+        }
+
+        if (!user.CompanyId.HasValue && IsCompanyScopedRole(user.Role?.Name))
+        {
+            var invitation = await _unitOfWork.UserInvitations.Query()
+                .Where(i =>
+                    i.Email == user.Email
+                    && i.RoleId == user.RoleId
+                    && i.Status == "Accepted")
+                .OrderByDescending(i => i.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (invitation != null)
+            {
+                user.CompanyId = invitation.CompanyId;
+                user.DepartmentId = invitation.DepartmentId;
+                user.UpdatedAt = DateTime.UtcNow;
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+            }
         }
 
         // 3. Add custom claims
@@ -68,4 +90,7 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
 
         return clone;
     }
+
+    private static bool IsCompanyScopedRole(string? roleName) =>
+        roleName is "Recruiter" or "HiringManager";
 }
