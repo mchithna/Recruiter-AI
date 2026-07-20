@@ -22,6 +22,8 @@ export default function MessagesList() {
   const [messages, setMessages] = useState([]);
   const [draftMessage, setDraftMessage] = useState('');
   const [loadingThread, setLoadingThread] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -66,7 +68,10 @@ export default function MessagesList() {
       setLoadingThread(true);
 
       try {
-        const app = await recruiterApi.getApplication(selectedAppId);
+        const [app, threadMessages] = await Promise.all([
+          recruiterApi.getApplication(selectedAppId),
+          recruiterApi.getApplicationMessages(selectedAppId),
+        ]);
 
         if (!isActive) return;
 
@@ -78,8 +83,9 @@ export default function MessagesList() {
           )
         );
         setSelectedApplication(app);
-        setMessages(app.messages || []);
+        setMessages(threadMessages || []);
         setDraftMessage('');
+        setSendError('');
       } catch (error) {
         console.error('Failed to load thread:', error);
       } finally {
@@ -98,36 +104,46 @@ export default function MessagesList() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (event) => {
+  const handleSendMessage = async (event) => {
     event.preventDefault();
 
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
     if (!window.confirm('Confirm that you reviewed and want to send this message?')) return;
 
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'Current Recruiter',
-      body: trimmed,
-      sentAt: new Date().toISOString(),
-    };
+    setIsSending(true);
+    setSendError('');
 
-    setMessages((current) => [...current, newMessage]);
-    setDraftMessage('');
-    setConversations((current) =>
-      current
-        .map((conversation) =>
-          conversation.applicationId === selectedAppId
-            ? {
-                ...conversation,
-                body: newMessage.body,
-                sentAt: newMessage.sentAt,
-                unread: false,
-              }
-            : conversation
-        )
-        .sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt))
-    );
+    try {
+      const sentMessage = await recruiterApi.sendApplicationMessage(selectedAppId, { body: trimmed });
+      setMessages((current) => [...current, sentMessage]);
+      setDraftMessage('');
+      setConversations((current) => {
+        const existingConversation = current.find(
+          (conversation) => conversation.applicationId === selectedAppId
+        );
+        const updatedConversation = {
+          ...(existingConversation || {
+            applicationId: selectedAppId,
+            candidateName: selectedApplication?.candidateName || 'Candidate',
+            jobTitle: selectedApplication?.jobTitle || 'Application',
+          }),
+          body: sentMessage.body,
+          sentAt: sentMessage.sentAt,
+          unread: false,
+        };
+
+        return [
+          updatedConversation,
+          ...current.filter((conversation) => conversation.applicationId !== selectedAppId),
+        ].sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+      });
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setSendError(error?.response?.data?.message || 'Unable to send message. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const filteredConversations = searchQuery
@@ -308,25 +324,29 @@ export default function MessagesList() {
               </div>
 
               <form
-                className="flex shrink-0 items-end gap-3 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
+                className="flex shrink-0 flex-col gap-2 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
                 onSubmit={handleSendMessage}
               >
-                <Input
-                  value={draftMessage}
-                  onChange={(event) => setDraftMessage(event.target.value)}
-                  placeholder={`Message ${selectedApplication.candidateName}...`}
-                  className="recruiter-compose-input flex-1"
-                />
-                <Button
-                  type="submit"
-                  variant={draftMessage.trim() ? 'glass' : 'outline'}
-                  size="md"
-                  leftIcon={<Send size={16} strokeWidth={1.75} />}
-                  disabled={!draftMessage.trim()}
-                  className="min-w-24 shrink-0 rounded-xl px-5"
-                >
-                  Send
-                </Button>
+                {sendError && <p className="text-body-sm font-semibold text-danger-500">{sendError}</p>}
+                <div className="flex items-end gap-3">
+                  <Input
+                    value={draftMessage}
+                    onChange={(event) => setDraftMessage(event.target.value)}
+                    placeholder={`Message ${selectedApplication.candidateName}...`}
+                    className="recruiter-compose-input flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    variant={draftMessage.trim() ? 'glass' : 'outline'}
+                    size="md"
+                    leftIcon={<Send size={16} strokeWidth={1.75} />}
+                    disabled={!draftMessage.trim() || isSending}
+                    isLoading={isSending}
+                    className="min-w-24 shrink-0 rounded-xl px-5"
+                  >
+                    Send
+                  </Button>
+                </div>
               </form>
             </>
           ) : (

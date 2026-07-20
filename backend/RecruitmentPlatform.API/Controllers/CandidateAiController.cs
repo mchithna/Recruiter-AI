@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -51,7 +52,7 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        if (result == null) return BadRequest(new { message = DashboardAiMessages.MissingData });
+        result ??= BuildProfileAnalysis(profile);
         result.ProfileCompletenessScore = CalculateProfileScore(profile);
         result.ResumeCompletenessScore = CalculateResumeScore(profile);
         ClampScores(result);
@@ -94,13 +95,17 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 2600,
             cancellationToken: cancellationToken);
 
-        if (result?.Recommendations.Count > 0 != true) return BadRequest(new { message = DashboardAiMessages.MissingData });
         var allowed = jobs.ToDictionary(j => j.Id);
+        result ??= BuildJobRecommendations(profile, jobs);
         result.Recommendations = result.Recommendations
             .Where(r => allowed.ContainsKey(r.JobId))
-            .Select(r => EnrichRecommendation(r, allowed[r.JobId]))
+            .Select(r => EnrichRecommendation(r, allowed[r.JobId], profile))
             .Take(8)
             .ToList();
+        if (result.Recommendations.Count == 0)
+        {
+            result = BuildJobRecommendations(profile, jobs);
+        }
         if (result.Recommendations.Count == 0) return BadRequest(new { message = DashboardAiMessages.MissingData });
         return CandidateResponse(result);
     }
@@ -119,7 +124,7 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 1600,
             cancellationToken: cancellationToken);
 
-        if (result == null) return BadRequest(new { message = DashboardAiMessages.MissingData });
+        result ??= BuildSkillGap(profile, job);
         result.JobId = job.Id;
         result.JobTitle = job.Title;
         return CandidateResponse(result);
@@ -147,7 +152,8 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 2200,
             cancellationToken: cancellationToken);
 
-        return result == null ? BadRequest(new { message = DashboardAiMessages.MissingData }) : CandidateResponse(result);
+        result ??= BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        return CandidateResponse(result);
     }
 
     private async Task<CandidateProfile?> GetCandidateProfile(CancellationToken cancellationToken)
@@ -225,15 +231,140 @@ public class CandidateAiController : ControllerBase
         preferredSkills = job.JobSkills.Where(s => !s.IsMandatory).Select(s => s.Skill.Name)
     };
 
-    private static CandidateJobRecommendationDto EnrichRecommendation(CandidateJobRecommendationDto dto, Job job)
+    private static CandidateProfileResumeAnalysisDto BuildProfileAnalysis(CandidateProfile profile)
     {
+        var missingProfile = new List<string>();
+        if (string.IsNullOrWhiteSpace(profile.SummaryText)) missingProfile.Add("Add a short professional summary.");
+        if (string.IsNullOrWhiteSpace(profile.LocationCity)) missingProfile.Add("Add your current city or preferred work location.");
+        if (!profile.YearsOfExperience.HasValue) missingProfile.Add("Add your total years of experience.");
+        if (string.IsNullOrWhiteSpace(profile.LinkedinUrl)) missingProfile.Add("Add a LinkedIn profile URL.");
+        if (string.IsNullOrWhiteSpace(profile.PortfolioUrl) && string.IsNullOrWhiteSpace(profile.GithubUrl)) missingProfile.Add("Add a portfolio or GitHub URL.");
+        if (profile.CandidateSkills.Count == 0) missingProfile.Add("Add the main skills you want recruiters to match against.");
+        if (profile.CandidateEducations.Count == 0 && profile.CandidateWorkExperiences.Count == 0) missingProfile.Add("Add education or work experience details.");
+
+        var missingResume = new List<string>();
+        if (!profile.CandidateDocuments.Any(d => d.IsPrimary && d.DocumentType.Equals("Resume", StringComparison.OrdinalIgnoreCase))) missingResume.Add("Upload or mark a resume as primary.");
+        if (profile.CandidateWorkExperiences.Count == 0) missingResume.Add("Include recent work experience in your resume/profile.");
+        if (profile.CandidateSkills.Count == 0) missingResume.Add("Include a skills section.");
+        if (profile.CandidateEducations.Count == 0) missingResume.Add("Include education or certification details where relevant.");
+
+        return new CandidateProfileResumeAnalysisDto
+        {
+            MissingProfileInformation = missingProfile,
+            MissingResumeInformation = missingResume,
+            ExtractedSkills = NormalizeList(profile.CandidateSkills.Select(s => s.Skill.Name)),
+            Education = NormalizeList(profile.CandidateEducations.Select(e => string.Join(" - ", new[] { e.Degree, e.FieldOfStudy, e.InstitutionName }.Where(v => !string.IsNullOrWhiteSpace(v))))),
+            Experience = NormalizeList(profile.CandidateWorkExperiences.Select(e => string.Join(" at ", new[] { e.JobTitle, e.CompanyName }.Where(v => !string.IsNullOrWhiteSpace(v))))),
+            Suggestions =
+            [
+                "Keep your summary specific to the roles you want.",
+                "Make sure skills, experience, and projects use the same keywords found in target job descriptions.",
+                "Review uploaded resume details before applying."
+            ]
+        };
+    }
+
+    private static CandidateJobRecommendationsDto BuildJobRecommendations(CandidateProfile profile, IEnumerable<Job> jobs)
+    {
+        var recommendations = jobs
+            .Select(job => EnrichRecommendation(new CandidateJobRecommendationDto(), job, profile))
+            .OrderByDescending(r => r.MatchScore)
+            .ThenBy(r => r.JobTitle)
+            .Take(8)
+            .ToList();
+
+        return new CandidateJobRecommendationsDto { Recommendations = recommendations };
+    }
+
+    private static CandidateSkillGapDto BuildSkillGap(CandidateProfile profile, Job job)
+    {
+        var candidateSkills = CandidateSkillSet(profile);
+        var required = job.JobSkills.Where(s => s.IsMandatory).Select(s => s.Skill.Name).ToList();
+        var preferred = job.JobSkills.Where(s => !s.IsMandatory).Select(s => s.Skill.Name).ToList();
+        if (required.Count == 0) required = ExtractSkillKeywords($"{job.Title} {job.Description} {job.Requirements}");
+
+        var available = required.Where(skill => candidateSkills.Contains(NormalizeSkillKey(skill))).ToList();
+        var missing = required.Where(skill => !candidateSkills.Contains(NormalizeSkillKey(skill))).ToList();
+
+        return new CandidateSkillGapDto
+        {
+            JobId = job.Id,
+            JobTitle = job.Title,
+            AvailableRequiredSkills = NormalizeList(available),
+            MissingRequiredSkills = NormalizeList(missing),
+            PreferredSkills = NormalizeList(preferred),
+            SuggestedLearningAreas = NormalizeList(missing.Concat(preferred).Take(6)),
+            PracticalRecommendations = BuildPracticalRecommendations(missing, job)
+        };
+    }
+
+    private static CandidateApplicationAssistanceDto BuildApplicationAssistance(CandidateProfile profile, Job job, string notes)
+    {
+        var gap = BuildSkillGap(profile, job);
+        var candidateName = $"{profile.User.FirstName} {profile.User.LastName}".Trim();
+        var strengths = gap.AvailableRequiredSkills.Count > 0
+            ? string.Join(", ", gap.AvailableRequiredSkills.Take(4))
+            : "your relevant skills and experience";
+
+        return new CandidateApplicationAssistanceDto
+        {
+            ApplicationTips =
+            [
+                $"Tailor your application to {job.Title} and mention the most relevant requirements from the posting.",
+                $"Highlight evidence for {strengths}.",
+                "Use concise examples with outcomes, metrics, or project context where possible.",
+                string.IsNullOrWhiteSpace(notes) ? "Review the job description before submitting." : $"Reflect this note in your application: {notes}"
+            ],
+            ProfileSummarySuggestions =
+            [
+                "Lead with your target role, strongest technical skills, and years of experience.",
+                "Mention domain experience or project outcomes that match this job.",
+                "Remove generic claims that are not backed by your experience or portfolio."
+            ],
+            CoverLetterDraft = BuildCoverLetterDraft(candidateName, profile, job, gap),
+            InterviewPreparationGuidance =
+            [
+                $"Prepare examples that show how you used {strengths}.",
+                "Review the job requirements and prepare honest answers for any missing skills.",
+                "Prepare one project walkthrough, one teamwork example, and one problem-solving example."
+            ],
+            ReviewChecklist =
+            [
+                "Confirm your resume is the primary uploaded document.",
+                "Check that profile skills match the job keywords.",
+                "Proofread the cover letter before sending.",
+                "Do not claim skills or experience you cannot explain in an interview."
+            ]
+        };
+    }
+
+    private static CandidateJobRecommendationDto EnrichRecommendation(CandidateJobRecommendationDto dto, Job job, CandidateProfile profile)
+    {
+        var candidateSkills = CandidateSkillSet(profile);
+        var jobSkills = job.JobSkills.Select(s => s.Skill.Name).ToList();
+        if (jobSkills.Count == 0) jobSkills = ExtractSkillKeywords($"{job.Title} {job.Description} {job.Requirements}");
+        var matching = jobSkills.Where(skill => candidateSkills.Contains(NormalizeSkillKey(skill))).ToList();
+        var missing = jobSkills.Where(skill => !candidateSkills.Contains(NormalizeSkillKey(skill))).Take(6).ToList();
+        var score = jobSkills.Count == 0
+            ? Math.Min(70, 35 + (profile.YearsOfExperience ?? 0) * 5)
+            : 45 + (int)Math.Round((double)matching.Count / jobSkills.Count * 50);
+
         dto.JobId = job.Id;
         dto.JobTitle = job.Title;
         dto.DepartmentName = job.Department.Name;
         dto.EmploymentType = job.EmploymentType;
         dto.WorkMode = job.WorkMode;
         dto.Location = job.Location;
-        dto.MatchScore = Math.Clamp(dto.MatchScore, 0, 100);
+        dto.MatchScore = Math.Clamp(dto.MatchScore > 0 ? dto.MatchScore : score, 0, 100);
+        if (dto.MatchingSkills.Count == 0) dto.MatchingSkills = NormalizeList(matching);
+        if (dto.MissingSkills.Count == 0) dto.MissingSkills = NormalizeList(missing);
+        if (dto.RelevantStrengths.Count == 0) dto.RelevantStrengths = BuildRelevantStrengths(profile, matching);
+        if (string.IsNullOrWhiteSpace(dto.Explanation))
+        {
+            dto.Explanation = matching.Count > 0
+                ? $"This role matches your profile through {string.Join(", ", matching.Take(3))}."
+                : "This role may be relevant based on your profile, but review the requirements carefully before applying.";
+        }
         return dto;
     }
 
@@ -276,4 +407,93 @@ public class CandidateAiController : ControllerBase
         if (string.IsNullOrWhiteSpace(value)) return value;
         return value.Length <= maxLength ? value : value[..maxLength];
     }
+
+    private static HashSet<string> CandidateSkillSet(CandidateProfile profile) =>
+        profile.CandidateSkills.Select(s => NormalizeSkillKey(s.Skill.Name)).ToHashSet();
+
+    private static List<string> BuildRelevantStrengths(CandidateProfile profile, List<string> matchingSkills)
+    {
+        var strengths = new List<string>();
+        strengths.AddRange(matchingSkills.Take(4).Select(skill => $"Profile includes {skill}."));
+        if (profile.YearsOfExperience.HasValue) strengths.Add($"{profile.YearsOfExperience.Value} years of experience listed.");
+        if (profile.CandidateWorkExperiences.Count > 0) strengths.Add("Work experience is available for recruiter review.");
+        if (profile.CandidateDocuments.Any(d => d.IsPrimary)) strengths.Add("Primary resume is uploaded.");
+        return NormalizeList(strengths).Take(5).ToList();
+    }
+
+    private static List<string> BuildPracticalRecommendations(List<string> missing, Job job)
+    {
+        var recommendations = new List<string>();
+        if (missing.Count > 0)
+        {
+            recommendations.Add($"Strengthen or document evidence for: {string.Join(", ", missing.Take(4))}.");
+        }
+
+        recommendations.Add($"Review the {job.Title} description and align your profile summary with its main responsibilities.");
+        recommendations.Add("Prepare examples that prove your strongest matching skills.");
+        recommendations.Add("If a required skill is missing, be transparent and show a learning plan or adjacent experience.");
+        return recommendations;
+    }
+
+    private static string BuildCoverLetterDraft(string candidateName, CandidateProfile profile, Job job, CandidateSkillGapDto gap)
+    {
+        var introName = string.IsNullOrWhiteSpace(candidateName) ? "I" : candidateName;
+        var strengths = gap.AvailableRequiredSkills.Count > 0
+            ? string.Join(", ", gap.AvailableRequiredSkills.Take(4))
+            : "my relevant background";
+        var experience = profile.YearsOfExperience.HasValue
+            ? $" with {profile.YearsOfExperience.Value} years of experience"
+            : "";
+
+        return $"""
+        Dear Hiring Team,
+
+        I am interested in the {job.Title} role. {introName} can bring {strengths}{experience}, and I am excited by the opportunity to contribute to this position.
+
+        My profile shows experience and skills that align with several parts of the role. I would welcome the opportunity to discuss how my background can support your team.
+
+        Sincerely,
+        {candidateName}
+        """;
+    }
+
+    private static List<string> ExtractSkillKeywords(string text)
+    {
+        var patterns = new (string Skill, string Pattern)[]
+        {
+            ("React", @"\breact(?:\.js|js)?\b"),
+            ("JavaScript", @"\bjavascript\b|\bjs\b"),
+            ("TypeScript", @"\btypescript\b|\bts\b"),
+            ("Node.js", @"\bnode(?:\.js|js)?\b"),
+            ("ASP.NET Core", @"\basp\.?net\s+core\b|\b\.net\s+core\b"),
+            ("C#", @"\bc#\b|\bcsharp\b"),
+            ("Python", @"\bpython\b"),
+            ("Java", @"\bjava\b"),
+            ("SQL", @"\bsql\b"),
+            ("PostgreSQL", @"\bpostgres(?:ql)?\b"),
+            ("MongoDB", @"\bmongodb\b|\bmongo\b"),
+            ("REST API", @"\brest(?:ful)?\s+api\b|\bapis?\b"),
+            ("Docker", @"\bdocker\b"),
+            ("AWS", @"\baws\b"),
+            ("Azure", @"\bazure\b"),
+            ("Git", @"\bgit\b|\bgithub\b"),
+            ("Agile", @"\bagile\b|\bscrum\b")
+        };
+
+        return patterns
+            .Where(item => Regex.IsMatch(text, item.Pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            .Select(item => item.Skill)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string NormalizeSkillKey(string value) =>
+        Regex.Replace(value.Trim().ToLowerInvariant(), @"[^a-z0-9+#.]+", "");
+
+    private static List<string> NormalizeList(IEnumerable<string?> values) =>
+        values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => Regex.Replace(value!.Trim(), @"\s+", " "))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 }
