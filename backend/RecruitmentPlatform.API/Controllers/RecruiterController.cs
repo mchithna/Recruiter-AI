@@ -191,6 +191,7 @@ public class RecruiterController : ControllerBase
     {
         var companyId = GetCompanyId();
         var application = await RecruiterApplications(companyId)
+            .Include(a => a.Job)
             .Include(a => a.AiScreeningResult)
             .Include(a => a.Document)
             .Include(a => a.Candidate).ThenInclude(c => c.CandidateProfile)!.ThenInclude(p => p.CandidateEducations)

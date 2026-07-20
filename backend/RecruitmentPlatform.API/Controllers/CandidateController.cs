@@ -170,6 +170,17 @@ public class CandidateController : ControllerBase
             UpdatedAt = DateTime.UtcNow
         };
         _context.Applications.Add(app);
+
+        var history = new ApplicationStatusHistory
+        {
+            Application = app,
+            ChangedBy = userId,
+            OldStatus = null,
+            NewStatus = "Applied",
+            ChangedAt = DateTime.UtcNow
+        };
+        _context.ApplicationStatusHistories.Add(history);
+
         await _context.SaveChangesAsync(cancellationToken);
         return Ok(new { app.Id, app.JobId, JobTitle = job.Title, app.AppliedAt, app.Status, app.AiMatchScore });
     }
