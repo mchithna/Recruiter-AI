@@ -333,10 +333,14 @@ public class RecruiterController : ControllerBase
     [HttpGet("messages/conversations")]
     public async Task<ActionResult<List<RecruiterConversationDto>>> GetConversations(CancellationToken cancellationToken)
     {
-        var companyId = GetCompanyId();
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+        if (!TryGetUserId(out var userId)) return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
+
         return await _context.CommunicationMessages
             .AsNoTracking()
-            .Where(m => m.Application.Job.Department.CompanyId == companyId)
+            .Where(m => m.Application.Job.Department.CompanyId == companyId
+                || m.RecipientId == userId
+                || m.SenderId == userId)
             .GroupBy(m => m.ApplicationId)
             .Select(g => g.OrderByDescending(m => m.SentAt).First())
             .OrderByDescending(m => m.SentAt)
@@ -360,7 +364,10 @@ public class RecruiterController : ControllerBase
 
         var hasAccess = await _context.Applications
             .AsNoTracking()
-            .AnyAsync(a => a.Id == applicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
+            .AnyAsync(a => a.Id == applicationId
+                && (a.Job.Department.CompanyId == companyId
+                    || a.CommunicationMessages.Any(m => m.RecipientId == userId || m.SenderId == userId)),
+                cancellationToken);
 
         if (!hasAccess) return NotFound(new { message = "Application not found." });
 

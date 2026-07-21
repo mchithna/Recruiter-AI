@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -158,7 +159,13 @@ public class RecruiterAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result, RecruiterAiMessages.JobDescriptionGenerationFailed);
+        if (HasJobDescriptionDraft(result))
+        {
+            return ToAiResponse(NormalizeJobDescriptionDraft(result!, request), RecruiterAiMessages.JobDescriptionGenerationFailed);
+        }
+
+        var fallback = GenerateJobDescriptionLocally(request);
+        return Ok(new RecruiterAiResponse<JobDescriptionResultDto> { Result = fallback });
     }
 
     [HttpPost("extract-job-skills")]
@@ -176,9 +183,18 @@ public class RecruiterAiController : ControllerBase
                 maxOutputTokens: 800,
                 cancellationToken: cancellationToken);
 
-            return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
+            if (result?.ExtractedSkills.Count > 0 == true)
+            {
+                result.ExtractedSkills = NormalizeSkillList(result.ExtractedSkills);
+                return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
+            }
+
+            var fallback = ExtractJobSkillsLocally(request);
+            return fallback.ExtractedSkills.Count > 0
+                ? Ok(new RecruiterAiResponse<JobSkillsExtractionResultDto> { Result = fallback })
+                : ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "AI service is currently unavailable or rate limited. Please try again later." });
         }
@@ -417,6 +433,194 @@ public class RecruiterAiController : ControllerBase
         if (string.IsNullOrWhiteSpace(value)) return value;
         return value.Length <= maxLength ? value : value[..maxLength];
     }
+
+    private static JobSkillsExtractionResultDto ExtractJobSkillsLocally(JobSkillsExtractionRequestDto request)
+    {
+        var text = string.Join(" ", request.Title, request.Description, request.Requirements);
+        var skills = new List<string>();
+
+        foreach (var (skill, pattern) in SkillPatterns)
+        {
+            if (Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            {
+                skills.Add(skill);
+            }
+        }
+
+        return new JobSkillsExtractionResultDto
+        {
+            ExtractedSkills = NormalizeSkillList(skills).Take(18).ToList()
+        };
+    }
+
+    private static bool HasJobDescriptionDraft(JobDescriptionResultDto? result)
+    {
+        return result != null
+            && (!string.IsNullOrWhiteSpace(result.Title)
+                || !string.IsNullOrWhiteSpace(result.Description)
+                || !string.IsNullOrWhiteSpace(result.Requirements));
+    }
+
+    private static JobDescriptionResultDto NormalizeJobDescriptionDraft(JobDescriptionResultDto result, JobDescriptionRequestDto request)
+    {
+        result.Title = FirstText(result.Title, request.JobTitle, "New Role");
+        result.Description = FirstText(result.Description, request.ExistingDescription, BuildFallbackDescription(request));
+        result.Requirements = FirstText(result.Requirements, request.ExistingRequirements, BuildFallbackRequirements(request));
+        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
+        return result;
+    }
+
+    private static JobDescriptionResultDto GenerateJobDescriptionLocally(JobDescriptionRequestDto request)
+    {
+        return new JobDescriptionResultDto
+        {
+            Title = FirstText(request.JobTitle, "New Role"),
+            Description = BuildFallbackDescription(request),
+            Requirements = BuildFallbackRequirements(request),
+            ReviewNotes =
+            [
+                "Generated from the current form fields because the AI service did not return a draft.",
+                "Review responsibilities, required skills, seniority, compensation details, and compliance language before publishing."
+            ]
+        };
+    }
+
+    private static string BuildFallbackDescription(JobDescriptionRequestDto request)
+    {
+        var title = FirstText(request.JobTitle, "this role");
+        var location = FirstText(request.Location, "the assigned location");
+        var employmentType = FirstText(request.EmploymentType, "full-time");
+        var workMode = FirstText(request.WorkMode, "onsite or hybrid");
+        var responsibilities = FirstText(request.Responsibilities, request.ExistingDescription);
+
+        var lines = new List<string>
+        {
+            $"We are hiring {ArticleFor(title)} {title} to join our team and contribute to high-quality hiring outcomes.",
+            $"This is a {employmentType} role based in {location} with a {workMode} work arrangement."
+        };
+
+        if (!string.IsNullOrWhiteSpace(responsibilities))
+        {
+            lines.Add($"Key responsibilities include {TrimSentence(responsibilities)}");
+        }
+        else
+        {
+            lines.Add("The successful candidate will collaborate with cross-functional teams, manage assigned responsibilities, communicate clearly with stakeholders, and deliver reliable results.");
+        }
+
+        lines.Add("The recruiter should tailor this draft to the company culture, team structure, seniority level, and final approval requirements.");
+        return string.Join(Environment.NewLine + Environment.NewLine, lines);
+    }
+
+    private static string BuildFallbackRequirements(JobDescriptionRequestDto request)
+    {
+        var requirements = new List<string>();
+
+        AddRequirement(requirements, request.RequiredSkills, "Required skills");
+        AddRequirement(requirements, request.PreferredSkills, "Preferred skills");
+        AddRequirement(requirements, request.Experience, "Experience");
+        AddRequirement(requirements, request.Education, "Education");
+        AddRequirement(requirements, request.ExistingRequirements, "Additional requirements");
+
+        if (requirements.Count == 0)
+        {
+            requirements.Add("Relevant experience in a similar role or demonstrated ability to perform the responsibilities.");
+            requirements.Add("Strong communication, collaboration, problem-solving, and time-management skills.");
+            requirements.Add("Ability to work independently, follow agreed processes, and adapt to changing business needs.");
+        }
+
+        return string.Join(Environment.NewLine, requirements.Select(requirement => $"- {requirement}"));
+    }
+
+    private static void AddRequirement(List<string> requirements, string? value, string label)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        var cleaned = TrimSentence(value);
+        if (!string.IsNullOrWhiteSpace(cleaned))
+        {
+            requirements.Add($"{label}: {cleaned}");
+        }
+    }
+
+    private static List<string> NormalizeSkillList(IEnumerable<string> skills)
+    {
+        return skills
+            .Select(skill => Regex.Replace(skill.Trim(), @"\s+", " "))
+            .Where(skill => skill.Length is >= 2 and <= 60)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(skill => skill)
+            .ToList();
+    }
+
+    private static string FirstText(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? "";
+    }
+
+    private static string TrimSentence(string value)
+    {
+        var cleaned = Regex.Replace(value.Trim(), @"\s+", " ");
+        return cleaned.EndsWith('.') ? cleaned : cleaned + ".";
+    }
+
+    private static string ArticleFor(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) && "aeiou".Contains(char.ToLowerInvariant(value.Trim()[0]))
+            ? "an"
+            : "a";
+    }
+
+    private static readonly (string Skill, string Pattern)[] SkillPatterns =
+    [
+        ("ASP.NET Core", @"\basp\.?net\s+core\b|\bdotnet\s+core\b|\b\.net\s+core\b"),
+        ("C#", @"\bc#\b|\bcsharp\b"),
+        ("JavaScript", @"\bjavascript\b|\bjs\b"),
+        ("TypeScript", @"\btypescript\b|\bts\b"),
+        ("React", @"\breact(?:\.js|js)?\b"),
+        ("Angular", @"\bangular\b"),
+        ("Vue.js", @"\bvue(?:\.js|js)?\b"),
+        ("Node.js", @"\bnode(?:\.js|js)?\b"),
+        ("Express.js", @"\bexpress(?:\.js|js)?\b"),
+        ("HTML", @"\bhtml5?\b"),
+        ("CSS", @"\bcss3?\b"),
+        ("Tailwind CSS", @"\btailwind(?:\s+css)?\b"),
+        ("Bootstrap", @"\bbootstrap\b"),
+        ("Python", @"\bpython\b"),
+        ("Java", @"\bjava\b"),
+        ("Spring Boot", @"\bspring\s+boot\b"),
+        ("PHP", @"\bphp\b"),
+        ("Laravel", @"\blaravel\b"),
+        ("Ruby", @"\bruby\b"),
+        ("Rails", @"\brails\b|\bruby\s+on\s+rails\b"),
+        ("Go", @"\bgolang\b|\bgo\b"),
+        ("SQL", @"\bsql\b"),
+        ("PostgreSQL", @"\bpostgres(?:ql)?\b"),
+        ("MySQL", @"\bmysql\b"),
+        ("SQL Server", @"\bsql\s+server\b|\bmssql\b"),
+        ("MongoDB", @"\bmongodb\b|\bmongo\b"),
+        ("Redis", @"\bredis\b"),
+        ("Supabase", @"\bsupabase\b"),
+        ("Entity Framework", @"\bentity\s+framework\b|\bef\s+core\b"),
+        ("REST API", @"\brest(?:ful)?\s+api\b|\bapis?\b"),
+        ("GraphQL", @"\bgraphql\b"),
+        ("Git", @"\bgit\b|\bgithub\b|\bgitlab\b"),
+        ("Docker", @"\bdocker\b"),
+        ("Kubernetes", @"\bkubernetes\b|\bk8s\b"),
+        ("Azure", @"\bazure\b"),
+        ("AWS", @"\baws\b|amazon\s+web\s+services"),
+        ("Google Cloud", @"\bgoogle\s+cloud\b|\bgcp\b"),
+        ("CI/CD", @"\bci/cd\b|\bcontinuous\s+integration\b|\bcontinuous\s+delivery\b"),
+        ("Unit Testing", @"\bunit\s+tests?\b|\bunit\s+testing\b"),
+        ("Agile", @"\bagile\b|\bscrum\b"),
+        ("Machine Learning", @"\bmachine\s+learning\b|\bml\b"),
+        ("AI", @"\bartificial\s+intelligence\b|\bai\b"),
+        ("Data Analysis", @"\bdata\s+analysis\b|\banalytics\b"),
+        ("Power BI", @"\bpower\s*bi\b"),
+        ("Excel", @"\bexcel\b"),
+        ("Figma", @"\bfigma\b"),
+        ("UI/UX", @"\bui/ux\b|\buser\s+experience\b|\buser\s+interface\b")
+    ];
 
     private static void NormalizeScores(CandidateJobMatchResultDto result)
     {

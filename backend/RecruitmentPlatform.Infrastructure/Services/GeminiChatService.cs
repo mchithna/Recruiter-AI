@@ -17,13 +17,8 @@ public class GeminiChatService : IAiChatService
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["GeminiSettings:ApiKey"]
-            ?? configuration["GEMINI_API_KEY"]
-            ?? string.Empty;
-        var configuredModel = configuration["GeminiSettings:Model"]
-            ?? configuration["GEMINI_MODEL"]
-            ?? "gemini-2.5-flash";
-        _models = BuildModelFallbacks(configuredModel);
+        _apiKey = GeminiConfiguration.GetApiKey(configuration);
+        _models = GeminiConfiguration.GetModels(configuration);
         _logger = logger;
     }
 
@@ -146,24 +141,6 @@ public class GeminiChatService : IAiChatService
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
-    }
-
-    private static string[] BuildModelFallbacks(string configuredModel)
-    {
-        var models = new[] { configuredModel, "gemini-flash-latest", "gemini-2.0-flash" };
-        return models
-            .Select(NormalizeModel)
-            .Where(model => !string.IsNullOrWhiteSpace(model))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-    }
-
-    private static string NormalizeModel(string model)
-    {
-        var normalized = model.Trim().Trim('"');
-        return normalized.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
-            ? normalized["models/".Length..]
-            : normalized;
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>

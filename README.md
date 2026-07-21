@@ -136,7 +136,8 @@ Copy-Item .env.example .env
 ConnectionStrings__DefaultConnection=
 JwtSettings__SupabaseJwtSecret=
 JwtSettings__SupabaseUrl=
-GeminiSettings__ApiKey=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash
 EmailSettings__AppPassword=
 ```
 
@@ -169,20 +170,19 @@ Environment variables are intentionally kept out of source control. Use local `.
 | Backend | `ConnectionStrings__DefaultConnection` | PostgreSQL database connection string |
 | Backend | `JwtSettings__SupabaseJwtSecret` | Supabase JWT signing secret |
 | Backend | `JwtSettings__SupabaseUrl` | Supabase issuer URL for JWT validation |
-| Backend | `GeminiSettings__ApiKey` | Gemini API key for AI chat responses |
-| Backend | `GEMINI_API_KEY` | Alternative Gemini API key name accepted by the backend |
+| Backend | `GEMINI_API_KEY` | Gemini API key used by all backend AI features |
+| Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-3.5-flash` |
 | Backend | `EmailSettings__AppPassword` | App password for email notifications |
 
 Never commit `.env` files, API keys, database credentials, JWT secrets, or email passwords.
 
 ### Gemini API key setup
 
-The chatbot sends Gemini requests only from the ASP.NET backend. Add your real Gemini key to `backend/RecruitmentPlatform.API/.env` using one of these names:
+The chatbot and dashboard AI features send Gemini requests only from the ASP.NET backend. Add your real Gemini key and model to `backend/RecruitmentPlatform.API/.env`:
 
 ```env
-GeminiSettings__ApiKey=your-real-key
-# or
 GEMINI_API_KEY=your-real-key
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
 Do not put a real Gemini key in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.

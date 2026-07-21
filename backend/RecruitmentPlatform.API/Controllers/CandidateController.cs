@@ -496,18 +496,24 @@ public class CandidateController : ControllerBase
     {
         var userId = GetUserId();
         var app = await _context.Applications
-            .Include(a => a.Job)
+            .Include(a => a.Job).ThenInclude(j => j.Department)
             .FirstOrDefaultAsync(a => a.Id == applicationId && a.CandidateId == userId, cancellationToken);
         if (app == null) return NotFound(new { message = "Application not found." });
 
         var body = Clamp(request.Body, 4000);
         if (string.IsNullOrWhiteSpace(body)) return BadRequest(new { message = "Message body is required." });
 
+        var recruiterId = await ResolveRecruiterRecipientIdAsync(app.Job, cancellationToken);
+        if (recruiterId == null)
+        {
+            return BadRequest(new { message = "No active recruiter is available for this job. Please try again later." });
+        }
+
         var message = new CommunicationMessage
         {
             ApplicationId = applicationId,
             SenderId = userId,
-            RecipientId = app.Job.RecruiterId,
+            RecipientId = recruiterId.Value,
             Subject = "Candidate message",
             Body = body,
             IsRead = false,
@@ -516,6 +522,32 @@ public class CandidateController : ControllerBase
         _context.CommunicationMessages.Add(message);
         await _context.SaveChangesAsync(cancellationToken);
         return Ok(new { message.Id, message.ApplicationId, SenderName = "You", message.Body, message.SentAt, IsMine = true });
+    }
+
+    private async Task<int?> ResolveRecruiterRecipientIdAsync(Job job, CancellationToken cancellationToken)
+    {
+        var companyId = job.Department.CompanyId;
+
+        var jobRecruiter = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == job.RecruiterId
+                && u.IsActive
+                && u.CompanyId == companyId
+                && u.Role.Name == "Recruiter")
+            .Select(u => (int?)u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (jobRecruiter != null) return jobRecruiter;
+
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => u.IsActive
+                && u.CompanyId == companyId
+                && u.Role.Name == "Recruiter")
+            .OrderByDescending(u => u.DepartmentId == job.DepartmentId)
+            .ThenBy(u => u.Id)
+            .Select(u => (int?)u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private IQueryable<Job> ActiveJobsQuery() =>
