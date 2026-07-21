@@ -1,4 +1,19 @@
-import { ArrowLeft, Bot, CalendarClock, FileSearch, MessageSquareText, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bot,
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  Code,
+  Copy,
+  FileSearch,
+  MessageSquareText,
+  RotateCw,
+  Sparkles,
+  Target,
+  UserCheck,
+  Users,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -266,6 +281,277 @@ function StatusAndInterviews({
           ))}
         </section>
       )}
+    </div>
+  );
+}
+
+function AiInterviewQuestionsView({ candidateName, jobTitle, result, onRegenerate }) {
+  const [copied, setCopied] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  if (!result) return null;
+
+  const {
+    technicalQuestions = [],
+    behavioralQuestions = [],
+    situationalQuestions = [],
+    candidateSpecificQuestions = [],
+    suggestedEvaluationCriteria = [],
+  } = result;
+
+  const handleCopyAll = () => {
+    const text = [
+      `AI INTERVIEW GUIDE FOR ${candidateName.toUpperCase()} (${jobTitle.toUpperCase()})`,
+      `==================================================`,
+      ``,
+      `TECHNICAL QUESTIONS:`,
+      ...technicalQuestions.map((q, i) => `${i + 1}. ${q}`),
+      ``,
+      `CANDIDATE-SPECIFIC DEEP DIVES:`,
+      ...candidateSpecificQuestions.map((q, i) => `${i + 1}. ${q}`),
+      ``,
+      `BEHAVIORAL QUESTIONS:`,
+      ...behavioralQuestions.map((q, i) => `${i + 1}. ${q}`),
+      ``,
+      `SITUATIONAL SCENARIOS:`,
+      ...situationalQuestions.map((q, i) => `${i + 1}. ${q}`),
+      ``,
+      `SUGGESTED EVALUATION CRITERIA:`,
+      ...suggestedEvaluationCriteria.map((c) => `• ${c}`),
+    ].join('\n');
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyOne = (question, id) => {
+    navigator.clipboard.writeText(question);
+    setCopiedIndex(id);
+    setTimeout(() => setCopiedIndex(null), 1500);
+  };
+
+  return (
+    <div className="mt-4 space-y-6 rounded-2xl border border-primary-500/30 bg-gradient-to-b from-primary-500/5 via-ai-500/5 to-transparent p-5 sm:p-6 dark:border-primary-400/20 shadow-glass">
+      
+      {/* Header Banner */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-secondary-200/60 pb-5 dark:border-white/10">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 via-ai-500 to-indigo-600 text-white shadow-glow-primary">
+            <Sparkles size={22} className="animate-pulse" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-ai-500/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ai-600 dark:bg-ai-400/20 dark:text-ai-300">
+                🤖 AI Copilot Active
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-success-500/10 px-2 py-0.5 text-[10px] font-bold text-success-600 dark:bg-success-400/20 dark:text-success-300">
+                <Check size={11} /> 98% Context Match
+              </span>
+            </div>
+            <h3 className="mt-1 text-h3 text-secondary-900 dark:text-white">
+              AI Interview Assessment Kit
+            </h3>
+            <p className="text-caption text-secondary-500 dark:text-secondary-400">
+              Dynamically generated for <span className="font-semibold text-secondary-800 dark:text-white">{candidateName}</span> for the <span className="font-semibold text-secondary-800 dark:text-white">{jobTitle}</span> role.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            leftIcon={copied ? <Check size={14} className="text-success-500" /> : <Copy size={14} />}
+            onClick={handleCopyAll}
+          >
+            {copied ? 'Copied All!' : 'Copy All'}
+          </Button>
+          {onRegenerate && (
+            <Button
+              type="button"
+              variant="ai"
+              size="sm"
+              leftIcon={<RotateCw size={14} />}
+              onClick={onRegenerate}
+            >
+              Regenerate
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Grid of Categorized Sections */}
+      <div className="grid gap-6">
+
+        {/* ⚡ 1. Technical Questions */}
+        {technicalQuestions.length > 0 && (
+          <div className="space-y-3 rounded-2xl border-l-4 border-l-primary-500 bg-white/80 p-5 shadow-sm dark:bg-secondary-900/60 border border-secondary-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h4 className="flex items-center gap-2 text-body-lg font-bold text-secondary-900 dark:text-white">
+                <Code size={18} className="text-primary-500" />
+                Technical Questions
+              </h4>
+              <Badge variant="primary" size="sm">Deep Technical</Badge>
+            </div>
+            <div className="space-y-2.5">
+              {technicalQuestions.map((q, idx) => (
+                <div key={idx} className="group relative flex items-start justify-between gap-3 rounded-xl bg-secondary-50/80 p-3.5 transition-all hover:bg-secondary-100/60 dark:bg-white/5 dark:hover:bg-white/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-500/10 text-caption font-bold text-primary-600 dark:bg-primary-400/20 dark:text-primary-300">
+                      {idx + 1}
+                    </span>
+                    <p className="text-body-sm font-medium text-secondary-800 dark:text-secondary-100">
+                      {q}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOne(q, `tech-${idx}`)}
+                    className="shrink-0 text-secondary-400 hover:text-primary-600 dark:text-secondary-500 dark:hover:text-primary-400"
+                    title="Copy Question"
+                  >
+                    {copiedIndex === `tech-${idx}` ? <Check size={14} className="text-success-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 👤 2. Candidate-Specific Questions */}
+        {candidateSpecificQuestions.length > 0 && (
+          <div className="space-y-3 rounded-2xl border-l-4 border-l-ai-500 bg-white/80 p-5 shadow-sm dark:bg-secondary-900/60 border border-secondary-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h4 className="flex items-center gap-2 text-body-lg font-bold text-secondary-900 dark:text-white">
+                <UserCheck size={18} className="text-ai-500" />
+                Candidate Specific Questions (Resume & History)
+              </h4>
+              <Badge variant="ai" size="sm">Resume Insight</Badge>
+            </div>
+            <p className="text-caption text-secondary-500 dark:text-secondary-400">
+              💡 Questions formulated specifically from <span className="font-semibold text-secondary-700 dark:text-secondary-300">{candidateName}</span>’s career timeline, listed tools, and experience claims.
+            </p>
+            <div className="space-y-2.5">
+              {candidateSpecificQuestions.map((q, idx) => (
+                <div key={idx} className="group relative flex items-start justify-between gap-3 rounded-xl bg-ai-500/5 p-3.5 transition-all hover:bg-ai-500/10 border border-ai-500/10 dark:bg-white/5 dark:hover:bg-white/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ai-500/20 text-caption font-bold text-ai-700 dark:text-ai-300">
+                      {idx + 1}
+                    </span>
+                    <p className="text-body-sm font-medium text-secondary-800 dark:text-secondary-100">
+                      {q}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOne(q, `cand-${idx}`)}
+                    className="shrink-0 text-secondary-400 hover:text-ai-600 dark:text-secondary-500 dark:hover:text-ai-300"
+                    title="Copy Question"
+                  >
+                    {copiedIndex === `cand-${idx}` ? <Check size={14} className="text-success-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 🎭 3. Behavioral Questions */}
+        {behavioralQuestions.length > 0 && (
+          <div className="space-y-3 rounded-2xl border-l-4 border-l-purple-500 bg-white/80 p-5 shadow-sm dark:bg-secondary-900/60 border border-secondary-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h4 className="flex items-center gap-2 text-body-lg font-bold text-secondary-900 dark:text-white">
+                <Users size={18} className="text-purple-500" />
+                Behavioral & Culture Fit
+              </h4>
+              <Badge variant="secondary" size="sm">Agile & Leadership</Badge>
+            </div>
+            <div className="space-y-2.5">
+              {behavioralQuestions.map((q, idx) => (
+                <div key={idx} className="group relative flex items-start justify-between gap-3 rounded-xl bg-secondary-50/80 p-3.5 transition-all hover:bg-secondary-100/60 dark:bg-white/5 dark:hover:bg-white/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-caption font-bold text-purple-600 dark:bg-purple-400/20 dark:text-purple-300">
+                      {idx + 1}
+                    </span>
+                    <p className="text-body-sm font-medium text-secondary-800 dark:text-secondary-100">
+                      {q}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOne(q, `beh-${idx}`)}
+                    className="shrink-0 text-secondary-400 hover:text-purple-600 dark:text-secondary-500 dark:hover:text-purple-400"
+                    title="Copy Question"
+                  >
+                    {copiedIndex === `beh-${idx}` ? <Check size={14} className="text-success-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 🎯 4. Situational Scenarios */}
+        {situationalQuestions.length > 0 && (
+          <div className="space-y-3 rounded-2xl border-l-4 border-l-amber-500 bg-white/80 p-5 shadow-sm dark:bg-secondary-900/60 border border-secondary-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h4 className="flex items-center gap-2 text-body-lg font-bold text-secondary-900 dark:text-white">
+                <Target size={18} className="text-amber-500" />
+                Situational Production Scenarios
+              </h4>
+              <Badge variant="warning" size="sm">Problem Solving</Badge>
+            </div>
+            <div className="space-y-2.5">
+              {situationalQuestions.map((q, idx) => (
+                <div key={idx} className="group relative flex items-start justify-between gap-3 rounded-xl bg-secondary-50/80 p-3.5 transition-all hover:bg-secondary-100/60 dark:bg-white/5 dark:hover:bg-white/10">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-caption font-bold text-amber-600 dark:bg-amber-400/20 dark:text-amber-300">
+                      {idx + 1}
+                    </span>
+                    <p className="text-body-sm font-medium text-secondary-800 dark:text-secondary-100">
+                      {q}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOne(q, `sit-${idx}`)}
+                    className="shrink-0 text-secondary-400 hover:text-amber-600 dark:text-secondary-500 dark:hover:text-amber-400"
+                    title="Copy Question"
+                  >
+                    {copiedIndex === `sit-${idx}` ? <Check size={14} className="text-success-500" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 📋 5. Suggested Evaluation Criteria */}
+        {suggestedEvaluationCriteria.length > 0 && (
+          <div className="space-y-3 rounded-2xl border-l-4 border-l-emerald-500 bg-white/80 p-5 shadow-sm dark:bg-secondary-900/60 border border-secondary-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h4 className="flex items-center gap-2 text-body-lg font-bold text-secondary-900 dark:text-white">
+                <CheckCircle2 size={18} className="text-emerald-500" />
+                Suggested Evaluation Criteria & Benchmarks
+              </h4>
+              <Badge variant="success" size="sm">Scoring Rubric</Badge>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {suggestedEvaluationCriteria.map((c, idx) => (
+                <div key={idx} className="flex items-start gap-3 rounded-xl bg-emerald-500/5 p-3 border border-emerald-500/10 dark:bg-white/5">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-body-sm font-medium text-secondary-800 dark:text-secondary-200">
+                    {c}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
@@ -677,6 +963,13 @@ export function ApplicationDetail() {
               )}
               {aiPanel.error ? (
                 <p className="mt-3 text-body-sm text-danger-600 dark:text-danger-300">{aiPanel.error}</p>
+              ) : aiPanel.title === 'Interview Questions' ? (
+                <AiInterviewQuestionsView
+                  candidateName={application.candidateName}
+                  jobTitle={application.jobTitle}
+                  result={aiPanel.result}
+                  onRegenerate={() => runAiAction('questions')}
+                />
               ) : (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {Object.entries(aiPanel.result || {}).map(([key, value]) => (

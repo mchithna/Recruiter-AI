@@ -228,7 +228,7 @@ public class RecruiterAiController : ControllerBase
             if (result?.ExtractedSkills.Count > 0 == true)
             {
                 result.ExtractedSkills = NormalizeSkillList(result.ExtractedSkills);
-                return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
+                return ToAiResponse(result);
             }
 
             return ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
@@ -246,11 +246,14 @@ public class RecruiterAiController : ControllerBase
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
+        var candidateName = CandidateName(application);
+        var jobTitle = application.Job.Title;
+
         var result = await _gemini.GenerateJsonAsync<InterviewQuestionResultDto>(
             SafetySystemInstruction,
             BuildRecruiterPrompt(
-                "Generate interview questions for this candidate and job.",
-                "Questions must be specific to the supplied job and candidate evidence. Include 4 technical, 3 behavioral, 3 situational, 4 candidate-specific, and 6 evaluation criteria. Avoid protected characteristics and hiring decisions.",
+                $"Generate a custom AI interview guide for candidate {candidateName} applying for the {jobTitle} position.",
+                $"Questions MUST be uniquely tailored to {candidateName}'s exact resume history, listed technical skills, work experience entries, and education background. Include 4 technical questions targeting job and candidate skills, 3 behavioral questions, 3 situational production scenarios, 4 candidate-specific questions referencing their past job roles or listed skills, and 6 evaluation criteria.",
                 new
                 {
                     technicalQuestions = Array.Empty<string>(),
@@ -635,39 +638,54 @@ public class RecruiterAiController : ControllerBase
         result.CandidateSpecificQuestions = NormalizeQuestionList(result.CandidateSpecificQuestions);
         result.SuggestedEvaluationCriteria = NormalizeTextList(result.SuggestedEvaluationCriteria);
 
-        var jobSkills = RequiredSkillNames(application.Job).Take(4).ToList();
+        var candidateName = CandidateName(application);
+        var jobTitle = application.Job.Title;
+        var candidateSkills = application.Candidate.CandidateProfile?.CandidateSkills.Select(s => s.Skill.Name) ?? Enumerable.Empty<string>();
+        var skills = RequiredSkillNames(application.Job).Concat(candidateSkills).Distinct().ToList();
+        var primarySkill = skills.FirstOrDefault() ?? "full-stack engineering";
+        var secondarySkill = skills.Skip(1).FirstOrDefault() ?? "system architecture";
+        var experiences = application.Candidate.CandidateProfile?.CandidateWorkExperiences.ToList() ?? new List<RecruitmentPlatform.Core.Entities.CandidateWorkExperience>();
+
         while (result.TechnicalQuestions.Count < 4)
         {
-            var skill = jobSkills.ElementAtOrDefault(result.TechnicalQuestions.Count) ?? application.Job.Title;
-            result.TechnicalQuestions.Add($"How have you used {skill} in a production or project environment?");
+            var skill = skills.ElementAtOrDefault(result.TechnicalQuestions.Count) ?? primarySkill;
+            result.TechnicalQuestions.Add($"Can you describe a complex production challenge you solved using {skill} and how it impacted performance and reliability?");
         }
 
         while (result.BehavioralQuestions.Count < 3)
         {
-            result.BehavioralQuestions.Add("Tell me about a time you had to clarify ambiguous requirements with a stakeholder. What did you do?");
+            result.BehavioralQuestions.Add($"Tell me about a time in your previous engineering roles where you had to collaborate closely with product managers and designers to deliver a critical feature under a tight deadline.");
         }
 
         while (result.SituationalQuestions.Count < 3)
         {
-            result.SituationalQuestions.Add($"Imagine you join this {application.Job.Title} role and discover a high-priority issue close to release. How would you approach it?");
+            result.SituationalQuestions.Add($"Imagine you join as {jobTitle} and identify a major performance or security bottleneck in our {primarySkill} service. How would you triage and fix it?");
         }
 
         while (result.CandidateSpecificQuestions.Count < 4)
         {
-            var strength = BuildEvidenceStrengths(application).ElementAtOrDefault(result.CandidateSpecificQuestions.Count) ?? "your listed experience";
-            result.CandidateSpecificQuestions.Add($"Can you walk me through an example that demonstrates {strength}?");
+            var exp = experiences.ElementAtOrDefault(result.CandidateSpecificQuestions.Count);
+            if (exp != null)
+            {
+                result.CandidateSpecificQuestions.Add($"In your position as {exp.JobTitle} at {exp.CompanyName}, what key architectural or operational decisions did you lead?");
+            }
+            else
+            {
+                var strength = BuildEvidenceStrengths(application).ElementAtOrDefault(result.CandidateSpecificQuestions.Count) ?? primarySkill;
+                result.CandidateSpecificQuestions.Add($"Given {candidateName}'s profile and background in {strength}, can you walk through a project demonstrating your mastery in this area?");
+            }
         }
 
         if (result.SuggestedEvaluationCriteria.Count == 0)
         {
             result.SuggestedEvaluationCriteria =
             [
-                "Depth and accuracy of role-specific knowledge",
-                "Evidence from previous work or projects",
-                "Clarity of communication",
-                "Ability to reason through practical scenarios",
-                "Honesty about missing or developing skills",
-                "Alignment with mandatory job requirements"
+                $"Depth of expertise in {primarySkill} and {secondarySkill} in production environments",
+                "Ability to articulate secure API design and scalable software architecture",
+                "Problem-solving methodology when handling complex technical debt or system bottlenecks",
+                "Evidence of effective cross-functional collaboration and engineering leadership",
+                $"Direct alignment with core requirements for the {jobTitle} role",
+                "Clarity regarding professional career history and progression"
             ];
         }
 
