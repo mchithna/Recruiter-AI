@@ -154,15 +154,10 @@ public class GeminiStructuredService : IGeminiStructuredService
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
-                {
-                    return response;
-                }
-
+                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode)) return response;
                 _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
                 lastResponse = response;
             }
-
             return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
         }
 
@@ -171,29 +166,11 @@ public class GeminiStructuredService : IGeminiStructuredService
             foreach (var model in _models)
             {
                 lastResponse?.Dispose();
-
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
                 var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return response;
-                }
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    _logger.LogWarning("Gemini API key rate limited. Trying next key.");
-                    lastResponse = response;
-                    break; 
-                }
-
-                if (!IsModelUnavailable(response.StatusCode))
-                {
-                    return response;
-                }
-
-                _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
                 lastResponse = response;
             }
         }

@@ -38,7 +38,7 @@ public class GeminiChatService : IAiChatService
             return "The AI assistant is not configured yet. Please contact support or try again later.";
         }
 
-        if (!_useVertexAi && string.IsNullOrEmpty(_apiKey))
+        if (!_useVertexAi && string.IsNullOrWhiteSpace(_apiKey))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return "The AI assistant is not configured yet. Please contact support or try again later.";
@@ -122,6 +122,7 @@ public class GeminiChatService : IAiChatService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Gemini API.");
+                Console.Error.WriteLine($"Chat AI test diagnostic: {ex}");
                 if (attempt == 3)
                 {
                     return "I'm sorry, I couldn't process that request right now. Please try again later.";
@@ -153,32 +154,19 @@ public class GeminiChatService : IAiChatService
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
-                {
-                    return response;
-                }
-
-                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode)) return response;
                 lastResponse = response;
             }
-
             return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
         }
 
         foreach (var model in _models)
         {
             lastResponse?.Dispose();
-
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
             var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
-            {
-                return response;
-            }
-
-            _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode)) return response;
             lastResponse = response;
         }
 

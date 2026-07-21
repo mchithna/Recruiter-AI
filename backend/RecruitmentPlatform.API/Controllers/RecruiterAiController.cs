@@ -164,8 +164,7 @@ public class RecruiterAiController : ControllerBase
             return ToAiResponse(NormalizeJobDescriptionDraft(result!, request), RecruiterAiMessages.JobDescriptionGenerationFailed);
         }
 
-        var fallback = GenerateJobDescriptionLocally(request);
-        return Ok(new RecruiterAiResponse<JobDescriptionResultDto> { Result = fallback });
+        return ToAiResponse<JobDescriptionResultDto>(null, RecruiterAiMessages.JobDescriptionGenerationFailed);
     }
 
     [HttpPost("extract-job-skills")]
@@ -189,10 +188,7 @@ public class RecruiterAiController : ControllerBase
                 return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
             }
 
-            var fallback = ExtractJobSkillsLocally(request);
-            return fallback.ExtractedSkills.Count > 0
-                ? Ok(new RecruiterAiResponse<JobSkillsExtractionResultDto> { Result = fallback })
-                : ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
+            return ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
         }
         catch (Exception)
         {
@@ -501,17 +497,15 @@ public class RecruiterAiController : ControllerBase
     private static bool HasJobDescriptionDraft(JobDescriptionResultDto? result)
     {
         return result != null
-            && (!string.IsNullOrWhiteSpace(result.Title)
-                || !string.IsNullOrWhiteSpace(result.Description)
-                || !string.IsNullOrWhiteSpace(result.Requirements));
+            && !string.IsNullOrWhiteSpace(result.Description)
+            && !string.IsNullOrWhiteSpace(result.Requirements);
     }
 
     private static JobDescriptionResultDto NormalizeJobDescriptionDraft(JobDescriptionResultDto result, JobDescriptionRequestDto request)
     {
         result.Title = FirstText(result.Title, request.JobTitle, "New Role");
-        result.Description = FirstText(result.Description, request.ExistingDescription, BuildFallbackDescription(request));
-        result.Requirements = FirstText(result.Requirements, request.ExistingRequirements, BuildFallbackRequirements(request));
-        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
+        result.Title = FirstText(result.Title, request.JobTitle);
+        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes);
         return result;
     }
 

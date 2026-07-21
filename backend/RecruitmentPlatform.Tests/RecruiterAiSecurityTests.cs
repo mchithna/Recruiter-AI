@@ -62,7 +62,7 @@ public class RecruiterAiSecurityTests
         Assert.NotNull(result);
         Assert.Equal(77, result!.OverallMatchScore);
         Assert.Contains("gemini-test", handler.RequestedModels);
-        Assert.Contains("gemini-3.5-flash", handler.RequestedModels);
+        Assert.Contains("gemini-2.5-flash", handler.RequestedModels);
     }
 
     private static GeminiStructuredService CreateService(HttpMessageHandler handler, Dictionary<string, string?> settings)

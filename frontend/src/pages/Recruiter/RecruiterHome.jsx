@@ -284,7 +284,7 @@ export default function RecruiterHome() {
               </div>
             ) : (
               <p className="mt-4 text-body-sm text-secondary-500 dark:text-secondary-300">
-                No urgent deadlines in the mock workspace.
+                No urgent deadlines are available from the backend.
               </p>
             )}
             {nextInterview && (

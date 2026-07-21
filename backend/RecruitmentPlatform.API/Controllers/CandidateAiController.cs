@@ -52,7 +52,7 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        result ??= BuildProfileAnalysis(profile);
+        if (result == null) return AiUnavailable();
         result.ProfileCompletenessScore = CalculateProfileScore(profile);
         result.ResumeCompletenessScore = CalculateResumeScore(profile);
         ClampScores(result);
@@ -96,7 +96,7 @@ public class CandidateAiController : ControllerBase
             cancellationToken: cancellationToken);
 
         var allowed = jobs.ToDictionary(j => j.Id);
-        result ??= BuildJobRecommendations(profile, jobs);
+        if (result == null) return AiUnavailable();
         result.Recommendations = result.Recommendations
             .Where(r => allowed.ContainsKey(r.JobId))
             .Select(r => EnrichRecommendation(r, allowed[r.JobId], profile))
@@ -104,7 +104,7 @@ public class CandidateAiController : ControllerBase
             .ToList();
         if (result.Recommendations.Count == 0)
         {
-            result = BuildJobRecommendations(profile, jobs);
+            return AiUnavailable();
         }
         if (result.Recommendations.Count == 0) return BadRequest(new { message = DashboardAiMessages.MissingData });
         return CandidateResponse(result);
@@ -124,7 +124,7 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 1600,
             cancellationToken: cancellationToken);
 
-        result ??= BuildSkillGap(profile, job);
+        if (result == null) return AiUnavailable();
         result.JobId = job.Id;
         result.JobTitle = job.Title;
         return CandidateResponse(result);
@@ -152,7 +152,7 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 2200,
             cancellationToken: cancellationToken);
 
-        result ??= BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        if (result == null) return AiUnavailable();
         return CandidateResponse(result);
     }
 
@@ -176,11 +176,16 @@ public class CandidateAiController : ControllerBase
             .Include(j => j.JobSkills).ThenInclude(s => s.Skill)
             .FirstOrDefaultAsync(j => j.Id == jobId && (j.Status == "Open" || j.Status == "Published"), cancellationToken);
 
-    private IActionResult CandidateResponse<T>(T result) => Ok(new DashboardAiResponse<T>
+    private IActionResult CandidateResponse<T>(T? result)
     {
-        Result = result,
-        Disclaimer = DashboardAiMessages.CandidateDisclaimer
-    });
+        return result == null ? AiUnavailable() : Ok(new DashboardAiResponse<T>
+        {
+            Result = result,
+            Disclaimer = DashboardAiMessages.CandidateDisclaimer
+        });
+    }
+
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Vertex AI did not return a usable result. Please try again." });
 
     private IActionResult RateLimited() =>
         StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many AI requests. Please wait a moment and try again." });

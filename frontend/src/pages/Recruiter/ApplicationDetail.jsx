@@ -506,7 +506,7 @@ export function ApplicationDetail() {
           <div>
             <CardTitle>Application not found</CardTitle>
             <CardDescription>
-              This application is not available in the current mock dataset.
+              This application is not available from the backend right now.
             </CardDescription>
           </div>
         </CardHeader>
