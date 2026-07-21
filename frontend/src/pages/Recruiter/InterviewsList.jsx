@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  Sparkles,
   Video,
   UserCheck,
   Sparkles,
@@ -560,12 +561,26 @@ export default function InterviewsList() {
                           <p className="text-[13px] font-medium text-[#64748b]">
                             with {interview.interviewerName}
                           </p>
-                          {interview.meetingLink && (
-                            <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
-                              <Video size={14} strokeWidth={2.5} />
-                              Video
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {interview.meetingLink && (
+                              <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
+                                <Video size={14} strokeWidth={2.5} />
+                                Video
+                              </div>
+                            )}
+                            <Button
+                              type="button"
+                              variant="ai"
+                              size="sm"
+                              leftIcon={<Sparkles size={14} />}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                navigate(`/recruiter/interviews/${interview.id}/live-copilot`);
+                              }}
+                            >
+                              Live Copilot
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -742,6 +757,16 @@ export default function InterviewsList() {
                     View Candidate Application
                   </Button>
                   <div className="flex gap-2 w-full sm:w-auto justify-end">
+                    <Button
+                      variant="ai"
+                      leftIcon={<Sparkles size={14} />}
+                      onClick={() => {
+                        setIsViewModalOpen(false);
+                        navigate(`/recruiter/interviews/${selectedInterview.id}/live-copilot`);
+                      }}
+                    >
+                      Live Copilot
+                    </Button>
                     <Button
                       variant="primary"
                       leftIcon={<Edit size={14} />}

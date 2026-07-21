@@ -55,6 +55,7 @@ public class CandidateAiController : ControllerBase
             cancellationToken: cancellationToken);
 
         result ??= BuildProfileAnalysis(profile);
+        NormalizeProfileAnalysis(result, profile);
         result.ProfileCompletenessScore = CalculateProfileScore(profile);
         result.ResumeCompletenessScore = CalculateResumeScore(profile);
         ClampScores(result);
@@ -89,7 +90,7 @@ public class CandidateAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CandidateJobRecommendationsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Recommend suitable active jobs. Scores must be 0-100 integers and explanations must be based only on supplied data.", new
+            BuildPrompt("Recommend suitable active jobs. Return exactly one JSON object with this shape: { \"recommendations\": [{ \"jobId\": number, \"matchScore\": number, \"matchingSkills\": string[], \"missingSkills\": string[], \"relevantStrengths\": string[], \"explanation\": string }] }. Scores must be 0-100 integers. Explanations must be based only on supplied data.", new
             {
                 candidate = BuildCandidateSnapshot(profile),
                 jobs = jobs.Select(BuildJobSnapshot)
@@ -292,11 +293,16 @@ public class CandidateAiController : ControllerBase
             .Include(j => j.JobSkills).ThenInclude(s => s.Skill)
             .FirstOrDefaultAsync(j => j.Id == jobId && (j.Status == "Open" || j.Status == "Published"), cancellationToken);
 
-    private IActionResult CandidateResponse<T>(T result) => Ok(new DashboardAiResponse<T>
+    private IActionResult CandidateResponse<T>(T? result)
     {
-        Result = result,
-        Disclaimer = DashboardAiMessages.CandidateDisclaimer
-    });
+        return result == null ? AiUnavailable() : Ok(new DashboardAiResponse<T>
+        {
+            Result = result,
+            Disclaimer = DashboardAiMessages.CandidateDisclaimer
+        });
+    }
+
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private IActionResult RateLimited() =>
         StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many AI requests. Please wait a moment and try again." });
@@ -380,6 +386,50 @@ public class CandidateAiController : ControllerBase
         };
     }
 
+    private static void NormalizeProfileAnalysis(CandidateProfileResumeAnalysisDto result, CandidateProfile profile)
+    {
+        result.MissingProfileInformation = NormalizeList(result.MissingProfileInformation);
+        result.MissingResumeInformation = NormalizeList(result.MissingResumeInformation);
+        result.ExtractedSkills = NormalizeList(result.ExtractedSkills);
+        result.Education = NormalizeList(result.Education);
+        result.Experience = NormalizeList(result.Experience);
+        result.Projects = NormalizeList(result.Projects);
+        result.Certifications = NormalizeList(result.Certifications);
+        result.Suggestions = NormalizeList(result.Suggestions);
+
+        if (result.ExtractedSkills.Count == 0 && profile.CandidateSkills.Count > 0)
+        {
+            result.ExtractedSkills = NormalizeList(profile.CandidateSkills.Select(s => s.Skill.Name));
+        }
+
+        if (result.Education.Count == 0 && profile.CandidateEducations.Count > 0)
+        {
+            result.Education = NormalizeList(profile.CandidateEducations.Select(e =>
+                string.Join(" - ", new[] { e.Degree, e.FieldOfStudy, e.InstitutionName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        if (result.Experience.Count == 0 && profile.CandidateWorkExperiences.Count > 0)
+        {
+            result.Experience = NormalizeList(profile.CandidateWorkExperiences.Select(e =>
+                string.Join(" at ", new[] { e.JobTitle, e.CompanyName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        var fallback = BuildProfileAnalysis(profile);
+        if (result.MissingProfileInformation.Count == 0 && fallback.MissingProfileInformation.Count > 0)
+        {
+            result.MissingProfileInformation = fallback.MissingProfileInformation;
+        }
+
+        if (result.MissingResumeInformation.Count == 0 && fallback.MissingResumeInformation.Count > 0)
+        {
+            result.MissingResumeInformation = fallback.MissingResumeInformation;
+        }
+
+        if (result.Suggestions.Count == 0)
+        {
+            result.Suggestions = fallback.Suggestions;
+        }
+    }
     private static CandidateJobRecommendationsDto BuildJobRecommendations(CandidateProfile profile, IEnumerable<Job> jobs)
     {
         var recommendations = jobs

@@ -52,10 +52,25 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CvAnalysisResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Analyze this candidate CV/profile data for recruiter review.", BuildApplicationSnapshot(application)),
+            BuildRecruiterPrompt(
+                "Analyze this candidate CV/profile data for recruiter review.",
+                "Return concise, evidence-based fields. Separate confirmed facts from missing or unclear information. Do not infer facts that are not in the supplied data.",
+                new
+                {
+                    education = Array.Empty<string>(),
+                    experience = Array.Empty<string>(),
+                    skills = Array.Empty<string>(),
+                    certifications = Array.Empty<string>(),
+                    projects = Array.Empty<string>(),
+                    relevantStrengths = Array.Empty<string>(),
+                    missingOrUnclearInformation = Array.Empty<string>(),
+                    estimatedRelevantExperience = ""
+                },
+                BuildApplicationSnapshot(application)),
+            maxOutputTokens: 1500,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result);
+        return ToAiResponse(NormalizeCvAnalysis(result, application));
     }
 
     [HttpPost("applications/{applicationId:int}/match")]
@@ -71,11 +86,27 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CandidateJobMatchResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Compare the candidate against this vacancy. Scores must be 0-100 integers.", BuildApplicationSnapshot(application)),
+            BuildRecruiterPrompt(
+                "Compare the candidate against this vacancy for recruiter review.",
+                "Score strictly from supplied job requirements and candidate evidence. Reward direct skill and experience evidence. Penalize missing mandatory skills. Explanation must be 2-3 polished sentences with specific evidence and gaps.",
+                new
+                {
+                    overallMatchScore = 0,
+                    skillMatchScore = 0,
+                    experienceMatchScore = 0,
+                    educationMatchScore = 0,
+                    matchedRequirements = Array.Empty<string>(),
+                    missingRequirements = Array.Empty<string>(),
+                    strengths = Array.Empty<string>(),
+                    concerns = Array.Empty<string>(),
+                    explanation = ""
+                },
+                BuildApplicationSnapshot(application)),
+            maxOutputTokens: 1500,
             cancellationToken: cancellationToken);
 
         if (result == null) return BadRequest(new { message = RecruiterAiMessages.MissingData });
-        NormalizeScores(result);
+        NormalizeMatchResult(result, application);
 
         var screening = await _context.AiScreeningResults.FirstOrDefaultAsync(r => r.ApplicationId == applicationId, cancellationToken);
         if (screening == null)
@@ -106,10 +137,22 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CandidateSummaryResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Summarize this candidate for recruiter review. Include strengths, gaps, and manual review flags.", BuildApplicationSnapshot(application)),
+            BuildRecruiterPrompt(
+                "Summarize this candidate for recruiter review.",
+                "Write a polished recruiter-facing summary in 3-4 sentences. Include concrete strengths, qualification gaps, and manual review flags based only on supplied data.",
+                new
+                {
+                    candidateName = "",
+                    summary = "",
+                    strengths = Array.Empty<string>(),
+                    qualificationGaps = Array.Empty<string>(),
+                    manualReviewFlags = Array.Empty<string>()
+                },
+                BuildApplicationSnapshot(application)),
+            maxOutputTokens: 1400,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result);
+        return ToAiResponse(NormalizeCandidateSummary(result, application));
     }
 
     [HttpPost("jobs/{jobId:int}/compare-candidates")]
@@ -155,8 +198,8 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<JobDescriptionResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate or improve a professional job description. The recruiter must review and edit before publishing.", request),
-            maxOutputTokens: 1800,
+            BuildJobDescriptionPrompt(request),
+            maxOutputTokens: 750,
             cancellationToken: cancellationToken);
 
         if (HasJobDescriptionDraft(result))
@@ -179,8 +222,8 @@ public class RecruiterAiController : ControllerBase
         {
             var result = await _gemini.GenerateJsonAsync<JobSkillsExtractionResultDto>(
                 SafetySystemInstruction,
-                BuildPrompt("Extract the core skills and technologies required for this job. Return a flat list of normalized skill names.", request),
-                maxOutputTokens: 800,
+                BuildJobSkillsPrompt(request),
+                maxOutputTokens: 350,
                 cancellationToken: cancellationToken);
 
             if (result?.ExtractedSkills.Count > 0 == true)
@@ -207,13 +250,27 @@ public class RecruiterAiController : ControllerBase
         var application = await GetAuthorizedApplication(applicationId, true, cancellationToken);
         if (application == null) return NotFound(new { message = RecruiterAiMessages.MissingData });
 
+        var candidateName = CandidateName(application);
+        var jobTitle = application.Job.Title;
+
         var result = await _gemini.GenerateJsonAsync<InterviewQuestionResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate technical, behavioral, situational, candidate-specific interview questions and evaluation criteria.", BuildApplicationSnapshot(application)),
+            BuildRecruiterPrompt(
+                $"Generate a custom AI interview guide for candidate {candidateName} applying for the {jobTitle} position.",
+                $"Questions MUST be uniquely tailored to {candidateName}'s exact resume history, listed technical skills, work experience entries, and education background. Include 4 technical questions targeting job and candidate skills, 3 behavioral questions, 3 situational production scenarios, 4 candidate-specific questions referencing their past job roles or listed skills, and 6 evaluation criteria.",
+                new
+                {
+                    technicalQuestions = Array.Empty<string>(),
+                    behavioralQuestions = Array.Empty<string>(),
+                    situationalQuestions = Array.Empty<string>(),
+                    candidateSpecificQuestions = Array.Empty<string>(),
+                    suggestedEvaluationCriteria = Array.Empty<string>()
+                },
+                BuildApplicationSnapshot(application)),
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result);
+        return ToAiResponse(NormalizeInterviewQuestions(result, application));
     }
 
     [HttpPost("jobs/{jobId:int}/screening")]
@@ -279,21 +336,37 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<MessageDraftResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Draft a professional recruiter message. Do not send it. Recruiter approval is required.", new
-            {
-                messageType = request.MessageType,
-                recruiterNotes = validation.SanitizedMessage,
-                application = BuildApplicationSnapshot(application)
-            }),
+            BuildRecruiterPrompt(
+                "Draft a professional recruiter message. Do not send it. Recruiter approval is required.",
+                "Use a warm, clear, concise tone. Personalize with candidate name, job title, and recruiter notes. Do not promise outcomes. If scheduling, ask for availability and mention that details can be confirmed by the recruiter.",
+                new
+                {
+                    subject = "",
+                    body = ""
+                },
+                new
+                {
+                    messageType = request.MessageType,
+                    recruiterNotes = validation.SanitizedMessage,
+                    application = BuildApplicationSnapshot(application)
+                }),
             maxOutputTokens: 1200,
             cancellationToken: cancellationToken);
 
-        return ToAiResponse(result);
+        return ToAiResponse(NormalizeMessageDraft(result, application, request.MessageType));
     }
 
     private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
+        if (result == null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = failureMessage ?? "Gemini did not return a usable response. Please try again.",
+                provider = "gemini",
+                model = "configured"
+            });
+        }
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 
@@ -428,6 +501,270 @@ public class RecruiterAiController : ControllerBase
     private static string BuildPrompt(string task, object data) =>
         JsonSerializer.Serialize(new { task, authorizedData = data });
 
+    private static string BuildRecruiterPrompt(string task, string qualityRules, object returnShape, object data) =>
+        JsonSerializer.Serialize(new
+        {
+            task,
+            qualityRules,
+            returnShape,
+            outputStyle = new
+            {
+                tone = "polished, concise, recruiter-facing",
+                evidence = "base every claim on supplied candidate/job data",
+                uncertainty = "write 'missing or unclear' when evidence is absent",
+                safety = "advisory only; no automatic hiring, rejection, ranking finality, or protected-character inference"
+            },
+            authorizedData = data
+        });
+
+    private static CvAnalysisResultDto NormalizeCvAnalysis(CvAnalysisResultDto? result, Application application)
+    {
+        result ??= new CvAnalysisResultDto();
+        var profile = application.Candidate.CandidateProfile;
+
+        result.Education = NormalizeTextList(result.Education);
+        result.Experience = NormalizeTextList(result.Experience);
+        result.Skills = NormalizeSkillList(result.Skills);
+        result.Certifications = NormalizeTextList(result.Certifications);
+        result.Projects = NormalizeTextList(result.Projects);
+        result.RelevantStrengths = NormalizeTextList(result.RelevantStrengths);
+        result.MissingOrUnclearInformation = NormalizeTextList(result.MissingOrUnclearInformation);
+
+        if (result.Education.Count == 0 && profile != null)
+        {
+            result.Education = NormalizeTextList(profile.CandidateEducations.Select(e =>
+                string.Join(" - ", new[] { e.Degree, e.FieldOfStudy, e.InstitutionName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        if (result.Experience.Count == 0 && profile != null)
+        {
+            result.Experience = NormalizeTextList(profile.CandidateWorkExperiences.Select(e =>
+                string.Join(" at ", new[] { e.JobTitle, e.CompanyName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        if (result.Skills.Count == 0 && profile != null)
+        {
+            result.Skills = NormalizeSkillList(profile.CandidateSkills.Select(s => s.Skill.Name));
+        }
+
+        if (string.IsNullOrWhiteSpace(result.EstimatedRelevantExperience))
+        {
+            result.EstimatedRelevantExperience = profile?.YearsOfExperience.HasValue == true
+                ? $"{profile.YearsOfExperience.Value} years listed in profile"
+                : "Missing or unclear from supplied profile data";
+        }
+
+        if (result.RelevantStrengths.Count == 0)
+        {
+            result.RelevantStrengths = BuildEvidenceStrengths(application).Take(5).ToList();
+        }
+
+        AddMissingProfileFlags(application, result.MissingOrUnclearInformation);
+        return result;
+    }
+
+    private static CandidateSummaryResultDto NormalizeCandidateSummary(CandidateSummaryResultDto? result, Application application)
+    {
+        result ??= new CandidateSummaryResultDto();
+        var candidateName = CandidateName(application);
+        result.CandidateName = FirstText(result.CandidateName, candidateName);
+        result.Strengths = NormalizeTextList(result.Strengths);
+        result.QualificationGaps = NormalizeTextList(result.QualificationGaps);
+        result.ManualReviewFlags = NormalizeTextList(result.ManualReviewFlags);
+
+        if (result.Strengths.Count == 0)
+        {
+            result.Strengths = BuildEvidenceStrengths(application).Take(5).ToList();
+        }
+
+        if (result.QualificationGaps.Count == 0)
+        {
+            result.QualificationGaps = BuildMissingRequirements(application).Take(5).ToList();
+        }
+
+        AddMissingProfileFlags(application, result.ManualReviewFlags);
+
+        if (string.IsNullOrWhiteSpace(result.Summary))
+        {
+            var strengths = result.Strengths.Count > 0 ? string.Join(", ", result.Strengths.Take(3)) : "available profile evidence";
+            var gaps = result.QualificationGaps.Count > 0 ? $" Key gaps to verify include {string.Join(", ", result.QualificationGaps.Take(2))}." : "";
+            result.Summary = $"{candidateName} applied for {application.Job.Title}. The profile shows {strengths}.{gaps} Recruiter review is required before any decision.";
+        }
+
+        return result;
+    }
+
+    private static void NormalizeMatchResult(CandidateJobMatchResultDto result, Application application)
+    {
+        NormalizeScores(result);
+        result.MatchedRequirements = NormalizeTextList(result.MatchedRequirements);
+        result.MissingRequirements = NormalizeTextList(result.MissingRequirements);
+        result.Strengths = NormalizeTextList(result.Strengths);
+        result.Concerns = NormalizeTextList(result.Concerns);
+
+        var matched = BuildMatchedRequirements(application);
+        var missing = BuildMissingRequirements(application);
+        if (result.MatchedRequirements.Count == 0) result.MatchedRequirements = matched.Take(8).ToList();
+        if (result.MissingRequirements.Count == 0) result.MissingRequirements = missing.Take(8).ToList();
+        if (result.Strengths.Count == 0) result.Strengths = BuildEvidenceStrengths(application).Take(6).ToList();
+        if (result.Concerns.Count == 0) result.Concerns = missing.Take(5).ToList();
+
+        var evidenceScore = EstimateSkillScore(application);
+        if (result.SkillMatchScore == 0 && evidenceScore > 0) result.SkillMatchScore = evidenceScore;
+        if (result.ExperienceMatchScore == 0) result.ExperienceMatchScore = EstimateExperienceScore(application);
+        if (result.EducationMatchScore == 0) result.EducationMatchScore = EstimateEducationScore(application);
+        if (result.OverallMatchScore == 0)
+        {
+            result.OverallMatchScore = Math.Clamp(
+                (int)Math.Round(result.SkillMatchScore * 0.5 + result.ExperienceMatchScore * 0.3 + result.EducationMatchScore * 0.2),
+                0,
+                100);
+        }
+
+        if (string.IsNullOrWhiteSpace(result.Explanation))
+        {
+            var matchedText = result.MatchedRequirements.Count > 0
+                ? string.Join(", ", result.MatchedRequirements.Take(3))
+                : "the available candidate evidence";
+            var missingText = result.MissingRequirements.Count > 0
+                ? $" Key areas to verify include {string.Join(", ", result.MissingRequirements.Take(2))}."
+                : " No major requirement gaps were detected from the supplied profile, but recruiter review is still required.";
+            result.Explanation = $"{CandidateName(application)} has a {result.OverallMatchScore}% advisory match for {application.Job.Title}, supported by {matchedText}.{missingText}";
+        }
+    }
+
+    private static InterviewQuestionResultDto NormalizeInterviewQuestions(InterviewQuestionResultDto? result, Application application)
+    {
+        result ??= new InterviewQuestionResultDto();
+        result.TechnicalQuestions = NormalizeQuestionList(result.TechnicalQuestions);
+        result.BehavioralQuestions = NormalizeQuestionList(result.BehavioralQuestions);
+        result.SituationalQuestions = NormalizeQuestionList(result.SituationalQuestions);
+        result.CandidateSpecificQuestions = NormalizeQuestionList(result.CandidateSpecificQuestions);
+        result.SuggestedEvaluationCriteria = NormalizeTextList(result.SuggestedEvaluationCriteria);
+
+        var candidateName = CandidateName(application);
+        var jobTitle = application.Job.Title;
+        var candidateSkills = application.Candidate.CandidateProfile?.CandidateSkills.Select(s => s.Skill.Name) ?? Enumerable.Empty<string>();
+        var skills = RequiredSkillNames(application.Job).Concat(candidateSkills).Distinct().ToList();
+        var primarySkill = skills.FirstOrDefault() ?? "full-stack engineering";
+        var secondarySkill = skills.Skip(1).FirstOrDefault() ?? "system architecture";
+        var experiences = application.Candidate.CandidateProfile?.CandidateWorkExperiences.ToList() ?? new List<RecruitmentPlatform.Core.Entities.CandidateWorkExperience>();
+
+        while (result.TechnicalQuestions.Count < 4)
+        {
+            var skill = skills.ElementAtOrDefault(result.TechnicalQuestions.Count) ?? primarySkill;
+            result.TechnicalQuestions.Add($"Can you describe a complex production challenge you solved using {skill} and how it impacted performance and reliability?");
+        }
+
+        while (result.BehavioralQuestions.Count < 3)
+        {
+            result.BehavioralQuestions.Add($"Tell me about a time in your previous engineering roles where you had to collaborate closely with product managers and designers to deliver a critical feature under a tight deadline.");
+        }
+
+        while (result.SituationalQuestions.Count < 3)
+        {
+            result.SituationalQuestions.Add($"Imagine you join as {jobTitle} and identify a major performance or security bottleneck in our {primarySkill} service. How would you triage and fix it?");
+        }
+
+        while (result.CandidateSpecificQuestions.Count < 4)
+        {
+            var exp = experiences.ElementAtOrDefault(result.CandidateSpecificQuestions.Count);
+            if (exp != null)
+            {
+                result.CandidateSpecificQuestions.Add($"In your position as {exp.JobTitle} at {exp.CompanyName}, what key architectural or operational decisions did you lead?");
+            }
+            else
+            {
+                var strength = BuildEvidenceStrengths(application).ElementAtOrDefault(result.CandidateSpecificQuestions.Count) ?? primarySkill;
+                result.CandidateSpecificQuestions.Add($"Given {candidateName}'s profile and background in {strength}, can you walk through a project demonstrating your mastery in this area?");
+            }
+        }
+
+        if (result.SuggestedEvaluationCriteria.Count == 0)
+        {
+            result.SuggestedEvaluationCriteria =
+            [
+                $"Depth of expertise in {primarySkill} and {secondarySkill} in production environments",
+                "Ability to articulate secure API design and scalable software architecture",
+                "Problem-solving methodology when handling complex technical debt or system bottlenecks",
+                "Evidence of effective cross-functional collaboration and engineering leadership",
+                $"Direct alignment with core requirements for the {jobTitle} role",
+                "Clarity regarding professional career history and progression"
+            ];
+        }
+
+        result.TechnicalQuestions = result.TechnicalQuestions.Distinct(StringComparer.OrdinalIgnoreCase).Take(6).ToList();
+        result.BehavioralQuestions = result.BehavioralQuestions.Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
+        result.SituationalQuestions = result.SituationalQuestions.Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
+        result.CandidateSpecificQuestions = result.CandidateSpecificQuestions.Distinct(StringComparer.OrdinalIgnoreCase).Take(6).ToList();
+        result.SuggestedEvaluationCriteria = result.SuggestedEvaluationCriteria.Take(8).ToList();
+        return result;
+    }
+
+    private static MessageDraftResultDto NormalizeMessageDraft(MessageDraftResultDto? result, Application application, string messageType)
+    {
+        result ??= new MessageDraftResultDto();
+        var candidateName = CandidateName(application);
+        result.Subject = FirstText(result.Subject, $"{messageType}: {application.Job.Title}");
+        if (string.IsNullOrWhiteSpace(result.Body))
+        {
+            result.Body = $"""
+            Hi {candidateName},
+
+            Thank you for your interest in the {application.Job.Title} role. I am reaching out regarding the next step in your application.
+
+            Please share your availability, and our team will confirm the details.
+
+            Best regards,
+            Hiring Team
+            """;
+        }
+
+        result.Subject = TrimSentenceFragment(result.Subject, 120);
+        result.Body = TrimMessageBody(result.Body);
+        return result;
+    }
+
+    private static string BuildJobDescriptionPrompt(JobDescriptionRequestDto request)
+    {
+        var data = new
+        {
+            title = Truncate(FirstText(request.JobTitle), 90),
+            employmentType = Truncate(FirstText(request.EmploymentType), 40),
+            workMode = Truncate(FirstText(request.WorkMode), 40),
+            location = Truncate(FirstText(request.Location), 80),
+            department = Truncate(FirstText(request.Department), 60),
+            responsibilities = Truncate(FirstText(request.Responsibilities, request.ExistingDescription), 700),
+            requiredSkills = Truncate(FirstText(request.RequiredSkills), 400),
+            preferredSkills = Truncate(FirstText(request.PreferredSkills), 300),
+            experience = Truncate(FirstText(request.Experience), 180),
+            education = Truncate(FirstText(request.Education), 180),
+            existingRequirements = Truncate(FirstText(request.ExistingRequirements), 500)
+        };
+
+        return JsonSerializer.Serialize(new
+        {
+            task = "Create a concise, role-specific job post draft from the supplied title and fields. Do not use a generic template. If only title is present, infer common responsibilities and requirements for that role. Return JSON only with exactly these fields: title (string), description (string), requirements (string with bullet lines separated by newline), reviewNotes (array of short strings). Description: 2 short paragraphs, under 120 words. Requirements: 5 bullets, under 90 words total. reviewNotes: max 2 short items.",
+            authorizedData = data
+        });
+    }
+
+    private static string BuildJobSkillsPrompt(JobSkillsExtractionRequestDto request)
+    {
+        var data = new
+        {
+            title = Truncate(FirstText(request.Title), 90),
+            description = Truncate(FirstText(request.Description), 900),
+            requirements = Truncate(FirstText(request.Requirements), 700)
+        };
+
+        return JsonSerializer.Serialize(new
+        {
+            task = "Extract the real required skills for this job from the supplied title, description, and requirements. Infer common role skills only when the text is sparse. Return JSON only with this exact shape: {\"extractedSkills\":[\"Skill\"]}. Include 5-10 concise skill names. Do not include sentences, responsibilities, locations, benefits, soft filler, or duplicate variants.",
+            authorizedData = data
+        });
+    }
+
     private static string? Truncate(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value)) return value;
@@ -445,6 +782,11 @@ public class RecruiterAiController : ControllerBase
             {
                 skills.Add(skill);
             }
+        }
+
+        if (skills.Count == 0 && !string.IsNullOrWhiteSpace(request.Title))
+        {
+            skills.AddRange(GetRoleProfile(request.Title).Skills);
         }
 
         return new JobSkillsExtractionResultDto
@@ -492,10 +834,11 @@ public class RecruiterAiController : ControllerBase
         var employmentType = FirstText(request.EmploymentType, "full-time");
         var workMode = FirstText(request.WorkMode, "onsite or hybrid");
         var responsibilities = FirstText(request.Responsibilities, request.ExistingDescription);
+        var profile = GetRoleProfile(title);
 
         var lines = new List<string>
         {
-            $"We are hiring {ArticleFor(title)} {title} to join our team and contribute to high-quality hiring outcomes.",
+            $"We are hiring {ArticleFor(title)} {title} to {profile.Outcome}.",
             $"This is a {employmentType} role based in {location} with a {workMode} work arrangement."
         };
 
@@ -505,16 +848,17 @@ public class RecruiterAiController : ControllerBase
         }
         else
         {
-            lines.Add("The successful candidate will collaborate with cross-functional teams, manage assigned responsibilities, communicate clearly with stakeholders, and deliver reliable results.");
+            lines.Add($"Key responsibilities include {string.Join(", ", profile.Responsibilities.Take(4))}.");
         }
 
-        lines.Add("The recruiter should tailor this draft to the company culture, team structure, seniority level, and final approval requirements.");
+        lines.Add("Review and adjust this draft for company context, seniority, compensation, and compliance before publishing.");
         return string.Join(Environment.NewLine + Environment.NewLine, lines);
     }
 
     private static string BuildFallbackRequirements(JobDescriptionRequestDto request)
     {
         var requirements = new List<string>();
+        var profile = GetRoleProfile(FirstText(request.JobTitle));
 
         AddRequirement(requirements, request.RequiredSkills, "Required skills");
         AddRequirement(requirements, request.PreferredSkills, "Preferred skills");
@@ -524,13 +868,99 @@ public class RecruiterAiController : ControllerBase
 
         if (requirements.Count == 0)
         {
-            requirements.Add("Relevant experience in a similar role or demonstrated ability to perform the responsibilities.");
-            requirements.Add("Strong communication, collaboration, problem-solving, and time-management skills.");
-            requirements.Add("Ability to work independently, follow agreed processes, and adapt to changing business needs.");
+            requirements.AddRange(profile.Requirements);
         }
 
         return string.Join(Environment.NewLine, requirements.Select(requirement => $"- {requirement}"));
     }
+
+    private static RoleProfile GetRoleProfile(string? title)
+    {
+        var normalized = (title ?? string.Empty).ToLowerInvariant();
+
+        if (ContainsAny(normalized, "sales", "account executive", "business development"))
+        {
+            return new RoleProfile(
+                "grow revenue by identifying prospects, building trusted customer relationships, and closing qualified opportunities",
+                ["prospecting new customers", "managing the sales pipeline", "delivering product demos", "negotiating and closing deals", "maintaining accurate CRM records"],
+                ["Experience in sales, account management, or business development.", "Strong prospecting, negotiation, and presentation skills.", "Ability to manage leads, follow-ups, and targets in a CRM.", "Clear written and verbal communication with customers.", "Comfortable working toward monthly or quarterly revenue goals."],
+                ["Sales Prospecting", "Lead Qualification", "CRM", "Negotiation", "Customer Relationship Management", "Sales Pipeline Management", "Product Demos"]);
+        }
+
+        if (ContainsAny(normalized, "developer", "engineer", "full stack", "frontend", "backend", "software"))
+        {
+            return new RoleProfile(
+                "design, build, test, and maintain reliable software used by our teams and customers",
+                ["building production features", "reviewing code", "fixing defects", "collaborating with product and design", "improving performance and maintainability"],
+                ["Hands-on experience building software in relevant languages or frameworks.", "Understanding of APIs, databases, testing, and version control.", "Ability to debug issues and ship maintainable code.", "Good collaboration with product, design, and QA teams.", "Interest in improving performance, reliability, and user experience."],
+                ["Software Development", "API Development", "Databases", "Testing", "Git", "Debugging", "Code Review"]);
+        }
+
+        if (ContainsAny(normalized, "designer", "ux", "ui"))
+        {
+            return new RoleProfile(
+                "create clear, usable product experiences from research, flows, wireframes, and polished interface designs",
+                ["mapping user journeys", "creating wireframes and prototypes", "running usability reviews", "partnering with engineering", "maintaining design standards"],
+                ["Portfolio showing UX/UI design work and decision-making.", "Strong Figma, prototyping, and visual design skills.", "Ability to translate user needs into practical product flows.", "Comfortable collaborating with product managers and engineers.", "Attention to accessibility, consistency, and design system patterns."],
+                ["UX Design", "UI Design", "Figma", "Prototyping", "User Research", "Wireframing", "Accessibility"]);
+        }
+
+        if (ContainsAny(normalized, "product manager", "project manager", "scrum"))
+        {
+            return new RoleProfile(
+                "turn customer and business needs into clear plans, priorities, and delivered outcomes",
+                ["defining requirements", "prioritizing roadmaps", "coordinating delivery", "tracking risks", "communicating progress to stakeholders"],
+                ["Experience managing product, project, or delivery work.", "Strong requirements gathering, prioritization, and stakeholder skills.", "Ability to coordinate cross-functional teams and remove blockers.", "Comfortable using analytics, feedback, and business goals to guide decisions.", "Clear communication through plans, updates, and documentation."],
+                ["Roadmapping", "Requirements Gathering", "Stakeholder Management", "Agile", "Project Planning", "Risk Management", "Analytics"]);
+        }
+
+        if (ContainsAny(normalized, "recruiter", "talent", "sourcer"))
+        {
+            return new RoleProfile(
+                "attract, engage, screen, and coordinate candidates through a high-quality hiring process",
+                ["sourcing candidates", "screening applications", "coordinating interviews", "managing hiring pipelines", "partnering with hiring managers"],
+                ["Experience in recruiting, sourcing, or talent coordination.", "Strong interviewing, candidate communication, and pipeline management skills.", "Ability to use ATS tools and maintain accurate records.", "Good stakeholder management with hiring managers.", "Understanding of fair, structured, and compliant hiring practices."],
+                ["Candidate Sourcing", "Screening", "Interview Coordination", "ATS", "Pipeline Management", "Stakeholder Management", "Candidate Communication"]);
+        }
+
+        if (ContainsAny(normalized, "data", "analyst", "business intelligence", "bi"))
+        {
+            return new RoleProfile(
+                "turn data into clear reporting, insights, and recommendations that improve business decisions",
+                ["building reports", "analyzing trends", "cleaning datasets", "presenting insights", "supporting metric definitions"],
+                ["Experience with data analysis, reporting, or business intelligence.", "Strong SQL, spreadsheet, dashboard, or analytics tool skills.", "Ability to interpret trends and explain findings clearly.", "Attention to data quality, definitions, and validation.", "Comfortable working with stakeholders to answer business questions."],
+                ["Data Analysis", "SQL", "Dashboards", "Reporting", "Data Visualization", "Data Quality", "Business Intelligence"]);
+        }
+
+        if (ContainsAny(normalized, "marketing", "content", "seo", "social media"))
+        {
+            return new RoleProfile(
+                "plan and execute campaigns that build audience awareness, engagement, and qualified demand",
+                ["creating campaigns", "writing content", "tracking performance", "coordinating channels", "optimizing messaging"],
+                ["Experience in marketing, content, campaigns, or brand communication.", "Strong writing, planning, and campaign execution skills.", "Ability to use performance metrics to improve results.", "Comfortable coordinating with sales, design, and product teams.", "Understanding of target audiences, channels, and messaging."],
+                ["Campaign Management", "Content Writing", "SEO", "Social Media Marketing", "Marketing Analytics", "Brand Messaging", "Performance Tracking"]);
+        }
+
+        if (ContainsAny(normalized, "hr", "human resources", "people"))
+        {
+            return new RoleProfile(
+                "support employees and managers across people operations, policies, onboarding, and workplace processes",
+                ["supporting onboarding", "maintaining HR records", "answering policy questions", "coordinating employee processes", "improving people operations"],
+                ["Experience in HR, people operations, or employee support.", "Good knowledge of HR processes, documentation, and confidentiality.", "Strong communication and problem-solving with employees and managers.", "Ability to manage records accurately and follow policies.", "Professional judgment, empathy, and attention to detail."],
+                ["HR Operations", "Onboarding", "Employee Relations", "HR Documentation", "Policy Support", "Confidentiality", "People Operations"]);
+        }
+
+        return new RoleProfile(
+            $"deliver the core responsibilities of the {FirstText(title, "role")} with accuracy, ownership, and clear communication",
+            ["managing assigned work", "coordinating with stakeholders", "solving day-to-day problems", "tracking progress", "improving processes"],
+            [$"Experience as {ArticleFor(FirstText(title, "role"))} {FirstText(title, "role")} or in a closely related role.", "Strong communication, organization, and problem-solving skills.", "Ability to manage priorities and deliver reliable results.", "Comfortable collaborating with cross-functional teams.", "Willingness to learn tools, processes, and business context quickly."],
+            [FirstText(title, "Role Operations"), "Communication", "Organization", "Problem Solving", "Stakeholder Coordination"]);
+    }
+
+    private static bool ContainsAny(string text, params string[] terms) =>
+        terms.Any(term => text.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+    private sealed record RoleProfile(string Outcome, string[] Responsibilities, string[] Requirements, string[] Skills);
 
     private static void AddRequirement(List<string> requirements, string? value, string label)
     {
@@ -551,6 +981,160 @@ public class RecruiterAiController : ControllerBase
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(skill => skill)
             .ToList();
+    }
+
+    private static List<string> NormalizeTextList(IEnumerable<string?> values)
+    {
+        return values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => Regex.Replace(value!.Trim(), @"\s+", " "))
+            .Where(value => value.Length is >= 2 and <= 240)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static List<string> NormalizeQuestionList(IEnumerable<string?> values)
+    {
+        return NormalizeTextList(values)
+            .Select(value => value.EndsWith('?') ? value : value.TrimEnd('.') + "?")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string CandidateName(Application application) =>
+        $"{application.Candidate.FirstName} {application.Candidate.LastName}".Trim();
+
+    private static List<string> RequiredSkillNames(Job job)
+    {
+        var skills = job.JobSkills
+            .OrderByDescending(s => s.IsMandatory)
+            .Select(s => s.Skill.Name)
+            .ToList();
+
+        if (skills.Count == 0)
+        {
+            skills = ExtractJobSkillsLocally(new JobSkillsExtractionRequestDto
+            {
+                Title = job.Title,
+                Description = job.Description ?? "",
+                Requirements = job.Requirements ?? ""
+            }).ExtractedSkills;
+        }
+
+        return NormalizeSkillList(skills);
+    }
+
+    private static HashSet<string> CandidateSkillKeys(Application application)
+    {
+        return application.Candidate.CandidateProfile?.CandidateSkills
+            .Select(s => NormalizeSkillKey(s.Skill.Name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+    }
+
+    private static List<string> BuildMatchedRequirements(Application application)
+    {
+        var candidateSkills = CandidateSkillKeys(application);
+        return RequiredSkillNames(application.Job)
+            .Where(skill => candidateSkills.Contains(NormalizeSkillKey(skill)))
+            .Select(skill => $"Evidence of {skill}")
+            .ToList();
+    }
+
+    private static List<string> BuildMissingRequirements(Application application)
+    {
+        var candidateSkills = CandidateSkillKeys(application);
+        return RequiredSkillNames(application.Job)
+            .Where(skill => !candidateSkills.Contains(NormalizeSkillKey(skill)))
+            .Select(skill => $"{skill} is missing or unclear")
+            .ToList();
+    }
+
+    private static List<string> BuildEvidenceStrengths(Application application)
+    {
+        var profile = application.Candidate.CandidateProfile;
+        var strengths = new List<string>();
+        if (profile == null) return strengths;
+
+        strengths.AddRange(BuildMatchedRequirements(application).Select(item => item.Replace("Evidence of ", "Relevant skill: ")));
+        if (profile.YearsOfExperience.HasValue) strengths.Add($"{profile.YearsOfExperience.Value} years of experience listed");
+        strengths.AddRange(profile.CandidateWorkExperiences.Take(3).Select(e => $"Experience as {e.JobTitle} at {e.CompanyName}".Trim()));
+        if (!string.IsNullOrWhiteSpace(profile.SummaryText)) strengths.Add("Candidate profile includes a professional summary");
+        if (application.Document != null) strengths.Add($"Application includes {application.Document.DocumentType} document metadata");
+        return NormalizeTextList(strengths);
+    }
+
+    private static void AddMissingProfileFlags(Application application, List<string> flags)
+    {
+        var profile = application.Candidate.CandidateProfile;
+        if (profile == null)
+        {
+            flags.Add("Candidate profile is missing.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(profile.SummaryText)) flags.Add("Profile summary is missing or unclear.");
+        if (profile.CandidateSkills.Count == 0) flags.Add("Skills are missing from the candidate profile.");
+        if (profile.CandidateWorkExperiences.Count == 0) flags.Add("Work experience details are missing or unclear.");
+        if (application.Document == null) flags.Add("Resume/CV document metadata is not attached to this application.");
+        var normalized = NormalizeTextList(flags);
+        flags.Clear();
+        flags.AddRange(normalized);
+    }
+
+    private static int EstimateSkillScore(Application application)
+    {
+        var required = RequiredSkillNames(application.Job);
+        if (required.Count == 0) return 0;
+        var candidateSkills = CandidateSkillKeys(application);
+        var matched = required.Count(skill => candidateSkills.Contains(NormalizeSkillKey(skill)));
+        return Math.Clamp(35 + (int)Math.Round((double)matched / required.Count * 60), 0, 100);
+    }
+
+    private static int EstimateExperienceScore(Application application)
+    {
+        var profile = application.Candidate.CandidateProfile;
+        if (profile == null) return 0;
+
+        var score = 0;
+        if (profile.YearsOfExperience.HasValue)
+        {
+            score += Math.Min(55, profile.YearsOfExperience.Value * 10);
+        }
+
+        if (profile.CandidateWorkExperiences.Count > 0) score += 30;
+        if (!string.IsNullOrWhiteSpace(profile.SummaryText)) score += 10;
+        if (application.Document != null) score += 5;
+
+        return Math.Clamp(score, 0, 100);
+    }
+
+    private static int EstimateEducationScore(Application application)
+    {
+        var profile = application.Candidate.CandidateProfile;
+        var jobText = $"{application.Job.Title} {application.Job.Description} {application.Job.Requirements}";
+        var educationRequired = Regex.IsMatch(
+            jobText,
+            @"\b(degree|bachelor|master|phd|diploma|education|graduate|qualification)\b",
+            RegexOptions.IgnoreCase);
+
+        if (profile?.CandidateEducations.Count > 0) return educationRequired ? 85 : 75;
+        return educationRequired ? 25 : 60;
+    }
+
+    private static string NormalizeSkillKey(string value) =>
+        Regex.Replace(value.Trim().ToLowerInvariant(), @"[^a-z0-9+#.]+", "");
+
+    private static string TrimSentenceFragment(string value, int maxLength)
+    {
+        var cleaned = Regex.Replace(value.Trim(), @"\s+", " ");
+        return cleaned.Length <= maxLength ? cleaned : cleaned[..maxLength].Trim();
+    }
+
+    private static string TrimMessageBody(string value)
+    {
+        var cleaned = Regex.Replace(value.Trim(), @"[ \t]+\r?\n", Environment.NewLine);
+        cleaned = Regex.Replace(cleaned, @"\n{3,}", Environment.NewLine + Environment.NewLine);
+        return cleaned.Length <= 3000 ? cleaned : cleaned[..3000].Trim();
     }
 
     private static string FirstText(params string?[] values)

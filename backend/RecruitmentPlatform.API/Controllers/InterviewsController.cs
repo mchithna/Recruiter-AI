@@ -28,18 +28,13 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
             .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
@@ -47,23 +42,38 @@ public class InterviewsController : ControllerBase
         return Ok(interviews);
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<InterviewDto>> GetInterviewById(int id, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interview = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .FirstOrDefaultAsync(i => i.Id == id && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        return Ok(ToInterviewDto(interview));
+    }
+
     [HttpGet("application/{applicationId:int}")]
     public async Task<ActionResult<List<InterviewDto>>> GetInterviewsForApplication(int applicationId, CancellationToken cancellationToken)
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
             .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
@@ -168,7 +178,6 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var interview = await _context.Interviews
             .Include(i => i.Application)
@@ -179,11 +188,6 @@ public class InterviewsController : ControllerBase
         if (interview == null || interview.Application.Job.Department.CompanyId != companyId)
         {
             return NotFound(new { message = "Interview not found." });
-        }
-
-        if (!isRecruiter && interview.InterviewerId != userId)
-        {
-            return Forbid();
         }
 
         var status = Clamp(request.Status, 50, "Status is required.");
@@ -286,16 +290,40 @@ public class InterviewsController : ControllerBase
     {
         Id = interview.Id,
         ApplicationId = interview.ApplicationId,
-        CandidateName = interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName,
-        JobTitle = interview.Application.Job.Title,
-        InterviewType = interview.InterviewType,
+        CandidateName = interview.Application != null && interview.Application.Candidate != null
+            ? (interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName).Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application != null && interview.Application.Job != null ? interview.Application.Job.Title : "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
         ScheduledTime = interview.ScheduledTime,
         DurationMinutes = interview.DurationMinutes,
         MeetingLink = interview.MeetingLink,
-        Status = interview.Status,
+        Status = interview.Status ?? "",
         Notes = interview.Notes,
         InterviewerId = interview.InterviewerId,
-        InterviewerName = interview.Interviewer.FirstName + " " + interview.Interviewer.LastName
+        InterviewerName = interview.Interviewer != null
+            ? (interview.Interviewer.FirstName + " " + interview.Interviewer.LastName).Trim()
+            : "Unknown Interviewer"
+    };
+
+    private static InterviewDto ToInterviewDto(Interview interview) => new InterviewDto
+    {
+        Id = interview.Id,
+        ApplicationId = interview.ApplicationId,
+        CandidateName = interview.Application?.Candidate != null
+            ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
+        ScheduledTime = interview.ScheduledTime,
+        DurationMinutes = interview.DurationMinutes,
+        MeetingLink = interview.MeetingLink,
+        Status = interview.Status ?? "",
+        Notes = interview.Notes,
+        InterviewerId = interview.InterviewerId,
+        InterviewerName = interview.Interviewer != null
+            ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
+            : "Unknown Interviewer"
     };
 
     private static string Clamp(string? value, int maxLength, string requiredMessage)

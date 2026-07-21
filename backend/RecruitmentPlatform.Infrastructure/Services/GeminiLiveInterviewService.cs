@@ -6,7 +6,7 @@ using RecruitmentPlatform.Core.Interfaces;
 
 namespace RecruitmentPlatform.Infrastructure.Services;
 
-public class GeminiStructuredService : IAiStructuredService
+public class GeminiLiveInterviewService : IGeminiLiveInterviewService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -20,17 +20,13 @@ public class GeminiStructuredService : IAiStructuredService
     private readonly string _vertexProjectId;
     private readonly string _vertexLocation;
     private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
-    private readonly ILogger<GeminiStructuredService> _logger;
+    private readonly ILogger<GeminiLiveInterviewService> _logger;
 
-    public GeminiStructuredService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<GeminiStructuredService> logger)
+    public GeminiLiveInterviewService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiLiveInterviewService> logger)
     {
         _httpClient = httpClient;
-        _apiKeys = GeminiConfiguration.GetApiKeys(configuration);
-        if (_apiKeys.Length == 0) _apiKeys = [string.Empty];
-        _models = GeminiConfiguration.GetModels(configuration);
+        _apiKeys = LiveInterviewGeminiConfiguration.GetApiKeys(configuration);
+        _models = LiveInterviewGeminiConfiguration.GetModels(configuration);
         _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
         _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
         _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
@@ -44,97 +40,76 @@ public class GeminiStructuredService : IAiStructuredService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (_useVertexAi && string.IsNullOrWhiteSpace(_vertexProjectId))
+        if (_apiKeys.Length == 0 && (!_useVertexAi || string.IsNullOrWhiteSpace(_vertexProjectId)))
         {
-            _logger.LogWarning("Vertex AI Gemini is missing project id.");
-            return default;
-        }
-
-        if (!_useVertexAi && _apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
-        {
-            _logger.LogWarning("Gemini API key is missing.");
+            _logger.LogWarning("Live interview AI is missing both Gemini API keys and Vertex AI configuration.");
             return default;
         }
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(25));
 
-        for (var attempt = 1; attempt <= 3; attempt++)
+        try
         {
-            try
+            var requestBody = new
             {
-                var requestBody = new
+                systemInstruction = new
                 {
-                    systemInstruction = new
+                    parts = new[] { new { text = systemInstruction } }
+                },
+                contents = new[]
+                {
+                    new
                     {
-                        parts = new[] { new { text = systemInstruction } }
-                    },
-                    contents = new[]
-                    {
-                        new
-                        {
-                            role = "user",
-                            parts = new[] { new { text = userPrompt } }
-                        }
-                    },
-                    generationConfig = new
-                    {
-                        temperature = 0.1,
-                        topP = 0.8,
-                        maxOutputTokens,
-                        responseMimeType = "application/json",
-                        thinkingConfig = new { thinkingBudget = 0 }
+                        role = "user",
+                        parts = new[] { new { text = userPrompt } }
                     }
-                };
-
-                using var response = await SendWithModelFallbacksAsync(requestBody, timeoutCts.Token);
-
-                if (!response.IsSuccessStatusCode)
+                },
+                generationConfig = new
                 {
-                    if ((int)response.StatusCode >= 500 && attempt < 3)
-                    {
-                        await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), timeoutCts.Token);
-                        continue;
-                    }
-
-                    var errorBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
-                    _logger.LogWarning("Gemini API returned status code {StatusCode}: {ErrorBody}", response.StatusCode, TruncateForLog(errorBody));
-                    return default;
+                    temperature = 0.2,
+                    topP = 0.8,
+                    maxOutputTokens,
+                    responseMimeType = "application/json",
+                    thinkingConfig = new { thinkingBudget = 0 }
                 }
+            };
 
-                var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
-                using var document = JsonDocument.Parse(responseBody);
-                var text = document.RootElement
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString();
-
-                var json = ExtractJson(text);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return default;
-                }
-
-                return JsonSerializer.Deserialize<T>(json, JsonOptions);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            using var response = await SendWithFallbacksAsync(requestBody, timeoutCts.Token);
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Gemini API request timed out on attempt {Attempt}.", attempt);
-                if (attempt == 3) return default;
+                var body = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                _logger.LogWarning("Live interview Gemini returned status {StatusCode}: {ErrorBody}", response.StatusCode, TruncateForLog(body));
+                return default;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error calling Gemini API.");
-                if (attempt == 3) return default;
-            }
+
+            var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+            using var document = JsonDocument.Parse(responseBody);
+            var text = document.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            var json = ExtractJson(text);
+            return string.IsNullOrWhiteSpace(json)
+                ? default
+                : JsonSerializer.Deserialize<T>(json, JsonOptions);
         }
-
-        return default;
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning("Live interview Gemini request timed out.");
+            return default;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling live interview Gemini.");
+            return default;
+        }
     }
 
-    private async Task<HttpResponseMessage> SendWithModelFallbacksAsync(object requestBody, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendWithFallbacksAsync(object requestBody, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
@@ -149,8 +124,8 @@ public class GeminiStructuredService : IAiStructuredService
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
                 var response = await _httpClient.PostAsync(url, content, cancellationToken);
                 if (response.IsSuccessStatusCode) return response;
-                if (!IsModelUnavailable(response.StatusCode)) return response;
-                _logger.LogWarning("Gemini AI Studio model {Model} on key {KeyPrefix}... failed with status {StatusCode}. Trying fallback.", model, apiKey[..Math.Min(apiKey.Length, 6)], response.StatusCode);
+                if (!IsFallbackStatus(response.StatusCode)) return response;
+                _logger.LogWarning("Live interview Gemini model {Model} on key {KeyPrefix}... failed with status {StatusCode}. Trying fallback.", model, apiKey[..Math.Min(apiKey.Length, 6)], response.StatusCode);
                 lastResponse = response;
             }
         }
@@ -170,10 +145,9 @@ public class GeminiStructuredService : IAiStructuredService
                 request.Headers.Authorization = new("Bearer", accessToken);
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
-
                 if (response.IsSuccessStatusCode) return response;
-                if (!IsModelUnavailable(response.StatusCode)) return response;
-                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                if (!IsFallbackStatus(response.StatusCode)) return response;
+                _logger.LogWarning("Vertex AI live interview model {Model} failed with status {StatusCode}. Trying fallback.", model, response.StatusCode);
                 lastResponse = response;
             }
         }
@@ -188,13 +162,14 @@ public class GeminiStructuredService : IAiStructuredService
         var modelId = Uri.EscapeDataString(model);
         return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
-    private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
-        statusCode is System.Net.HttpStatusCode.NotFound 
-                   or System.Net.HttpStatusCode.BadRequest
-                   or System.Net.HttpStatusCode.TooManyRequests
-                   or System.Net.HttpStatusCode.ServiceUnavailable
-                   or System.Net.HttpStatusCode.InternalServerError
-                   or System.Net.HttpStatusCode.Forbidden;
+
+    private static bool IsFallbackStatus(System.Net.HttpStatusCode statusCode) =>
+        statusCode is System.Net.HttpStatusCode.NotFound
+            or System.Net.HttpStatusCode.BadRequest
+            or System.Net.HttpStatusCode.TooManyRequests
+            or System.Net.HttpStatusCode.ServiceUnavailable
+            or System.Net.HttpStatusCode.InternalServerError
+            or System.Net.HttpStatusCode.Forbidden;
 
     private static string TruncateForLog(string value) =>
         value.Length <= 500 ? value : value[..500];
@@ -224,7 +199,6 @@ public class GeminiStructuredService : IAiStructuredService
         for (var index = firstObject; index < trimmed.Length; index++)
         {
             var current = trimmed[index];
-
             if (isEscaped)
             {
                 isEscaped = false;
@@ -245,11 +219,8 @@ public class GeminiStructuredService : IAiStructuredService
 
             if (inString) continue;
 
-            if (current == '{')
-            {
-                depth++;
-            }
-            else if (current == '}')
+            if (current == '{') depth++;
+            if (current == '}')
             {
                 depth--;
                 if (depth == 0)

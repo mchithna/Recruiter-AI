@@ -36,6 +36,7 @@ import HiringManagerInterviewDetail from './pages/HiringManager/InterviewDetail'
 import HiringManagerEvaluate from './pages/HiringManager/Evaluate';
 import HiringManagerOffer from './pages/HiringManager/Offer';
 import HiringManagerOffers from './pages/HiringManager/Offers';
+import LiveInterviewCopilot from './pages/LiveInterviewCopilot';
 import ChatBot from './components/chat/ChatBot';
 import CandidateHome from './pages/candidate/Home';
 import Profile from './pages/candidate/Profile';
@@ -90,12 +91,14 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
                 <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
                   <Route index element={<HiringManagerIndexRedirect />} />
+                  <Route path="queue" element={<Navigate to="/hiring-manager/home" replace />} />
                   <Route path="home" element={<HiringManagerHome />} />
                   <Route path="jobs" element={<HiringManagerJobsList />} />
                   <Route path="jobs/:jobId/applications" element={<HiringManagerJobApplications />} />
                   <Route path="applications/:applicationId" element={<HiringManagerApplicationDetail />} />
                   <Route path="interviews" element={<HiringManagerInterviews />} />
                   <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
+                  <Route path="interviews/:interviewId/live-copilot" element={<LiveInterviewCopilot />} />
                   <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
                   <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
                   <Route path="offers" element={<HiringManagerOffers />} />
@@ -132,6 +135,8 @@ function App() {
                 <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
                 <Route path="applications/:applicationId" element={<ApplicationDetail />} />
                 <Route path="interviews" element={<InterviewsList />} />
+                <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
+                <Route path="interviews/:interviewId/live-copilot" element={<LiveInterviewCopilot />} />
                 <Route path="messages" element={<MessagesList />} />
               </Route>
             </Route>

@@ -171,11 +171,16 @@ public class AdminAiController : ControllerBase
         return Math.Round(values.Average(v => (v.UpdatedAt - v.AppliedAt).TotalHours), 1);
     }
 
-    private IActionResult AdminResponse<T>(T result) => Ok(new DashboardAiResponse<T>
+    private IActionResult AdminResponse<T>(T? result)
     {
-        Result = result,
-        Disclaimer = DashboardAiMessages.AdminDisclaimer
-    });
+        return result == null ? AiUnavailable() : Ok(new DashboardAiResponse<T>
+        {
+            Result = result,
+            Disclaimer = DashboardAiMessages.AdminDisclaimer
+        });
+    }
+
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private static AdminAnalyticsSummaryDto BuildAnalyticsSummary(object metrics)
     {
