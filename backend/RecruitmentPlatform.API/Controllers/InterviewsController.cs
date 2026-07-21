@@ -28,16 +28,16 @@ public class InterviewsController : ControllerBase
         var companyId = GetCompanyId();
         var userId = GetUserId();
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.Application.Job.Department.CompanyId == companyId);
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
-            .Select(i => ToInterviewDto(i))
             .ToListAsync(cancellationToken);
 
-        return Ok(interviews);
+        return Ok(interviews.Select(ToInterviewDto).ToList());
     }
 
     [HttpGet("application/{applicationId:int}")]
@@ -46,16 +46,16 @@ public class InterviewsController : ControllerBase
         var companyId = GetCompanyId();
         var userId = GetUserId();
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId);
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
-            .Select(i => ToInterviewDto(i))
             .ToListAsync(cancellationToken);
 
-        return Ok(interviews);
+        return Ok(interviews.Select(ToInterviewDto).ToList());
     }
 
     [HttpPost]
@@ -201,16 +201,20 @@ public class InterviewsController : ControllerBase
         {
             Id = interview.Id,
             ApplicationId = interview.ApplicationId,
-            CandidateName = interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName,
-            JobTitle = interview.Application.Job.Title,
-            InterviewType = interview.InterviewType,
+            CandidateName = interview.Application?.Candidate != null
+                ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
+                : "Unknown Candidate",
+            JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
+            InterviewType = interview.InterviewType ?? "",
             ScheduledTime = interview.ScheduledTime,
             DurationMinutes = interview.DurationMinutes,
             MeetingLink = interview.MeetingLink,
-            Status = interview.Status,
+            Status = interview.Status ?? "",
             Notes = interview.Notes,
             InterviewerId = interview.InterviewerId,
-            InterviewerName = interview.Interviewer.FirstName + " " + interview.Interviewer.LastName
+            InterviewerName = interview.Interviewer != null
+                ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
+                : "Unknown Interviewer"
         };
     }
 

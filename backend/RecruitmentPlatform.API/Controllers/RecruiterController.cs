@@ -266,7 +266,8 @@ public class RecruiterController : ControllerBase
     [HttpGet("applications/{applicationId:int}")]
     public async Task<ActionResult<RecruiterApplicationDetailDto>> GetApplication(int applicationId, CancellationToken cancellationToken)
     {
-        var companyId = GetCompanyId();
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+
         var application = await RecruiterApplications(companyId)
             .Include(a => a.Job)
             .Include(a => a.AiScreeningResult)
@@ -526,15 +527,15 @@ public class RecruiterController : ControllerBase
 
     private static RecruiterApplicationDetailDto ToApplicationDetailDto(Application a)
     {
-        var profile = a.Candidate.CandidateProfile;
+        var profile = a.Candidate?.CandidateProfile;
         return new RecruiterApplicationDetailDto
         {
             Id = a.Id,
             JobId = a.JobId,
-            JobTitle = a.Job.Title,
-            CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
+            JobTitle = a.Job?.Title ?? "",
+            CandidateName = a.Candidate != null ? $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim() : "",
             AppliedAt = a.AppliedAt,
-            Status = a.Status,
+            Status = a.Status ?? "",
             AiMatchScore = a.AiMatchScore,
             CoverLetterText = a.CoverLetterText,
             CandidateProfile = profile == null ? null : new RecruiterCandidateProfileDto
@@ -545,16 +546,16 @@ public class RecruiterController : ControllerBase
                 GithubUrl = profile.GithubUrl,
                 LocationCity = profile.LocationCity,
                 YearsOfExperience = profile.YearsOfExperience,
-                FirstName = a.Candidate.FirstName,
-                LastName = a.Candidate.LastName,
-                Skills = profile.CandidateSkills.Select(s => new RecruiterCandidateSkillDto
+                FirstName = a.Candidate?.FirstName ?? "",
+                LastName = a.Candidate?.LastName ?? "",
+                Skills = (profile.CandidateSkills ?? Enumerable.Empty<CandidateSkill>()).Select(s => new RecruiterCandidateSkillDto
                 {
-                    Name = s.Skill.Name,
+                    Name = s.Skill?.Name ?? "",
                     ProficiencyLevel = s.ProficiencyLevel,
                     YearsOfExperience = s.YearsOfExperience,
                     ExtractedByAi = s.ExtractedByAi
                 }).ToList(),
-                Education = profile.CandidateEducations.Select(e => new RecruiterCandidateEducationDto
+                Education = (profile.CandidateEducations ?? Enumerable.Empty<CandidateEducation>()).Select(e => new RecruiterCandidateEducationDto
                 {
                     InstitutionName = e.InstitutionName,
                     Degree = e.Degree,
@@ -564,7 +565,7 @@ public class RecruiterController : ControllerBase
                     IsCurrent = e.IsCurrent,
                     Grade = e.Grade
                 }).ToList(),
-                WorkExperience = profile.CandidateWorkExperiences.Select(e => new RecruiterCandidateExperienceDto
+                WorkExperience = (profile.CandidateWorkExperiences ?? Enumerable.Empty<CandidateWorkExperience>()).Select(e => new RecruiterCandidateExperienceDto
                 {
                     CompanyName = e.CompanyName,
                     JobTitle = e.JobTitle,
@@ -586,20 +587,20 @@ public class RecruiterController : ControllerBase
                 AiRank = a.AiScreeningResult.AiRank,
                 ProcessedAt = a.AiScreeningResult.ProcessedAt
             },
-            Interviews = a.Interviews.OrderByDescending(i => i.ScheduledTime).Select(i => new RecruiterInterviewDto
+            Interviews = (a.Interviews ?? Enumerable.Empty<Interview>()).OrderByDescending(i => i.ScheduledTime).Select(i => new RecruiterInterviewDto
             {
                 Id = i.Id,
                 ApplicationId = i.ApplicationId,
-                CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
-                JobTitle = a.Job.Title,
-                InterviewType = i.InterviewType,
+                CandidateName = a.Candidate != null ? $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim() : "",
+                JobTitle = a.Job?.Title ?? "",
+                InterviewType = i.InterviewType ?? "",
                 ScheduledTime = i.ScheduledTime,
                 DurationMinutes = i.DurationMinutes,
                 MeetingLink = i.MeetingLink,
-                Status = i.Status,
+                Status = i.Status ?? "",
                 Notes = i.Notes
             }).ToList(),
-            Messages = a.CommunicationMessages.OrderBy(m => m.SentAt).Select(m => new RecruiterMessageDto
+            Messages = (a.CommunicationMessages ?? Enumerable.Empty<CommunicationMessage>()).OrderBy(m => m.SentAt).Select(m => new RecruiterMessageDto
             {
                 Id = m.Id,
                 Sender = m.SenderId == a.CandidateId ? "Candidate" : "Recruiter",

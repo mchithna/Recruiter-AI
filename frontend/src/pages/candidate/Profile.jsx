@@ -7,7 +7,7 @@ import {
   ProgressBar,
   Modal
 } from '../../components/ui';
-import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw, AlertCircle, CheckCircle2, FileText, Lightbulb } from 'lucide-react';
 import { 
   candidateAiApi, 
   getMyProfile, 
@@ -243,29 +243,7 @@ export default function Profile() {
               <Button type="button" size="sm" variant="outline" onClick={handleAnalyzeProfile} leftIcon={<RefreshCw size={14} />}>Retry</Button>
             </div>
           ) : analysis?.result ? (
-            <div className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">
-                    <span>Profile completeness</span>
-                    <span>{analysis.result.profileCompletenessScore}%</span>
-                  </div>
-                  <ProgressBar value={analysis.result.profileCompletenessScore} max={100} />
-                </div>
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">
-                    <span>Resume completeness</span>
-                    <span>{analysis.result.resumeCompletenessScore}%</span>
-                  </div>
-                  <ProgressBar value={analysis.result.resumeCompletenessScore} max={100} />
-                </div>
-              </div>
-              <AiList title="Missing profile information" items={analysis.result.missingProfileInformation} />
-              <AiList title="Missing resume information" items={analysis.result.missingResumeInformation} />
-              <AiList title="Extracted skills" items={analysis.result.extractedSkills} />
-              <AiList title="Suggestions" items={analysis.result.suggestions} />
-              <p className="text-caption text-secondary-500 dark:text-secondary-400">{analysis.disclaimer}</p>
-            </div>
+            <AnalysisResult analysis={analysis} />
           ) : (
             <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
               Run analysis to review completeness, missing information, extracted skills, education, experience, projects, certifications, and improvement suggestions.
@@ -504,24 +482,91 @@ export default function Profile() {
   );
 }
 
-function AiList({ title, items }) {
-  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
-  if (safeItems.length === 0) return null;
+function AnalysisResult({ analysis }) {
+  const result = analysis.result || {};
+  const scoreAverage = Math.round(((Number(result.profileCompletenessScore) || 0) + (Number(result.resumeCompletenessScore) || 0)) / 2);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+        <div className="rounded-2xl border border-ai-200/70 bg-ai-50/80 p-5 text-center dark:border-ai-500/20 dark:bg-ai-500/10">
+          <div className="text-caption font-semibold uppercase tracking-wide text-ai-700 dark:text-ai-300">
+            Readiness
+          </div>
+          <div className="mt-2 text-h1 tabular-nums text-ai-700 dark:text-ai-200">{scoreAverage}%</div>
+          <p className="mt-1 text-caption text-secondary-500 dark:text-secondary-400">
+            Combined profile and resume strength
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <ScoreMetric title="Profile completeness" value={result.profileCompletenessScore} />
+          <ScoreMetric title="Resume completeness" value={result.resumeCompletenessScore} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <AiList title="Missing profile information" items={result.missingProfileInformation} icon={AlertCircle} tone="warning" />
+        <AiList title="Missing resume information" items={result.missingResumeInformation} icon={FileText} tone="danger" />
+        <AiList title="Extracted skills" items={result.extractedSkills} icon={Sparkles} tone="ai" />
+        <AiList title="Education" items={result.education} icon={GraduationCap} tone="success" />
+        <AiList title="Experience" items={result.experience} icon={Briefcase} tone="primary" />
+        <AiList title="Projects" items={result.projects} icon={CheckCircle2} tone="success" emptyText="No projects were found in the current profile or resume data." />
+        <AiList title="Certifications" items={result.certifications} icon={FileText} tone="primary" emptyText="No certifications were found in the current profile or resume data." />
+        <AiList title="Suggestions" items={result.suggestions} icon={Lightbulb} tone="ai" />
+      </div>
+
+      <p className="rounded-xl border border-secondary-100 bg-secondary-50 px-4 py-3 text-caption text-secondary-500 dark:border-white/10 dark:bg-white/5 dark:text-secondary-400">
+        {analysis.disclaimer}
+      </p>
+    </div>
+  );
+}
+
+function ScoreMetric({ title, value }) {
+  const score = Math.max(0, Math.min(100, Number(value) || 0));
 
   return (
     <div>
-      <h4 className="mb-2 text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">{title}</h4>
-      <ul className="space-y-1.5 text-body-sm text-secondary-600 dark:text-secondary-300">
-        {safeItems.map((item) => (
-          <li key={item} className="flex gap-2">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ai-500" />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mb-2 flex items-center justify-between text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">
+        <span>{title}</span>
+        <span className="tabular-nums">{score}%</span>
+      </div>
+      <ProgressBar value={score} max={100} />
+    </div>
+  );
+}
 
+function AiList({ title, items, icon: Icon = Sparkles, tone = 'ai', emptyText = 'No items found in the current profile or resume data.' }) {
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  const toneClasses = {
+    ai: 'border-ai-100 bg-ai-50/60 text-ai-700 dark:border-ai-500/20 dark:bg-ai-500/10 dark:text-ai-300',
+    danger: 'border-red-100 bg-red-50/70 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200',
+    primary: 'border-primary-100 bg-primary-50/70 text-primary-700 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-200',
+    success: 'border-green-100 bg-green-50/70 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-200',
+    warning: 'border-amber-100 bg-amber-50/70 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200',
+  };
 
-
+  return (
+    <div className="rounded-2xl border border-secondary-100 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="mb-3 flex items-center gap-2">
+        <span className={`flex h-8 w-8 items-center justify-center rounded-xl border ${toneClasses[tone] || toneClasses.ai}`}>
+          <Icon size={16} />
+        </span>
+        <h4 className="text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">{title}</h4>
+      </div>
+      {safeItems.length === 0 ? (
+        <p className="text-body-sm text-secondary-500 dark:text-secondary-400">{emptyText}</p>
+      ) : (
+        <ul className="space-y-2 text-body-sm text-secondary-600 dark:text-secondary-300">
+          {safeItems.map((item) => (
+            <li key={item} className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ai-500" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

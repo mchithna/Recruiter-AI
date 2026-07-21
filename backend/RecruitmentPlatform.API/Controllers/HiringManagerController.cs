@@ -51,11 +51,20 @@ public class HiringManagerController : ControllerBase
         var companyId = GetCompanyId();
         var userId = GetUserId();
 
+        var visibleStatuses = new[]
+        {
+            "Shortlisted",
+            "Interview Scheduled",
+            "Offer Extended",
+            "Hired",
+            "Rejected"
+        };
+
         var applications = await _context.Applications
             .AsNoTracking()
             .Where(a => a.JobId == jobId && a.Job.Department.CompanyId == companyId)
             .Where(a => a.Job.HiringManagerId == userId || a.Interviews.Any(i => i.InterviewerId == userId))
-            .Where(a => a.Status == "Shortlisted" || a.Status == "Interview Scheduled" || a.Status == "Offer Extended" || a.Status == "Hired" || a.Status == "Rejected")
+            .Where(a => visibleStatuses.Contains(a.Status) || a.Interviews.Any(i => i.InterviewerId == userId))
             .OrderByDescending(a => a.AppliedAt)
             .Select(a => new HiringManagerApplicationListDto
             {
@@ -65,7 +74,16 @@ public class HiringManagerController : ControllerBase
                 CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
                 AppliedAt = a.AppliedAt,
                 Status = a.Status,
-                AiMatchScore = a.AiMatchScore
+                AiMatchScore = a.AiMatchScore,
+                ScheduledTime = a.Interviews
+                    .Where(i => i.InterviewerId == userId && (i.Status == "Scheduled" || i.Status == "Confirmed" || i.Status == "Rescheduled"))
+                    .OrderBy(i => i.ScheduledTime)
+                    .Select(i => (DateTime?)i.ScheduledTime)
+                    .FirstOrDefault()
+                    ?? a.Interviews
+                        .OrderBy(i => i.ScheduledTime)
+                        .Select(i => (DateTime?)i.ScheduledTime)
+                        .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
@@ -111,6 +129,15 @@ public class HiringManagerController : ControllerBase
             AppliedAt = application.AppliedAt,
             Status = application.Status,
             AiMatchScore = application.AiMatchScore,
+            ScheduledTime = application.Interviews
+                .Where(i => i.InterviewerId == userId && (i.Status == "Scheduled" || i.Status == "Confirmed" || i.Status == "Rescheduled"))
+                .OrderBy(i => i.ScheduledTime)
+                .Select(i => (DateTime?)i.ScheduledTime)
+                .FirstOrDefault()
+                ?? application.Interviews
+                    .OrderBy(i => i.ScheduledTime)
+                    .Select(i => (DateTime?)i.ScheduledTime)
+                    .FirstOrDefault(),
             CoverLetterText = application.CoverLetterText,
             ResumeUrl = application.Document?.FileUrl,
             CandidateProfile = profile == null ? null : new HiringManagerCandidateProfileDto
@@ -166,7 +193,8 @@ public class HiringManagerController : ControllerBase
 
         var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.Application.Job.Department.CompanyId == companyId && i.InterviewerId == userId)
+            .Where(i => i.Application.Job.Department.CompanyId == companyId &&
+                        (i.Application.Job.HiringManagerId == userId || i.InterviewerId == userId))
             .OrderBy(i => i.ScheduledTime)
             .Select(i => ToInterviewDto(i))
             .ToListAsync(cancellationToken);
@@ -182,7 +210,9 @@ public class HiringManagerController : ControllerBase
 
         var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId && i.InterviewerId == userId)
+            .Where(i => i.ApplicationId == applicationId &&
+                        i.Application.Job.Department.CompanyId == companyId &&
+                        (i.Application.Job.HiringManagerId == userId || i.InterviewerId == userId))
             .OrderBy(i => i.ScheduledTime)
             .Select(i => ToInterviewDto(i))
             .ToListAsync(cancellationToken);
@@ -474,6 +504,7 @@ public class HiringManagerApplicationListDto
     public DateTime AppliedAt { get; set; }
     public string Status { get; set; } = "";
     public decimal? AiMatchScore { get; set; }
+    public DateTime? ScheduledTime { get; set; }
 }
 
 public class HiringManagerApplicationDetailDto : HiringManagerApplicationListDto

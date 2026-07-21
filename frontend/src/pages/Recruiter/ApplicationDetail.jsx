@@ -293,8 +293,8 @@ export function ApplicationDetail() {
 
     Promise.all([
       recruiterApi.getApplication(applicationId),
-      recruiterApi.getInterviewsByApplication(applicationId),
-      recruiterApi.getApplicationMessages(applicationId),
+      recruiterApi.getInterviewsByApplication(applicationId).catch(() => []),
+      recruiterApi.getApplicationMessages(applicationId).catch(() => []),
       recruiterApi.getHiringManagers().catch(() => []),
     ])
       .then(([loadedApplication, loadedInterviews, loadedMessages, loadedHiringManagers]) => {
