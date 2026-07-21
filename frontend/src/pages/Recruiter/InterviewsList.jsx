@@ -17,8 +17,8 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
-import { getAllInterviews } from './services/mockData';
+import { StatusBadge } from '../../components/ui';
+import { recruiterApi } from './services/recruiterApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -56,11 +56,11 @@ export default function InterviewsList() {
       setLoading(true);
 
       try {
-        const data = await getAllInterviews();
+        const data = await recruiterApi.getInterviews();
         if (!isActive) return;
 
         setInterviews(
-          [...data].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
+          [...(data || [])].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
         );
       } catch (error) {
         console.error('Failed to fetch interviews:', error);
@@ -268,7 +268,7 @@ export default function InterviewsList() {
                       </div>
                     </div>
                     <div className="shrink-0">
-                      <StatusBadge status={interview.status} />
+                      <StatusBadge status={interview.status?.toLowerCase().replace(/ /g, '_')} />
                     </div>
                   </div>
 

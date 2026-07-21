@@ -27,8 +27,8 @@ import {
   Skeleton,
   StatCard,
 } from '../../components/ui';
-import StatusBadge from './components/StatusBadge';
-import { getAllApplications, getAllInterviews, getJobs } from './services/mockData';
+import { StatusBadge } from '../../components/ui';
+import { recruiterApi } from './services/recruiterApi';
 
 const pipelineOrder = [
   'Applied',
@@ -59,14 +59,10 @@ export default function RecruiterHome() {
       setLoading(true);
 
       try {
-        const [jobs, applications, interviews] = await Promise.all([
-          getJobs(),
-          getAllApplications(),
-          getAllInterviews(),
-        ]);
+        const dashboard = await recruiterApi.getDashboard();
 
         if (!isActive) return;
-        setDashboardData({ jobs, applications, interviews });
+        setDashboardData(dashboard);
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -216,7 +212,7 @@ export default function RecruiterHome() {
               return (
                 <div key={item.status} className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)_48px] sm:items-center">
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={item.status} />
+                    <StatusBadge status={item.status?.toLowerCase().replace(/ /g, '_')} />
                   </div>
                   <ProgressBar value={value} size="md" />
                   <p className="text-right text-body-sm font-semibold tabular-nums text-secondary-800 dark:text-white">
@@ -250,7 +246,7 @@ export default function RecruiterHome() {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <Badge variant="ai" size="sm">{topCandidate.aiMatchScore}% AI match</Badge>
-                      <StatusBadge status={topCandidate.status} />
+                      <StatusBadge status={topCandidate.status?.toLowerCase().replace(/ /g, '_')} />
                     </div>
                   </div>
                 </div>
@@ -277,7 +273,11 @@ export default function RecruiterHome() {
             </div>
             {closestDeadlineJob ? (
               <div className="mt-4">
-                <p className="text-h4 text-secondary-900 dark:text-white">{closestDeadlineJob.title}</p>
+                <Link to={`/recruiter/jobs/${closestDeadlineJob.id}/applications`} className="group/link block">
+                  <p className="text-h4 text-secondary-900 dark:text-white transition-colors group-hover/link:text-primary-600">
+                    {closestDeadlineJob.title}
+                  </p>
+                </Link>
                 <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
                   Deadline {formatDate(closestDeadlineJob.applicationDeadline)}
                 </p>
@@ -381,7 +381,7 @@ export default function RecruiterHome() {
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
-                  <StatusBadge status={application.status} />
+                  <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
                   <ChevronRight
                     size={20}
                     strokeWidth={1.75}
