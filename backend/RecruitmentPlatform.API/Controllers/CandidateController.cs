@@ -365,7 +365,7 @@ public class CandidateController : ControllerBase
         {
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var gemini = scope.ServiceProvider.GetRequiredService<RecruitmentPlatform.Core.Interfaces.IGeminiStructuredService>();
+            var aiService = scope.ServiceProvider.GetRequiredService<RecruitmentPlatform.Core.Interfaces.IAiStructuredService>();
 
             var app = await db.Applications
                 .Include(a => a.Job).ThenInclude(j => j.JobSkills).ThenInclude(s => s.Skill)
@@ -407,7 +407,7 @@ public class CandidateController : ControllerBase
                 authorizedData = new { applicationId = app.Id, job = jobSnapshot, candidate = candidateSnapshot }
             });
 
-            var result = await gemini.GenerateJsonAsync<RecruitmentPlatform.Core.DTOs.CandidateJobMatchResultDto>(
+            var result = await aiService.GenerateJsonAsync<RecruitmentPlatform.Core.DTOs.CandidateJobMatchResultDto>(
                 "You are Hirely AI. Return valid JSON only. Scores must be 0-100 integers.",
                 prompt);
 

@@ -6,7 +6,7 @@ import {
   Input
 } from '../../components/ui';
 import { FileText, Star, Trash2, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { getMyDocuments, uploadDocument, deleteDocument, setPrimaryDocument } from './services/candidateApi';
+import { getMyDocuments, uploadDocument, deleteDocument, setPrimaryDocument, candidateAiApi } from './services/candidateApi';
 import { supabase } from '../../supabaseClient';
 import { useToast } from '../../lib/ToastContext';
 
@@ -16,6 +16,7 @@ export default function Documents() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [customFileName, setCustomFileName] = useState('');
+  const [extractingId, setExtractingId] = useState(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -114,6 +115,19 @@ export default function Documents() {
     } catch (error) {
       console.error('Set primary error:', error);
       try { toast({ title: error.message || 'Failed to set primary document.', variant: 'danger' }); } catch (e) {}
+    }
+  };
+
+  const handleExtractSkills = async (id) => {
+    setExtractingId(id);
+    try {
+      await candidateAiApi.extractResumeSkills(id);
+      try { toast({ title: 'Skills successfully extracted! View them in your Profile.', variant: 'success' }); } catch (e) {}
+    } catch (error) {
+      console.error('Extract error:', error);
+      try { toast({ title: error.response?.data?.message || 'Failed to extract skills.', variant: 'danger' }); } catch (e) {}
+    } finally {
+      setExtractingId(null);
     }
   };
 
@@ -223,6 +237,17 @@ export default function Documents() {
             </div>
             
             <div className="flex items-center gap-2">
+              {doc.isPrimary && doc.documentType === 'Resume' && (
+                <Button 
+                  variant="ai" 
+                  size="sm" 
+                  onClick={() => handleExtractSkills(doc.id)}
+                  isLoading={extractingId === doc.id}
+                  disabled={extractingId !== null}
+                >
+                  ✨ Extract Skills with AI
+                </Button>
+              )}
               {!doc.isPrimary && (
                 <Button variant="outline" size="sm" onClick={() => handleSetPrimary(doc.id)}>
                   Set as Primary

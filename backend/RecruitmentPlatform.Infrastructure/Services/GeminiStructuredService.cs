@@ -6,7 +6,7 @@ using RecruitmentPlatform.Core.Interfaces;
 
 namespace RecruitmentPlatform.Infrastructure.Services;
 
-public class GeminiStructuredService : IGeminiStructuredService
+public class GeminiStructuredService : IAiStructuredService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

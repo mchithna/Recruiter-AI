@@ -27,13 +27,13 @@ public class RecruiterAiController : ControllerBase
         """;
 
     private readonly ApplicationDbContext _context;
-    private readonly IGeminiStructuredService _gemini;
+    private readonly IAiStructuredService _gemini;
     private readonly IChatInputValidator _inputValidator;
     private readonly IChatRateLimiter _rateLimiter;
 
     public RecruiterAiController(
         ApplicationDbContext context,
-        IGeminiStructuredService gemini,
+        IAiStructuredService gemini,
         IChatInputValidator inputValidator,
         IChatRateLimiter rateLimiter)
     {

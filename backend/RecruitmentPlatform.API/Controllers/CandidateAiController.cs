@@ -27,16 +27,18 @@ public class CandidateAiController : ControllerBase
         """;
 
     private readonly ApplicationDbContext _context;
-    private readonly IGeminiStructuredService _gemini;
+    private readonly IAiStructuredService _gemini;
     private readonly IChatInputValidator _inputValidator;
     private readonly IChatRateLimiter _rateLimiter;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public CandidateAiController(ApplicationDbContext context, IGeminiStructuredService gemini, IChatInputValidator inputValidator, IChatRateLimiter rateLimiter)
+    public CandidateAiController(ApplicationDbContext context, IAiStructuredService gemini, IChatInputValidator inputValidator, IChatRateLimiter rateLimiter, IHttpClientFactory httpClientFactory)
     {
         _context = context;
         _gemini = gemini;
         _inputValidator = inputValidator;
         _rateLimiter = rateLimiter;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpPost("profile-analysis")]
@@ -154,6 +156,120 @@ public class CandidateAiController : ControllerBase
 
         result ??= BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
         return CandidateResponse(result);
+    }
+
+    [HttpPost("extract-resume-skills/{documentId:int}")]
+    public async Task<IActionResult> ExtractResumeSkills(int documentId, CancellationToken cancellationToken)
+    {
+        if (!IsRateAllowed("extract-skills")) return RateLimited();
+        var userId = GetUserId();
+        
+        var document = await _context.CandidateDocuments
+            .FirstOrDefaultAsync(d => d.Id == documentId && d.CandidateId == userId, cancellationToken);
+
+        if (document == null) return NotFound(new { message = "Document not found." });
+
+        if (!document.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = "Currently, only PDF files are supported for AI skill extraction. Please upload a PDF resume." });
+        }
+
+        string resumeText;
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var pdfBytes = await client.GetByteArrayAsync(document.FileUrl, cancellationToken);
+
+            using var pdfDocument = UglyToad.PdfPig.PdfDocument.Open(pdfBytes);
+            var textBuilder = new System.Text.StringBuilder();
+            foreach (var page in pdfDocument.GetPages())
+            {
+                textBuilder.AppendLine(page.Text);
+            }
+            resumeText = textBuilder.ToString();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to parse PDF from {document.FileUrl}. Exception: {ex}");
+            return BadRequest(new { message = "Failed to parse the PDF document.", details = ex.ToString(), url = document.FileUrl });
+        }
+
+        if (string.IsNullOrWhiteSpace(resumeText))
+        {
+             return BadRequest(new { message = "No text found in the PDF." });
+        }
+
+        var result = await _gemini.GenerateJsonAsync<List<string>>(
+            SafetySystemInstruction,
+            BuildPrompt("Extract a comprehensive, flat list of professional skills from this resume text. Return only the skill names as strings.", resumeText),
+            maxOutputTokens: 1000,
+            cancellationToken: cancellationToken);
+
+        if (result == null || result.Count == 0)
+        {
+            return BadRequest(new { message = "AI could not extract any skills from this document." });
+        }
+
+        var normalizedExtractedSkills = NormalizeList(result);
+        if (normalizedExtractedSkills.Count == 0) return BadRequest(new { message = "No valid skills extracted." });
+
+        // Get existing skills from master list to avoid duplicates
+        var existingMasterSkills = await _context.Skills
+            .Where(s => normalizedExtractedSkills.Contains(s.Name))
+            .ToDictionaryAsync(s => s.Name, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var newSkillsToInsert = new List<Skill>();
+        foreach (var skillName in normalizedExtractedSkills)
+        {
+            if (!existingMasterSkills.ContainsKey(skillName))
+            {
+                var newSkill = new Skill { Name = skillName };
+                _context.Skills.Add(newSkill);
+                newSkillsToInsert.Add(newSkill);
+                existingMasterSkills[skillName] = newSkill;
+            }
+        }
+        
+        if (newSkillsToInsert.Count > 0)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        // Clear existing AI skills for this candidate
+        var existingAiSkills = await _context.CandidateSkills
+            .Where(cs => cs.CandidateId == userId && cs.ExtractedByAi)
+            .ToListAsync(cancellationToken);
+        
+        if (existingAiSkills.Count > 0)
+        {
+            _context.CandidateSkills.RemoveRange(existingAiSkills);
+        }
+
+        // Get candidate's manually added skills to avoid duplicates
+        var manuallyAddedSkillIds = await _context.CandidateSkills
+            .Where(cs => cs.CandidateId == userId && !cs.ExtractedByAi)
+            .Select(cs => cs.SkillId)
+            .ToListAsync(cancellationToken);
+
+        // Add new AI skills
+        foreach (var skillName in normalizedExtractedSkills)
+        {
+            var skillId = existingMasterSkills[skillName].Id;
+            if (!manuallyAddedSkillIds.Contains(skillId))
+            {
+                _context.CandidateSkills.Add(new CandidateSkill
+                {
+                    CandidateId = userId,
+                    SkillId = skillId,
+                    ExtractedByAi = true,
+                    ProficiencyLevel = "Intermediate"
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Skills successfully extracted.", extractedSkills = normalizedExtractedSkills });
     }
 
     private async Task<CandidateProfile?> GetCandidateProfile(CancellationToken cancellationToken)
