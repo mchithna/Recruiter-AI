@@ -136,8 +136,12 @@ Copy-Item .env.example .env
 ConnectionStrings__DefaultConnection=
 JwtSettings__SupabaseJwtSecret=
 JwtSettings__SupabaseUrl=
+GEMINI_PROVIDER=api-key
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.5-flash
+GEMINI_MODEL=gemini-2.5-flash
+VERTEX_AI_PROJECT_ID=
+VERTEX_AI_LOCATION=us-central1
+VERTEX_AI_ACCESS_TOKEN=
 EmailSettings__AppPassword=
 ```
 
@@ -170,22 +174,46 @@ Environment variables are intentionally kept out of source control. Use local `.
 | Backend | `ConnectionStrings__DefaultConnection` | PostgreSQL database connection string |
 | Backend | `JwtSettings__SupabaseJwtSecret` | Supabase JWT signing secret |
 | Backend | `JwtSettings__SupabaseUrl` | Supabase issuer URL for JWT validation |
-| Backend | `GEMINI_API_KEY` | Gemini API key used by all backend AI features |
-| Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-3.5-flash` |
+| Backend | `GEMINI_PROVIDER` | AI provider mode: `api-key` or `vertex` |
+| Backend | `GEMINI_API_KEY` | Gemini API key used when `GEMINI_PROVIDER=api-key` |
+| Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-2.5-flash` |
+| Backend | `VERTEX_AI_PROJECT_ID` | Google Cloud project id used when `GEMINI_PROVIDER=vertex` |
+| Backend | `VERTEX_AI_LOCATION` | Vertex AI location, for example `us-central1` |
+| Backend | `VERTEX_AI_ACCESS_TOKEN` | Short-lived Google access token for local Vertex AI testing |
 | Backend | `EmailSettings__AppPassword` | App password for email notifications |
 
 Never commit `.env` files, API keys, database credentials, JWT secrets, or email passwords.
 
-### Gemini API key setup
+### Gemini or Vertex AI setup
 
-The chatbot and dashboard AI features send Gemini requests only from the ASP.NET backend. Add your real Gemini key and model to `backend/RecruitmentPlatform.API/.env`:
+The chatbot and dashboard AI features send Gemini requests only from the ASP.NET backend.
+
+Gemini API key mode:
 
 ```env
+GEMINI_PROVIDER=api-key
 GEMINI_API_KEY=your-real-key
-GEMINI_MODEL=gemini-3.5-flash
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-Do not put a real Gemini key in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.
+Vertex AI mode:
+
+```env
+GEMINI_PROVIDER=vertex
+GEMINI_MODEL=gemini-2.5-flash
+VERTEX_AI_PROJECT_ID=your-google-cloud-project-id
+VERTEX_AI_LOCATION=us-central1
+VERTEX_AI_ACCESS_TOKEN=your-gcloud-access-token
+```
+
+For local Vertex AI testing, refresh the token before starting the backend:
+
+```powershell
+$env:VERTEX_AI_ACCESS_TOKEN = gcloud auth print-access-token
+dotnet run --launch-profile http
+```
+
+Do not put a real Gemini key or Vertex token in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.
 
 ## Chatbot Architecture
 

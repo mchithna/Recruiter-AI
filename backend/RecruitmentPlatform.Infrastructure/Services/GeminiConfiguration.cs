@@ -4,12 +4,11 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 internal static class GeminiConfiguration
 {
-    public const string DefaultModel = "gemini-3.5-flash";
+    public const string DefaultModel = "gemini-2.5-flash";
 
     private static readonly string[] ModelFallbacks =
     [
         DefaultModel,
-        "gemini-3.1-flash-lite",
         "gemini-2.5-flash-lite",
         "gemini-flash-latest",
         "gemini-2.0-flash"
@@ -51,5 +50,43 @@ internal static class GeminiConfiguration
         return normalized.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
             ? normalized["models/".Length..]
             : normalized;
+    }
+
+    public static bool UseVertexAi(IConfiguration configuration)
+    {
+        var provider = FirstConfigured(
+            configuration["GEMINI_PROVIDER"],
+            configuration["GeminiSettings:Provider"]);
+
+        return provider.Equals("vertex", StringComparison.OrdinalIgnoreCase)
+            || provider.Equals("vertex-ai", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string GetVertexProjectId(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["VERTEX_AI_PROJECT_ID"],
+            configuration["GOOGLE_CLOUD_PROJECT"],
+            configuration["GeminiSettings:VertexProjectId"],
+            configuration["VertexAI:ProjectId"]);
+    }
+
+    public static string GetVertexLocation(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["VERTEX_AI_LOCATION"],
+            configuration["GOOGLE_CLOUD_LOCATION"],
+            configuration["GeminiSettings:VertexLocation"],
+            configuration["VertexAI:Location"],
+            "us-central1");
+    }
+
+    public static string GetVertexAccessToken(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["VERTEX_AI_ACCESS_TOKEN"],
+            configuration["GOOGLE_ACCESS_TOKEN"],
+            configuration["GeminiSettings:VertexAccessToken"],
+            configuration["VertexAI:AccessToken"]);
     }
 }

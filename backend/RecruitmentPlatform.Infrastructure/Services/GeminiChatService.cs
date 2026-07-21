@@ -12,6 +12,10 @@ public class GeminiChatService : IAiChatService
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
     private readonly string[] _models;
+    private readonly bool _useVertexAi;
+    private readonly string _vertexProjectId;
+    private readonly string _vertexLocation;
+    private readonly string _vertexAccessToken;
     private readonly ILogger<GeminiChatService> _logger;
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
@@ -19,12 +23,22 @@ public class GeminiChatService : IAiChatService
         _httpClient = httpClient;
         _apiKey = GeminiConfiguration.GetApiKey(configuration);
         _models = GeminiConfiguration.GetModels(configuration);
+        _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
+        _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
+        _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
+        _vertexAccessToken = GeminiConfiguration.GetVertexAccessToken(configuration);
         _logger = logger;
     }
 
     public async Task<string> GenerateResponseAsync(ChatGenerationRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(_apiKey))
+        if (_useVertexAi && (string.IsNullOrWhiteSpace(_vertexProjectId) || string.IsNullOrWhiteSpace(_vertexAccessToken)))
+        {
+            _logger.LogWarning("Vertex AI Gemini is missing project id or access token.");
+            return "The AI assistant is not configured yet. Please contact support or try again later.";
+        }
+
+        if (!_useVertexAi && string.IsNullOrEmpty(_apiKey))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return "The AI assistant is not configured yet. Please contact support or try again later.";
@@ -123,6 +137,32 @@ public class GeminiChatService : IAiChatService
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
 
+        if (_useVertexAi)
+        {
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildVertexAiUrl(model))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new("Bearer", _vertexAccessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+                {
+                    return response;
+                }
+
+                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                lastResponse = response;
+            }
+
+            return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+        }
+
         foreach (var model in _models)
         {
             lastResponse?.Dispose();
@@ -141,6 +181,14 @@ public class GeminiChatService : IAiChatService
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private string BuildVertexAiUrl(string model)
+    {
+        var projectId = Uri.EscapeDataString(_vertexProjectId);
+        var location = Uri.EscapeDataString(_vertexLocation);
+        var modelId = Uri.EscapeDataString(model);
+        return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>

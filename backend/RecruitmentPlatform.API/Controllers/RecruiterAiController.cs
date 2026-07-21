@@ -155,8 +155,8 @@ public class RecruiterAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<JobDescriptionResultDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate or improve a professional job description. The recruiter must review and edit before publishing.", request),
-            maxOutputTokens: 1800,
+            BuildJobDescriptionPrompt(request),
+            maxOutputTokens: 750,
             cancellationToken: cancellationToken);
 
         if (HasJobDescriptionDraft(result))
@@ -179,8 +179,8 @@ public class RecruiterAiController : ControllerBase
         {
             var result = await _gemini.GenerateJsonAsync<JobSkillsExtractionResultDto>(
                 SafetySystemInstruction,
-                BuildPrompt("Extract the core skills and technologies required for this job. Return a flat list of normalized skill names.", request),
-                maxOutputTokens: 800,
+                BuildJobSkillsPrompt(request),
+                maxOutputTokens: 350,
                 cancellationToken: cancellationToken);
 
             if (result?.ExtractedSkills.Count > 0 == true)
@@ -428,6 +428,46 @@ public class RecruiterAiController : ControllerBase
     private static string BuildPrompt(string task, object data) =>
         JsonSerializer.Serialize(new { task, authorizedData = data });
 
+    private static string BuildJobDescriptionPrompt(JobDescriptionRequestDto request)
+    {
+        var data = new
+        {
+            title = Truncate(FirstText(request.JobTitle), 90),
+            employmentType = Truncate(FirstText(request.EmploymentType), 40),
+            workMode = Truncate(FirstText(request.WorkMode), 40),
+            location = Truncate(FirstText(request.Location), 80),
+            department = Truncate(FirstText(request.Department), 60),
+            responsibilities = Truncate(FirstText(request.Responsibilities, request.ExistingDescription), 700),
+            requiredSkills = Truncate(FirstText(request.RequiredSkills), 400),
+            preferredSkills = Truncate(FirstText(request.PreferredSkills), 300),
+            experience = Truncate(FirstText(request.Experience), 180),
+            education = Truncate(FirstText(request.Education), 180),
+            existingRequirements = Truncate(FirstText(request.ExistingRequirements), 500)
+        };
+
+        return JsonSerializer.Serialize(new
+        {
+            task = "Create a concise, role-specific job post draft from the supplied title and fields. Do not use a generic template. If only title is present, infer common responsibilities and requirements for that role. Return JSON only: title, description, requirements, reviewNotes. Description: 2 short paragraphs, under 120 words. Requirements: 5 bullets, under 90 words total. reviewNotes: max 2 short items.",
+            authorizedData = data
+        });
+    }
+
+    private static string BuildJobSkillsPrompt(JobSkillsExtractionRequestDto request)
+    {
+        var data = new
+        {
+            title = Truncate(FirstText(request.Title), 90),
+            description = Truncate(FirstText(request.Description), 900),
+            requirements = Truncate(FirstText(request.Requirements), 700)
+        };
+
+        return JsonSerializer.Serialize(new
+        {
+            task = "Extract the real required skills for this job from the supplied title, description, and requirements. Infer common role skills only when the text is sparse. Return JSON only with this exact shape: {\"extractedSkills\":[\"Skill\"]}. Include 5-10 concise skill names. Do not include sentences, responsibilities, locations, benefits, soft filler, or duplicate variants.",
+            authorizedData = data
+        });
+    }
+
     private static string? Truncate(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value)) return value;
@@ -447,9 +487,14 @@ public class RecruiterAiController : ControllerBase
             }
         }
 
+        if (skills.Count == 0 && !string.IsNullOrWhiteSpace(request.Title))
+        {
+            skills.AddRange(GetRoleProfile(request.Title).Skills);
+        }
+
         return new JobSkillsExtractionResultDto
         {
-            ExtractedSkills = NormalizeSkillList(skills).Take(18).ToList()
+            ExtractedSkills = NormalizeSkillList(skills).Take(10).ToList()
         };
     }
 
@@ -492,10 +537,11 @@ public class RecruiterAiController : ControllerBase
         var employmentType = FirstText(request.EmploymentType, "full-time");
         var workMode = FirstText(request.WorkMode, "onsite or hybrid");
         var responsibilities = FirstText(request.Responsibilities, request.ExistingDescription);
+        var profile = GetRoleProfile(title);
 
         var lines = new List<string>
         {
-            $"We are hiring {ArticleFor(title)} {title} to join our team and contribute to high-quality hiring outcomes.",
+            $"We are hiring {ArticleFor(title)} {title} to {profile.Outcome}.",
             $"This is a {employmentType} role based in {location} with a {workMode} work arrangement."
         };
 
@@ -505,16 +551,17 @@ public class RecruiterAiController : ControllerBase
         }
         else
         {
-            lines.Add("The successful candidate will collaborate with cross-functional teams, manage assigned responsibilities, communicate clearly with stakeholders, and deliver reliable results.");
+            lines.Add($"Key responsibilities include {string.Join(", ", profile.Responsibilities.Take(4))}.");
         }
 
-        lines.Add("The recruiter should tailor this draft to the company culture, team structure, seniority level, and final approval requirements.");
+        lines.Add("Review and adjust this draft for company context, seniority, compensation, and compliance before publishing.");
         return string.Join(Environment.NewLine + Environment.NewLine, lines);
     }
 
     private static string BuildFallbackRequirements(JobDescriptionRequestDto request)
     {
         var requirements = new List<string>();
+        var profile = GetRoleProfile(FirstText(request.JobTitle));
 
         AddRequirement(requirements, request.RequiredSkills, "Required skills");
         AddRequirement(requirements, request.PreferredSkills, "Preferred skills");
@@ -524,13 +571,99 @@ public class RecruiterAiController : ControllerBase
 
         if (requirements.Count == 0)
         {
-            requirements.Add("Relevant experience in a similar role or demonstrated ability to perform the responsibilities.");
-            requirements.Add("Strong communication, collaboration, problem-solving, and time-management skills.");
-            requirements.Add("Ability to work independently, follow agreed processes, and adapt to changing business needs.");
+            requirements.AddRange(profile.Requirements);
         }
 
         return string.Join(Environment.NewLine, requirements.Select(requirement => $"- {requirement}"));
     }
+
+    private static RoleProfile GetRoleProfile(string? title)
+    {
+        var normalized = (title ?? string.Empty).ToLowerInvariant();
+
+        if (ContainsAny(normalized, "sales", "account executive", "business development"))
+        {
+            return new RoleProfile(
+                "grow revenue by identifying prospects, building trusted customer relationships, and closing qualified opportunities",
+                ["prospecting new customers", "managing the sales pipeline", "delivering product demos", "negotiating and closing deals", "maintaining accurate CRM records"],
+                ["Experience in sales, account management, or business development.", "Strong prospecting, negotiation, and presentation skills.", "Ability to manage leads, follow-ups, and targets in a CRM.", "Clear written and verbal communication with customers.", "Comfortable working toward monthly or quarterly revenue goals."],
+                ["Sales Prospecting", "Lead Qualification", "CRM", "Negotiation", "Customer Relationship Management", "Sales Pipeline Management", "Product Demos"]);
+        }
+
+        if (ContainsAny(normalized, "developer", "engineer", "full stack", "frontend", "backend", "software"))
+        {
+            return new RoleProfile(
+                "design, build, test, and maintain reliable software used by our teams and customers",
+                ["building production features", "reviewing code", "fixing defects", "collaborating with product and design", "improving performance and maintainability"],
+                ["Hands-on experience building software in relevant languages or frameworks.", "Understanding of APIs, databases, testing, and version control.", "Ability to debug issues and ship maintainable code.", "Good collaboration with product, design, and QA teams.", "Interest in improving performance, reliability, and user experience."],
+                ["Software Development", "API Development", "Databases", "Testing", "Git", "Debugging", "Code Review"]);
+        }
+
+        if (ContainsAny(normalized, "designer", "ux", "ui"))
+        {
+            return new RoleProfile(
+                "create clear, usable product experiences from research, flows, wireframes, and polished interface designs",
+                ["mapping user journeys", "creating wireframes and prototypes", "running usability reviews", "partnering with engineering", "maintaining design standards"],
+                ["Portfolio showing UX/UI design work and decision-making.", "Strong Figma, prototyping, and visual design skills.", "Ability to translate user needs into practical product flows.", "Comfortable collaborating with product managers and engineers.", "Attention to accessibility, consistency, and design system patterns."],
+                ["UX Design", "UI Design", "Figma", "Prototyping", "User Research", "Wireframing", "Accessibility"]);
+        }
+
+        if (ContainsAny(normalized, "product manager", "project manager", "scrum"))
+        {
+            return new RoleProfile(
+                "turn customer and business needs into clear plans, priorities, and delivered outcomes",
+                ["defining requirements", "prioritizing roadmaps", "coordinating delivery", "tracking risks", "communicating progress to stakeholders"],
+                ["Experience managing product, project, or delivery work.", "Strong requirements gathering, prioritization, and stakeholder skills.", "Ability to coordinate cross-functional teams and remove blockers.", "Comfortable using analytics, feedback, and business goals to guide decisions.", "Clear communication through plans, updates, and documentation."],
+                ["Roadmapping", "Requirements Gathering", "Stakeholder Management", "Agile", "Project Planning", "Risk Management", "Analytics"]);
+        }
+
+        if (ContainsAny(normalized, "recruiter", "talent", "sourcer"))
+        {
+            return new RoleProfile(
+                "attract, engage, screen, and coordinate candidates through a high-quality hiring process",
+                ["sourcing candidates", "screening applications", "coordinating interviews", "managing hiring pipelines", "partnering with hiring managers"],
+                ["Experience in recruiting, sourcing, or talent coordination.", "Strong interviewing, candidate communication, and pipeline management skills.", "Ability to use ATS tools and maintain accurate records.", "Good stakeholder management with hiring managers.", "Understanding of fair, structured, and compliant hiring practices."],
+                ["Candidate Sourcing", "Screening", "Interview Coordination", "ATS", "Pipeline Management", "Stakeholder Management", "Candidate Communication"]);
+        }
+
+        if (ContainsAny(normalized, "data", "analyst", "business intelligence", "bi"))
+        {
+            return new RoleProfile(
+                "turn data into clear reporting, insights, and recommendations that improve business decisions",
+                ["building reports", "analyzing trends", "cleaning datasets", "presenting insights", "supporting metric definitions"],
+                ["Experience with data analysis, reporting, or business intelligence.", "Strong SQL, spreadsheet, dashboard, or analytics tool skills.", "Ability to interpret trends and explain findings clearly.", "Attention to data quality, definitions, and validation.", "Comfortable working with stakeholders to answer business questions."],
+                ["Data Analysis", "SQL", "Dashboards", "Reporting", "Data Visualization", "Data Quality", "Business Intelligence"]);
+        }
+
+        if (ContainsAny(normalized, "marketing", "content", "seo", "social media"))
+        {
+            return new RoleProfile(
+                "plan and execute campaigns that build audience awareness, engagement, and qualified demand",
+                ["creating campaigns", "writing content", "tracking performance", "coordinating channels", "optimizing messaging"],
+                ["Experience in marketing, content, campaigns, or brand communication.", "Strong writing, planning, and campaign execution skills.", "Ability to use performance metrics to improve results.", "Comfortable coordinating with sales, design, and product teams.", "Understanding of target audiences, channels, and messaging."],
+                ["Campaign Management", "Content Writing", "SEO", "Social Media Marketing", "Marketing Analytics", "Brand Messaging", "Performance Tracking"]);
+        }
+
+        if (ContainsAny(normalized, "hr", "human resources", "people"))
+        {
+            return new RoleProfile(
+                "support employees and managers across people operations, policies, onboarding, and workplace processes",
+                ["supporting onboarding", "maintaining HR records", "answering policy questions", "coordinating employee processes", "improving people operations"],
+                ["Experience in HR, people operations, or employee support.", "Good knowledge of HR processes, documentation, and confidentiality.", "Strong communication and problem-solving with employees and managers.", "Ability to manage records accurately and follow policies.", "Professional judgment, empathy, and attention to detail."],
+                ["HR Operations", "Onboarding", "Employee Relations", "HR Documentation", "Policy Support", "Confidentiality", "People Operations"]);
+        }
+
+        return new RoleProfile(
+            $"deliver the core responsibilities of the {FirstText(title, "role")} with accuracy, ownership, and clear communication",
+            ["managing assigned work", "coordinating with stakeholders", "solving day-to-day problems", "tracking progress", "improving processes"],
+            [$"Experience as {ArticleFor(FirstText(title, "role"))} {FirstText(title, "role")} or in a closely related role.", "Strong communication, organization, and problem-solving skills.", "Ability to manage priorities and deliver reliable results.", "Comfortable collaborating with cross-functional teams.", "Willingness to learn tools, processes, and business context quickly."],
+            [FirstText(title, "Role Operations"), "Communication", "Organization", "Problem Solving", "Stakeholder Coordination"]);
+    }
+
+    private static bool ContainsAny(string text, params string[] terms) =>
+        terms.Any(term => text.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+    private sealed record RoleProfile(string Outcome, string[] Responsibilities, string[] Requirements, string[] Skills);
 
     private static void AddRequirement(List<string> requirements, string? value, string label)
     {

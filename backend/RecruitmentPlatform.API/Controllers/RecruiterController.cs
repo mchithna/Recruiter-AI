@@ -192,13 +192,13 @@ public class RecruiterController : ControllerBase
 
         if (job == null) return NotFound(new { message = "Job not found." });
 
-        job.Title = Clamp(request.Title, 255);
-        job.Description = Clamp(request.Description, 5000);
-        job.Requirements = Clamp(request.Requirements, 5000);
-        job.EmploymentType = Clamp(request.EmploymentType, 50);
-        job.WorkMode = Clamp(request.WorkMode, 50);
-        job.Location = Clamp(request.Location, 255);
-        job.ApplicationDeadline = ParseDate(request.ApplicationDeadline);
+        if (request.Title != null) job.Title = Clamp(request.Title, 255);
+        if (request.Description != null) job.Description = Clamp(request.Description, 5000);
+        if (request.Requirements != null) job.Requirements = Clamp(request.Requirements, 5000);
+        if (request.EmploymentType != null) job.EmploymentType = Clamp(request.EmploymentType, 50);
+        if (request.WorkMode != null) job.WorkMode = Clamp(request.WorkMode, 50);
+        if (request.Location != null) job.Location = Clamp(request.Location, 255);
+        if (request.ApplicationDeadline != null) job.ApplicationDeadline = ParseDate(request.ApplicationDeadline);
         
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
@@ -620,7 +620,7 @@ public class SaveRecruiterJobDto
     public string? Location { get; set; }
     public string? ApplicationDeadline { get; set; }
     public string? Status { get; set; }
-    public List<string> Skills { get; set; } = new();
+    public List<string>? Skills { get; set; }
 }
 
 public class RecruiterJobDto

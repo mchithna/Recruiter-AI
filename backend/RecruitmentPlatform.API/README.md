@@ -7,7 +7,7 @@
    - `ConnectionStrings__DefaultConnection`
    - `JwtSettings__SupabaseJwtSecret`
    - `JwtSettings__SupabaseUrl`
-   - `GEMINI_API_KEY`
+   - `GEMINI_API_KEY` or Vertex AI settings
    - `GEMINI_MODEL`
 3. Start the API:
 
@@ -17,11 +17,31 @@ dotnet run --launch-profile http
 
 The API loads `.env` automatically in development and also accepts user secrets or standard environment variables.
 
-Keep the real Gemini key in local `.env`, user secrets, or deployment secrets only. Do not commit real keys, paste them into frontend files, or log them. The backend uses one Gemini key for all AI features:
+Keep real Gemini keys, Vertex access tokens, and service credentials in local `.env`, user secrets, or deployment secrets only. Do not commit real secrets, paste them into frontend files, or log them. The backend can use either Gemini API key mode or Vertex AI mode for all AI features.
+
+Gemini API key mode:
 
 ```env
+GEMINI_PROVIDER=api-key
 GEMINI_API_KEY=your-real-key
-GEMINI_MODEL=gemini-3.5-flash
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Vertex AI mode:
+
+```env
+GEMINI_PROVIDER=vertex
+GEMINI_MODEL=gemini-2.5-flash
+VERTEX_AI_PROJECT_ID=your-google-cloud-project-id
+VERTEX_AI_LOCATION=us-central1
+VERTEX_AI_ACCESS_TOKEN=your-gcloud-access-token
+```
+
+For local development, refresh the short-lived Vertex token before starting the API:
+
+```powershell
+$env:VERTEX_AI_ACCESS_TOKEN = gcloud auth print-access-token
+dotnet run --launch-profile http
 ```
 
 ## Chatbot flow
@@ -40,6 +60,10 @@ Use the same keys as the `.env` file:
 - `JwtSettings__SupabaseUrl`
 - `GEMINI_API_KEY`
 - `GEMINI_MODEL`
+- `GEMINI_PROVIDER`
+- `VERTEX_AI_PROJECT_ID`
+- `VERTEX_AI_LOCATION`
+- `VERTEX_AI_ACCESS_TOKEN`
 
 ## Swagger
 

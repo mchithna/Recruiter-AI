@@ -16,6 +16,10 @@ public class GeminiStructuredService : IGeminiStructuredService
     private readonly HttpClient _httpClient;
     private readonly string[] _apiKeys;
     private readonly string[] _models;
+    private readonly bool _useVertexAi;
+    private readonly string _vertexProjectId;
+    private readonly string _vertexLocation;
+    private readonly string _vertexAccessToken;
     private readonly ILogger<GeminiStructuredService> _logger;
 
     public GeminiStructuredService(
@@ -27,6 +31,10 @@ public class GeminiStructuredService : IGeminiStructuredService
         var apiKey = GeminiConfiguration.GetApiKey(configuration);
         _apiKeys = string.IsNullOrWhiteSpace(apiKey) ? [string.Empty] : [apiKey];
         _models = GeminiConfiguration.GetModels(configuration);
+        _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
+        _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
+        _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
+        _vertexAccessToken = GeminiConfiguration.GetVertexAccessToken(configuration);
         _logger = logger;
     }
 
@@ -36,7 +44,13 @@ public class GeminiStructuredService : IGeminiStructuredService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (_apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
+        if (_useVertexAi && (string.IsNullOrWhiteSpace(_vertexProjectId) || string.IsNullOrWhiteSpace(_vertexAccessToken)))
+        {
+            _logger.LogWarning("Vertex AI Gemini is missing project id or access token.");
+            return default;
+        }
+
+        if (!_useVertexAi && _apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return default;
@@ -124,6 +138,32 @@ public class GeminiStructuredService : IGeminiStructuredService
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
 
+        if (_useVertexAi)
+        {
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildVertexAiUrl(model))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new("Bearer", _vertexAccessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+                {
+                    return response;
+                }
+
+                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                lastResponse = response;
+            }
+
+            return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+        }
+
         foreach (var apiKey in _apiKeys)
         {
             foreach (var model in _models)
@@ -157,6 +197,14 @@ public class GeminiStructuredService : IGeminiStructuredService
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private string BuildVertexAiUrl(string model)
+    {
+        var projectId = Uri.EscapeDataString(_vertexProjectId);
+        var location = Uri.EscapeDataString(_vertexLocation);
+        var modelId = Uri.EscapeDataString(model);
+        return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
