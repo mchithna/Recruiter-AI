@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button, Spinner } from '../../components/ui';
 import { MapPin, Briefcase, Clock, Calendar, AlertCircle, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
-import { applyForJob, candidateAiApi, getJob, getMyDocuments } from './services/candidateApi';
+import { applyForJob, candidateAiApi, getJob, getMyDocuments, getMyProfile, getMyApplications } from './services/candidateApi';
 
 export default function JobDetail() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [hasPrimaryDoc, setHasPrimaryDoc] = useState(false);
+  const [hasProfileData, setHasProfileData] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [applyError, setApplyError] = useState('');
@@ -26,12 +28,21 @@ export default function JobDetail() {
     setLoading(true);
     setLoadError('');
     try {
-      const [jobData, docsData] = await Promise.all([
+      const [jobData, docsData, profileData, appsData] = await Promise.all([
         getJob(jobId),
-        getMyDocuments()
+        getMyDocuments(),
+        getMyProfile(),
+        getMyApplications()
       ]);
       setJob(jobData);
       setHasPrimaryDoc(docsData.some(d => d.isPrimary));
+      
+      const hasSkills = profileData.skills && profileData.skills.length > 0;
+      const hasExperience = profileData.experience && profileData.experience.length > 0;
+      const hasEducation = profileData.education && profileData.education.length > 0;
+      setHasProfileData(hasSkills && (hasExperience || hasEducation));
+      
+      setHasApplied(appsData.some(a => a.jobId === parseInt(jobId)));
     } catch (err) {
       setJob(null);
       setLoadError(err?.response?.data?.message || 'Unable to load this job right now.');
@@ -41,7 +52,7 @@ export default function JobDetail() {
   };
 
   const handleApply = async () => {
-    if (!hasPrimaryDoc) return;
+    if (!hasPrimaryDoc || !hasProfileData || hasApplied) return;
     setApplying(true);
     setApplyError('');
     try {
@@ -143,12 +154,23 @@ export default function JobDetail() {
             <Button 
               size="lg" 
               onClick={handleApply} 
-              disabled={!hasPrimaryDoc || applying}
-              className="w-full shadow-glow-primary"
+              disabled={!hasPrimaryDoc || !hasProfileData || applying || hasApplied}
+              className={`w-full ${hasApplied ? 'bg-success-100 text-success-700 border-success-200 dark:bg-success-900/30 dark:text-success-400' : 'shadow-glow-primary'}`}
+              variant={hasApplied ? 'outline' : 'primary'}
             >
-              {applying ? 'Applying...' : 'Apply Now'}
+              {hasApplied ? 'Applied' : applying ? 'Applying...' : 'Apply Now'}
             </Button>
-            {!hasPrimaryDoc && (
+            
+            {!hasApplied && !hasProfileData && (
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-caption text-red-700 dark:bg-red-500/10 dark:text-red-400">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <p>
+                  Complete your profile before applying. <Link to="/candidate/profile" className="font-semibold underline">Go to Profile</Link>
+                </p>
+              </div>
+            )}
+            
+            {!hasApplied && hasProfileData && !hasPrimaryDoc && (
               <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-caption text-red-700 dark:bg-red-500/10 dark:text-red-400">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <p>

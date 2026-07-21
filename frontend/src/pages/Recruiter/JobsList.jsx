@@ -165,10 +165,16 @@ export function JobsList() {
             return (
               <div
                 key={job.id}
-                onClick={() => navigate(`/recruiter/jobs/${job.id}/applications`)}
+                onClick={() => {
+                  if (job.status !== 'Draft') {
+                    navigate(`/recruiter/jobs/${job.id}/applications`);
+                  }
+                }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
-                    navigate(`/recruiter/jobs/${job.id}/applications`);
+                    if (job.status !== 'Draft') {
+                      navigate(`/recruiter/jobs/${job.id}/applications`);
+                    }
                   }
                 }}
                 role="link"
