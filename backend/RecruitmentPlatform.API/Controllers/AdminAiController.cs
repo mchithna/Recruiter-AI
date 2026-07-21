@@ -180,7 +180,7 @@ public class AdminAiController : ControllerBase
         });
     }
 
-    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Vertex AI did not return a usable result. Please try again." });
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private static AdminAnalyticsSummaryDto BuildAnalyticsSummary(object metrics)
     {

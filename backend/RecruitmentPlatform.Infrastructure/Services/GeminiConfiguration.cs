@@ -4,16 +4,18 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 internal static class GeminiConfiguration
 {
-    public const string DefaultModel = "gemini-2.5-flash";
+    public const string DefaultModel = "gemini-3.1-flash-lite";
 
     private static readonly string[] ModelFallbacks =
     [
-        "gemini-3.5-flash",
-        "gemini-2.5-flash",
+        "gemini-3.1-flash-lite",
         "gemini-2.5-flash-lite",
-        "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
-        "gemini-3.1-flash-lite"
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-002"
     ];
 
     public static string[] GetApiKeys(IConfiguration configuration)
@@ -30,12 +32,21 @@ internal static class GeminiConfiguration
 
     public static string[] GetModels(IConfiguration configuration)
     {
+        var configuredModels = FirstConfigured(
+            configuration["GEMINI_MODELS"],
+            configuration["GeminiSettings:Models"],
+            configuration["RecruiterGeminiSettings:Models"]);
+
         var configuredModel = FirstConfigured(
             configuration["GEMINI_MODEL"],
             configuration["GeminiSettings:Model"],
             configuration["RecruiterGeminiSettings:Model"]);
 
-        var models = new[] { configuredModel, DefaultModel }
+        var modelCandidates = configuredModels
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Concat([configuredModel, DefaultModel]);
+
+        var models = modelCandidates
             .Concat(ModelFallbacks)
             .Select(NormalizeModel)
             .Where(model => !string.IsNullOrWhiteSpace(model))
@@ -60,7 +71,19 @@ internal static class GeminiConfiguration
 
     public static bool UseVertexAi(IConfiguration configuration)
     {
-        return !string.IsNullOrWhiteSpace(GetVertexProjectId(configuration));
+        var provider = FirstConfigured(
+            configuration["GEMINI_PROVIDER"],
+            configuration["GeminiSettings:Provider"])
+            .Trim()
+            .Trim('"')
+            .ToLowerInvariant();
+
+        return provider switch
+        {
+            "api-key" or "apikey" or "ai-studio" or "aistudio" => false,
+            "vertex" or "vertex-ai" or "vertexai" or "hybrid" or "auto" => !string.IsNullOrWhiteSpace(GetVertexProjectId(configuration)),
+            _ => !string.IsNullOrWhiteSpace(GetVertexProjectId(configuration))
+        };
     }
 
     public static string GetVertexProjectId(IConfiguration configuration)

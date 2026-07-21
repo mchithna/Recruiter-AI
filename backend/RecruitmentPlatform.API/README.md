@@ -7,8 +7,8 @@
    - `ConnectionStrings__DefaultConnection`
    - `JwtSettings__SupabaseJwtSecret`
    - `JwtSettings__SupabaseUrl`
-   - `GEMINI_API_KEY` or Vertex AI settings
-   - `GEMINI_MODEL`
+   - `GEMINI_API_KEY` or `GEMINI_API_KEYS`
+   - `GEMINI_MODELS`
 3. Start the API:
 
 ```powershell
@@ -24,8 +24,11 @@ Gemini API key mode:
 ```env
 GEMINI_PROVIDER=api-key
 GEMINI_API_KEY=your-real-key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODELS=gemini-3.1-flash-lite,gemini-2.5-flash-lite,gemini-2.0-flash-lite,gemini-2.0-flash,gemini-2.5-flash,gemini-3.5-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
+
+Use `GEMINI_API_KEYS` instead of `GEMINI_API_KEY` when you have multiple AI Studio keys. Separate keys with commas. The backend tries every configured key/model pair before returning an AI unavailable response.
 
 Vertex AI mode:
 
@@ -35,6 +38,12 @@ GEMINI_MODEL=gemini-2.5-flash
 VERTEX_AI_PROJECT_ID=your-google-cloud-project-id
 VERTEX_AI_LOCATION=us-central1
 VERTEX_AI_ACCESS_TOKEN=your-gcloud-access-token
+```
+
+Hybrid mode tries Gemini API keys first and then Vertex AI if every API-key model is unavailable:
+
+```env
+GEMINI_PROVIDER=hybrid
 ```
 
 For local development, refresh the short-lived Vertex token before starting the API:
@@ -67,6 +76,8 @@ Use the same keys as the `.env` file:
 - `JwtSettings__SupabaseJwtSecret`
 - `JwtSettings__SupabaseUrl`
 - `GEMINI_API_KEY`
+- `GEMINI_API_KEYS`
+- `GEMINI_MODELS`
 - `GEMINI_MODEL`
 - `GEMINI_PROVIDER`
 - `VERTEX_AI_PROJECT_ID`

@@ -185,7 +185,7 @@ public class CandidateAiController : ControllerBase
         });
     }
 
-    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Vertex AI did not return a usable result. Please try again." });
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private IActionResult RateLimited() =>
         StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many AI requests. Please wait a moment and try again." });

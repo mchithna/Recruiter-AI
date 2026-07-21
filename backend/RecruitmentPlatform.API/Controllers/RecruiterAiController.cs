@@ -293,9 +293,9 @@ public class RecruiterAiController : ControllerBase
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {
-                message = failureMessage ?? "Vertex AI did not return a usable response. Please try again.",
-                provider = "vertex",
-                model = "gemini-2.5-flash"
+                message = failureMessage ?? "Gemini did not return a usable response. Please try again.",
+                provider = "gemini",
+                model = "configured"
             });
         }
         return Ok(new RecruiterAiResponse<T> { Result = result });
