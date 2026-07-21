@@ -542,6 +542,7 @@ public class RecruiterController : ControllerBase
         CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
         AppliedAt = a.AppliedAt,
         Status = a.Status,
+        JobStatus = a.Job.Status,
         AiMatchScore = a.AiMatchScore,
         ScreeningResult = a.AiScreeningResult == null ? null : new RecruiterAiScreeningDto
         {
@@ -674,6 +675,7 @@ public class RecruiterApplicationListDto
     public string CandidateName { get; set; } = "";
     public DateTime AppliedAt { get; set; }
     public string Status { get; set; } = "";
+    public string JobStatus { get; set; } = "";
     public decimal? AiMatchScore { get; set; }
     public RecruiterAiScreeningDto? ScreeningResult { get; set; }
 }

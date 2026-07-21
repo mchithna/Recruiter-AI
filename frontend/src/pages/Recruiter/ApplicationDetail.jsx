@@ -123,22 +123,14 @@ const emptyInterviewForm = {
 
 function StatusAndInterviews({
   application,
-  interviewForm,
-  interviews,
-  hiringManagers,
-  isSchedulingOpen,
-  isSubmittingInterview,
-  onInterviewFormChange,
   onReject,
-  onSchedule,
   onShortlist,
-  onSubmitInterview,
   isStatusUpdating,
 }) {
   const status = application.status;
   const canShortlist = status === 'Applied' || status === 'Under Review';
   const canReject = !['Rejected', 'Withdrawn', 'Hired'].includes(status);
-  const canSchedule = status === 'Shortlisted';
+  const isShortlisted = status === 'Shortlisted';
 
   return (
     <div className="relative z-10 space-y-6 animate-slide-up">
@@ -147,9 +139,9 @@ function StatusAndInterviews({
           <div>
             <CardTitle className="flex items-center gap-2 text-h4">
               <CalendarClock size={18} strokeWidth={1.75} />
-              Status & Interviews
+              Application Status
             </CardTitle>
-            <CardDescription>Phase R4 workspace</CardDescription>
+            <CardDescription>Screening & Decisioning</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -159,96 +151,30 @@ function StatusAndInterviews({
                 {isStatusUpdating ? 'Updating...' : 'Shortlist'}
               </Button>
             )}
-            {canSchedule && (
-              <Button type="button" variant="primary" size="sm" onClick={onSchedule}>
-                Schedule Interview
-              </Button>
-            )}
             {canReject && (
               <Button type="button" variant="outline" size="sm" onClick={onReject} disabled={isStatusUpdating}>
                 {isStatusUpdating ? 'Updating...' : 'Reject'}
               </Button>
             )}
-            {!canShortlist && !canSchedule && !canReject && (
+            {!canShortlist && !canReject && !isShortlisted && (
               <p className="text-body-sm leading-relaxed text-secondary-600">
                 No status actions are available for this application right now.
               </p>
             )}
           </div>
 
-          {isSchedulingOpen && (
-            <form
-              className="space-y-4 border-t border-secondary-100 pt-5"
-              onSubmit={onSubmitInterview}
-            >
-              <div>
-                <h3 className="text-body-md font-semibold text-secondary-900">
-                  Schedule Interview
-                </h3>
-                <p className="mt-1 text-body-sm leading-relaxed text-secondary-600">
-                  Connect your calendar to auto-sync this interview.
-                </p>
-                <div className="mt-3">
-                  <CalendarConnectButton />
-                </div>
-              </div>
-
-              <Select
-                label="Interviewer"
-                options={hiringManagers}
-                value={interviewForm.interviewerId}
-                onChange={onInterviewFormChange('interviewerId')}
-                required
-              />
-              <Select
-                label="Interview Type"
-                options={interviewTypeOptions}
-                value={interviewForm.interviewType}
-                onChange={onInterviewFormChange('interviewType')}
-                required
-              />
-              <DateTimeInput
-                label="Scheduled Time"
-                value={interviewForm.scheduledTime}
-                onChange={onInterviewFormChange('scheduledTime')}
-                min={new Date().toISOString().slice(0, 16)}
-                required
-              />
-              <Input
-                label="Duration Minutes"
-                type="number"
-                min="15"
-                step="15"
-                value={interviewForm.durationMinutes}
-                onChange={onInterviewFormChange('durationMinutes')}
-                required
-              />
-              <Input
-                label="Meeting Link"
-                type="url"
-                value={interviewForm.meetingLink}
-                onChange={onInterviewFormChange('meetingLink')}
-                placeholder="https://meet.example.com/interview"
-              />
-
-              <Button type="submit" variant="primary" className="w-full" disabled={isSubmittingInterview}>
-                {isSubmittingInterview ? 'Saving...' : 'Save Interview'}
-              </Button>
-            </form>
+          {isShortlisted && (
+            <div className="rounded-xl border border-primary-200/50 bg-primary-500/10 p-4 text-body-sm text-primary-900 dark:text-primary-200">
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <Sparkles size={16} /> Shortlisted for Interview
+              </p>
+              <p className="text-xs text-secondary-600 dark:text-secondary-300">
+                Interviews for shortlisted candidates can be scheduled from the <strong>Interviews Hub</strong> once the job is closed.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
-
-      {interviews.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-body-lg font-semibold text-secondary-900">
-            Scheduled Interviews
-          </h2>
-          {interviews.map((interview) => (
-            <InterviewCard key={interview.id} interview={interview} />
-          ))}
-        </section>
-      )}
     </div>
   );
 }
@@ -629,16 +555,8 @@ export function ApplicationDetail() {
         <div className="space-y-6">
           <StatusAndInterviews
             application={application}
-            interviewForm={interviewForm}
-            interviews={interviews}
-            hiringManagers={hiringManagers}
-            isSchedulingOpen={isSchedulingOpen}
-            isSubmittingInterview={isSubmittingInterview}
-            onInterviewFormChange={handleInterviewFormChange}
             onReject={handleReject}
-            onSchedule={handleSchedule}
             onShortlist={handleShortlist}
-            onSubmitInterview={handleSubmitInterview}
             isStatusUpdating={isStatusUpdating}
           />
 

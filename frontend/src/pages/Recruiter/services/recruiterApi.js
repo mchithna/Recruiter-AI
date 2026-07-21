@@ -11,6 +11,7 @@ const normalizeApplication = (application) => ({
   ...application,
   id: String(application.id),
   jobId: String(application.jobId),
+  jobStatus: application.jobStatus || '',
   aiMatchScore: Number(application.aiMatchScore ?? 0),
   screeningResult: application.screeningResult
     ? {
@@ -55,6 +56,10 @@ export const recruiterApi = {
     await api.put(`/recruiter/jobs/${jobId}`, payload);
   },
 
+  async updateJobStatus(jobId, payload) {
+    await api.put(`/recruiter/jobs/${jobId}/status`, payload);
+  },
+
   async getApplicationsByJob(jobId) {
     const { data } = await api.get(`/recruiter/jobs/${jobId}/applications`);
     return (data || []).map(normalizeApplication);
@@ -91,6 +96,16 @@ export const recruiterApi = {
   async createInterview(payload) {
     const { data } = await api.post('/interviews', payload);
     return normalizeInterview(data);
+  },
+
+  async updateInterview(interviewId, payload) {
+    const { data } = await api.put(`/interviews/${interviewId}`, payload);
+    return data;
+  },
+
+  async updateInterviewStatus(interviewId, payload) {
+    const { data } = await api.put(`/interviews/${interviewId}/status`, payload);
+    return data;
   },
 
   async getHiringManagers() {
