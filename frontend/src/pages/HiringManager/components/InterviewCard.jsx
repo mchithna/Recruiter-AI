@@ -3,6 +3,7 @@ import { CalendarClock, Clock, User, Video } from 'lucide-react';
 import {
   Avatar,
   Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -18,7 +19,7 @@ const formatScheduledTime = (scheduledTime) => {
   }).format(new Date(scheduledTime));
 };
 
-export function InterviewCard({ interview }) {
+export function InterviewCard({ interview, action }) {
   if (!interview) return null;
 
   const {
@@ -31,56 +32,59 @@ export function InterviewCard({ interview }) {
     interviewerName,
     meetingLink,
   } = interview;
+  const cardHeightClass = action ? 'min-h-[284px]' : 'min-h-[230px]';
 
   return (
-    <Card hoverable className="h-full overflow-hidden border-none p-0">
+    <Card hoverable className={`flex h-full ${cardHeightClass} flex-col overflow-hidden border-none p-0`}>
       {/* Top gradient accent */}
-      <div className="h-1 w-full bg-gradient-to-r from-primary-500 via-ai-500 to-primary-400" />
+      <div className="mx-5 mt-5 h-1 w-auto rounded-full bg-gradient-to-r from-primary-500 via-ai-500 to-primary-400" />
 
-      <CardHeader className="px-5 pt-5 pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Avatar name={candidateName} size="md" />
-            <div className="min-w-0">
-              <h3 className="truncate text-body-lg font-semibold text-secondary-900 dark:text-white">
+      <CardHeader className="px-5 pb-3 pt-4">
+        <div className="flex items-center gap-3">
+          <Avatar name={candidateName} size="md" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="min-w-0 flex-1 truncate text-body-lg font-semibold leading-6 text-secondary-900 dark:text-white">
                 {interviewType}
               </h3>
-              <p className="truncate text-body-sm text-secondary-500 dark:text-secondary-300">
-                {candidateName}
-              </p>
+              <div className="shrink-0">
+                <StatusBadge status={status} />
+              </div>
             </div>
+            <p className="mt-0.5 truncate text-body-sm leading-5 text-secondary-500 dark:text-secondary-300">
+              {candidateName}
+            </p>
           </div>
-          <StatusBadge status={status} />
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 px-5 pb-5 pt-0">
-        <p className="text-caption text-secondary-500 dark:text-secondary-400">
+      <CardContent className="flex flex-1 flex-col px-5 pb-5 pt-0">
+        <p className="mb-4 line-clamp-2 min-h-[32px] text-caption leading-4 text-secondary-500 dark:text-secondary-400">
           for {jobTitle}
         </p>
 
-        <div className="flex items-center gap-2 rounded-xl bg-secondary-50 p-3 dark:bg-white/5">
+        <div className="flex w-full items-center gap-3 rounded-xl bg-secondary-50 px-3.5 py-3 dark:bg-white/5">
           <CalendarClock
             size={16}
             strokeWidth={1.75}
             className="shrink-0 text-primary-600 dark:text-primary-400"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-body-sm font-semibold text-secondary-800 dark:text-white">
+            <p className="truncate text-body-sm font-semibold leading-5 text-secondary-800 dark:text-white">
               {formatScheduledTime(scheduledTime)}
             </p>
-            <div className="mt-0.5 flex items-center gap-2 text-caption text-secondary-500 dark:text-secondary-400">
-              <Clock size={11} strokeWidth={1.75} />
+            <div className="mt-1 flex items-center gap-1.5 text-caption leading-4 text-secondary-500 dark:text-secondary-400">
+              <Clock size={11} strokeWidth={1.75} className="shrink-0" />
               <span>{durationMinutes} min</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="mt-4 flex min-h-[24px] items-center justify-between gap-3">
           {interviewerName && (
-            <div className="flex items-center gap-1.5 text-caption text-secondary-500 dark:text-secondary-400">
-              <User size={12} strokeWidth={1.75} />
-              <span>{interviewerName}</span>
+            <div className="flex min-w-0 items-center gap-1.5 text-caption leading-4 text-secondary-500 dark:text-secondary-400">
+              <User size={12} strokeWidth={1.75} className="shrink-0" />
+              <span className="truncate">{interviewerName}</span>
             </div>
           )}
           {meetingLink && (
@@ -89,6 +93,21 @@ export function InterviewCard({ interview }) {
             </Badge>
           )}
         </div>
+
+        {action && (
+          <div className="mt-auto pt-4">
+            <Button
+              type="button"
+              variant={action.variant || 'ai'}
+              size="sm"
+              className="min-h-9 w-full justify-center"
+              leftIcon={action.icon}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -109,10 +128,17 @@ InterviewCard.propTypes = {
     status: PropTypes.string,
     notes: PropTypes.string,
   }),
+  action: PropTypes.shape({
+    label: PropTypes.string.isRequired,
+    icon: PropTypes.node,
+    onClick: PropTypes.func.isRequired,
+    variant: PropTypes.string,
+  }),
 };
 
 InterviewCard.defaultProps = {
   interview: null,
+  action: null,
 };
 
 export default InterviewCard;

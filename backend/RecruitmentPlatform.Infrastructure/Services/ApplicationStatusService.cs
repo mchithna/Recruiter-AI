@@ -9,7 +9,7 @@ public sealed class ApplicationStatusService : IApplicationStatusService
     {
         ["Applied"] = ["Under Review", "Shortlisted", "Rejected", "Withdrawn"],
         ["Under Review"] = ["Shortlisted", "Rejected", "Withdrawn"],
-        ["Shortlisted"] = ["Interview Scheduled", "Rejected", "Withdrawn"],
+        ["Shortlisted"] = ["Interview Scheduled", "Offer Extended", "Rejected", "Withdrawn"],
         ["Interview Scheduled"] = ["Offer Extended", "Rejected", "Withdrawn"],
         ["Offer Extended"] = ["Hired", "Rejected", "Withdrawn"],
         ["Hired"] = [],

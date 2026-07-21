@@ -101,7 +101,7 @@ public class LiveInterviewService : ILiveInterviewService
 
         if (result == null || string.IsNullOrWhiteSpace(result.Question) || IsDuplicateQuestion(result.Question, session.Questions))
         {
-            return null;
+            result = BuildFallbackQuestion(session, request);
         }
 
         var question = new InterviewQuestion
@@ -141,6 +141,8 @@ public class LiveInterviewService : ILiveInterviewService
             prompt,
             maxOutputTokens: 900,
             cancellationToken: cancellationToken);
+
+        insight ??= BuildFallbackAnswerInsight(request);
 
         var answer = new CandidateAnswer
         {
@@ -189,6 +191,7 @@ public class LiveInterviewService : ILiveInterviewService
     public async Task<InterviewSummaryResponse?> EndSessionAsync(int sessionId, int userId, string role, int companyId, CancellationToken cancellationToken = default)
     {
         var session = await AuthorizedSessions(userId, role, companyId)
+            .Include(s => s.Interview)
             .Include(s => s.Questions)
             .ThenInclude(q => q.CandidateAnswers)
             .Include(s => s.AiInsights)
@@ -200,6 +203,14 @@ public class LiveInterviewService : ILiveInterviewService
         {
             session.Status = "Ended";
             session.EndedAt = DateTime.UtcNow;
+        }
+
+        if (!string.Equals(session.Interview.Status, "Completed", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(session.Interview.Status, "Canceled", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(session.Interview.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            session.Interview.Status = "Completed";
+            session.Interview.UpdatedAt = DateTime.UtcNow;
         }
 
         var summary = await GenerateSummaryAsync(session, cancellationToken) ?? BuildStoredSummary(session);
@@ -442,6 +453,76 @@ public class LiveInterviewService : ILiveInterviewService
         summary.AiRecommendation = SafeRecommendation(result.AiRecommendation);
         return summary;
     }
+
+    private static LiveInterviewAiQuestionDto BuildFallbackQuestion(InterviewSession session, GenerateLiveQuestionRequest request)
+    {
+        var topic = TrimOptional(request.CurrentTopic, 120);
+        var latestNotes = TrimOptional(request.LatestAnswerNotes, 240);
+        var difficulty = request.Difficulty ?? session.Difficulty;
+        var mode = request.Mode ?? session.QuestionMode;
+        var sequence = session.Questions.Count % 5;
+
+        var question = sequence switch
+        {
+            0 => $"Walk me through a recent project where you used {ValueOrDefault(topic, "one of the core skills for this role")}. What trade-offs did you make?",
+            1 => $"How would you diagnose and resolve a production issue related to {ValueOrDefault(topic, "this role's main responsibilities")}?",
+            2 => "Tell me about a time you had to learn a technical concept quickly. How did you validate that you understood it well enough to use it?",
+            3 => $"If you joined this team next week, how would you approach your first task involving {ValueOrDefault(topic, "the required stack")}?",
+            _ => latestNotes == null
+                ? "What is one area in your experience that you think we should explore more deeply before the interview ends?"
+                : $"Earlier you mentioned: \"{latestNotes}\". Can you clarify the impact, constraints, and result?"
+        };
+
+        return new LiveInterviewAiQuestionDto
+        {
+            Question = question,
+            Category = mode,
+            Type = "Adaptive fallback",
+            Skill = topic,
+            Difficulty = difficulty,
+            Reason = "Generated locally because the external AI provider did not return a usable question.",
+            ExpectedPoints = [
+                "Clear situation and context",
+                "Specific actions taken by the candidate",
+                "Trade-offs, constraints, or risks considered",
+                "Measurable outcome or lesson learned"
+            ]
+        };
+    }
+
+    private static LiveInterviewAiAnswerInsightDto BuildFallbackAnswerInsight(SubmitCandidateAnswerRequest request)
+    {
+        var text = $"{request.Transcript} {request.InterviewerNotes}".Trim();
+        var wordCount = Regex.Matches(text, @"\b[\w'-]+\b").Count;
+        var hasExamples = Regex.IsMatch(text, @"\b(project|built|implemented|designed|led|fixed|improved|reduced|increased|deployed)\b", RegexOptions.IgnoreCase);
+        var hasTradeoffs = Regex.IsMatch(text, @"\b(trade[- ]?off|constraint|risk|because|however|but|alternative|impact|result)\b", RegexOptions.IgnoreCase);
+        var hasMetrics = Regex.IsMatch(text, @"\b\d+%?|\b(metric|latency|revenue|users|performance|time|cost)\b", RegexOptions.IgnoreCase);
+
+        var relevance = ClampScore((wordCount >= 25 ? 62 : 45) + (hasExamples ? 18 : 0) + (hasTradeoffs ? 10 : 0));
+        var depth = ClampScore((wordCount >= 60 ? 65 : 48) + (hasTradeoffs ? 18 : 0) + (hasMetrics ? 10 : 0));
+        var clarity = ClampScore((wordCount >= 20 ? 68 : 50) + (hasMetrics ? 8 : 0));
+
+        return new LiveInterviewAiAnswerInsightDto
+        {
+            AnswerSummary = wordCount == 0
+                ? "No answer transcript was captured."
+                : TrimOptional(text, 220) ?? "Captured answer notes were reviewed.",
+            RelevanceScore = relevance,
+            DepthScore = depth,
+            ClarityScore = clarity,
+            Confidence = wordCount >= 60 ? "Medium" : "Low",
+            PotentialConcern = wordCount < 25
+                ? "The answer is brief. Ask for a concrete example, constraints, and measurable outcome."
+                : hasTradeoffs ? "No major concern detected from the captured notes." : "The answer may need more detail about trade-offs and decision reasoning.",
+            SuggestedAction = "Ask one focused follow-up and verify the candidate's claims with human judgment.",
+            SuggestedFollowUpQuestion = hasMetrics
+                ? "What was your exact contribution, and how did the metric change after your work?"
+                : "Can you give a specific example with constraints, actions you personally took, and the final result?"
+        };
+    }
+
+    private static string ValueOrDefault(string? value, string fallback) =>
+        string.IsNullOrWhiteSpace(value) ? fallback : value;
 
     private static InterviewSummaryResponse BuildStoredSummary(InterviewSession session)
     {

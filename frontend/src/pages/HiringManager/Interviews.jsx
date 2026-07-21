@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, CalendarClock, CheckCircle2, Clock, Filter, Sparkles } from 'lucide-react';
 import {
   Badge,
-  Button,
   Card,
   Skeleton,
   Select,
@@ -206,24 +205,19 @@ export function Interviews() {
               }}
               role="link"
               tabIndex={0}
-              className="cursor-pointer transition-transform hover:-translate-y-1 focus:outline-none"
+              className="h-full cursor-pointer transition-transform hover:-translate-y-1 focus:outline-none"
             >
-              <InterviewCard interview={interview} />
-              <div className="mt-3">
-                <Button
-                  type="button"
-                  variant="ai"
-                  size="sm"
-                  className="w-full"
-                  leftIcon={<Sparkles size={14} />}
-                  onClick={(event) => {
+              <InterviewCard
+                interview={interview}
+                action={{
+                  label: 'Live Copilot',
+                  icon: <Sparkles size={14} />,
+                  onClick: (event) => {
                     event.stopPropagation();
                     navigate(`/hiring-manager/interviews/${interview.id}/live-copilot`);
-                  }}
-                >
-                  Live Copilot
-                </Button>
-              </div>
+                  },
+                }}
+              />
             </div>
           ))}
         </div>

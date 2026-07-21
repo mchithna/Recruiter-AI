@@ -137,12 +137,12 @@ export function ApplicationDetail() {
 
         {/* Interviews Side list */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-h3 font-semibold text-secondary-900 dark:text-white">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-h3 font-semibold leading-7 text-secondary-900 dark:text-white">
               Interviews ({interviews.length})
             </h3>
             {interviews.length > 0 && (
-              <Badge variant="primary" size="sm" icon={<Calendar size={12} />}>
+              <Badge variant="primary" size="sm" icon={<Calendar size={12} />} className="shrink-0">
                 Scheduled Loops
               </Badge>
             )}

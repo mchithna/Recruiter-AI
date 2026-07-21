@@ -388,6 +388,7 @@ public class HiringManagerController : ControllerBase
 
         var application = await _context.Applications
             .Include(a => a.Job).ThenInclude(j => j.Department)
+            .Include(a => a.Interviews)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
 
         if (application == null)
@@ -395,9 +396,12 @@ public class HiringManagerController : ControllerBase
             return NotFound(new { message = "Application not found." });
         }
 
-        if (application.Job.HiringManagerId != userId)
+        var canCreateOffer = application.Job.HiringManagerId == userId ||
+            application.Interviews.Any(i => i.InterviewerId == userId);
+
+        if (!canCreateOffer)
         {
-            return Forbid();
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not authorized to create an offer for this application." });
         }
 
         var existingOffer = await _context.Offers
@@ -424,17 +428,20 @@ public class HiringManagerController : ControllerBase
 
         _context.Offers.Add(offer);
 
-        try
+        if (!application.Status.Equals("Offer Extended", StringComparison.OrdinalIgnoreCase))
         {
-            await _applicationStatusService.ChangeStatusAsync(
-                application.Id,
-                "Offer Extended",
-                userId,
-                "Offer initiated.");
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
+            try
+            {
+                await _applicationStatusService.ChangeStatusAsync(
+                    application.Id,
+                    "Offer Extended",
+                    userId,
+                    "Offer initiated.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);
