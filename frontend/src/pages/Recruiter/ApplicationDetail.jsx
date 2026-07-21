@@ -35,30 +35,47 @@ const formatAppliedAt = (appliedAt) => {
   }).format(new Date(appliedAt));
 };
 
+const safeScore = (value) => Math.max(0, Math.min(100, Number(value ?? 0)));
+
+const hasUsableScreeningData = (result) => {
+  if (!result) return false;
+
+  return Boolean(result.screeningSummary?.trim())
+    || safeScore(result.overallScore) > 0
+    || safeScore(result.skillsMatchScore) > 0
+    || safeScore(result.experienceMatchScore) > 0
+    || safeScore(result.educationMatchScore) > 0;
+};
+
 function ScoreRow({ label, value }) {
+  const score = safeScore(value);
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3">
         <span className="text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">{label}</span>
         <span className="text-body-sm font-semibold tabular-nums text-secondary-900 dark:text-white">
-          {value}%
+          {score}%
         </span>
       </div>
-      <ProgressBar value={value} size="sm" />
+      <ProgressBar value={score} size="sm" />
     </div>
   );
 }
 
 function AiScreeningPanel({ result }) {
-  if (!result) {
+  if (!hasUsableScreeningData(result)) {
     return (
       <Card className="glass-card-heavy border-none">
         <CardContent className="text-body-md text-secondary-600 dark:text-secondary-300">
-          AI screening context is not available for this application.
+          AI screening context is not available yet. Run Match with Job to generate recruiter-reviewed screening scores.
         </CardContent>
       </Card>
     );
   }
+
+  const overallScore = safeScore(result.overallScore);
+  const rankLabel = result.aiRank ? `Rank #${result.aiRank}` : 'Rank pending';
 
   return (
     <Card className="glass-card-heavy overflow-hidden border-none">
@@ -67,7 +84,7 @@ function AiScreeningPanel({ result }) {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant="ai" size="sm">AI Generated</Badge>
             <span className="text-caption font-semibold uppercase tracking-wide text-ai-700 dark:text-ai-300">
-              Rank #{result.aiRank}
+              {rankLabel}
             </span>
           </div>
           <CardTitle className="flex items-center gap-2">
@@ -79,7 +96,7 @@ function AiScreeningPanel({ result }) {
           </CardDescription>
         </div>
         <div className="rounded-xl bg-secondary-50 px-5 py-3 text-center dark:bg-white/10">
-          <div className="text-h2 tabular-nums text-ai-700 dark:text-ai-300">{result.overallScore}%</div>
+          <div className="text-h2 tabular-nums text-ai-700 dark:text-ai-300">{overallScore}%</div>
           <div className="text-caption font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-400">
             Overall
           </div>
@@ -97,7 +114,7 @@ function AiScreeningPanel({ result }) {
           Screening Summary
         </h3>
         <p className="mt-2 text-body-md leading-relaxed text-secondary-700 dark:text-secondary-200">
-          {result.screeningSummary}
+          {result.screeningSummary || 'Review the generated scores alongside the candidate profile and job requirements before making any decision.'}
         </p>
       </div>
     </Card>
@@ -478,15 +495,71 @@ export function ApplicationDetail() {
     }
   };
 
-  const renderAiValue = (value) => {
+  const humanizeAiKey = (key) => key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (char) => char.toUpperCase())
+    .replace(/\bAi\b/g, 'AI')
+    .replace(/\bCv\b/g, 'CV');
+
+  const isScoreKey = (key, value) =>
+    typeof value === 'number' && /score|match|relevance|depth|clarity/i.test(key);
+
+  const renderAiValue = (value, key = '') => {
+    if (isScoreKey(key, value)) {
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-body-sm font-semibold text-secondary-700 dark:text-secondary-200">Score</span>
+            <span className="text-body-sm font-bold tabular-nums text-ai-700 dark:text-ai-300">{value}%</span>
+          </div>
+          <ProgressBar value={value} size="sm" />
+        </div>
+      );
+    }
+
     if (Array.isArray(value)) {
+      if (value.length === 0) return <p className="italic text-secondary-500">Not provided</p>;
       return (
         <ul className="list-disc space-y-1 pl-5">
-          {value.map((item) => <li key={String(item)}>{String(item)}</li>)}
+          {value.map((item, index) => (
+            <li key={`${String(item)}-${index}`}>
+              {typeof item === 'object' && item !== null ? renderAiObjectInline(item) : String(item)}
+            </li>
+          ))}
         </ul>
       );
     }
-    return <p>{String(value || 'Not provided')}</p>;
+
+    if (typeof value === 'object' && value !== null) {
+      return (
+        <div className="space-y-2">
+          {Object.entries(value).map(([childKey, childValue]) => (
+            <div key={childKey}>
+              <span className="font-semibold">{humanizeAiKey(childKey)}: </span>
+              {renderAiValue(childValue, childKey)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const text = String(value || 'Not provided');
+    if (/body|message|summary|explanation/i.test(key)) {
+      return <p className="whitespace-pre-wrap leading-relaxed">{text}</p>;
+    }
+
+    return <p>{text}</p>;
+  };
+
+  const renderAiObjectInline = (value) => Object.entries(value)
+    .map(([key, item]) => `${humanizeAiKey(key)}: ${Array.isArray(item) ? item.join(', ') : item}`)
+    .join(' | ');
+
+  const aiFieldClass = (key) => {
+    if (/body|summary|explanation|technicalQuestions|behavioralQuestions|situationalQuestions|candidateSpecificQuestions|suggestedEvaluationCriteria/i.test(key)) {
+      return 'md:col-span-2';
+    }
+    return '';
   };
 
   if (isLoading) {
@@ -607,12 +680,12 @@ export function ApplicationDetail() {
               ) : (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {Object.entries(aiPanel.result || {}).map(([key, value]) => (
-                    <div key={key} className="rounded-lg bg-secondary-50 p-3 dark:bg-white/10">
+                    <div key={key} className={`rounded-lg bg-secondary-50 p-3 dark:bg-white/10 ${aiFieldClass(key)}`}>
                       <p className="text-caption font-semibold uppercase tracking-wide text-secondary-500 dark:text-secondary-300">
-                        {key.replace(/([A-Z])/g, ' $1')}
+                        {humanizeAiKey(key)}
                       </p>
                       <div className="mt-2 text-body-sm leading-relaxed text-secondary-700 dark:text-secondary-200">
-                        {renderAiValue(value)}
+                        {renderAiValue(value, key)}
                       </div>
                     </div>
                   ))}

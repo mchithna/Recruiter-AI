@@ -10,7 +10,7 @@ namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/offers")]
-[Authorize(Roles = "HiringManager,Recruiter")]
+[Authorize(Roles = "Recruiter")]
 public class OffersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -27,7 +27,6 @@ public class OffersController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var offer = await _context.Offers
             .AsNoTracking()
@@ -37,12 +36,6 @@ public class OffersController : ControllerBase
         if (offer == null)
         {
             return NotFound(new { message = "Offer not found." });
-        }
-
-        if (!isRecruiter && offer.Application.Job.HiringManagerId != userId)
-        {
-            // Hiring managers can only view offers for their own jobs
-            return Forbid();
         }
 
         return Ok(new OfferDto
@@ -65,16 +58,10 @@ public class OffersController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var query = _context.Offers
             .AsNoTracking()
             .Where(o => o.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(o => o.Application.Job.HiringManagerId == userId);
-        }
 
         var offers = await query
             .OrderByDescending(o => o.CreatedAt)
@@ -99,7 +86,6 @@ public class OffersController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var application = await _context.Applications
             .Include(a => a.Job).ThenInclude(j => j.Department)
@@ -108,11 +94,6 @@ public class OffersController : ControllerBase
         if (application == null)
         {
             return NotFound(new { message = "Application not found." });
-        }
-
-        if (!isRecruiter && application.Job.HiringManagerId != userId)
-        {
-            return Forbid();
         }
 
         var existingOffer = await _context.Offers
@@ -132,7 +113,7 @@ public class OffersController : ControllerBase
             OfferExpiryDate = request.OfferExpiryDate,
             Status = "Pending",
             Notes = request.Notes,
-            ManagedBy = isRecruiter ? userId : (int?)null,
+            ManagedBy = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

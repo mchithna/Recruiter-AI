@@ -33,19 +33,19 @@ export const getInterview = async (interviewId) => {
   // Or add GET /api/interviews/{id} to backend? Wait!
   // I will just get all interviews and find it, or we can use a new endpoint.
   // Let's assume we fetch all and find it, or we should fetch all from /api/interviews
-  const response = await api.get('/interviews');
+  const response = await api.get('/hiring-manager/interviews');
   const interview = response.data.find(i => i.id === Number(interviewId));
   return interview || null;
 };
 
 export const getInterviewsForApplication = async (applicationId) => {
-  const response = await api.get(`/interviews/application/${applicationId}`);
+  const response = await api.get(`/hiring-manager/interviews/application/${applicationId}`);
   return response.data;
 };
 
 export const getEvaluationForInterview = async (interviewId) => {
   try {
-    const response = await api.get(`/evaluations/interview/${interviewId}`);
+    const response = await api.get(`/hiring-manager/evaluations/interview/${interviewId}`);
     return response.data;
   } catch (error) {
     if (error.response && error.response.status === 404) {
@@ -56,13 +56,13 @@ export const getEvaluationForInterview = async (interviewId) => {
 };
 
 export const submitEvaluation = async (evaluationData) => {
-  const response = await api.post('/evaluations', evaluationData);
+  const response = await api.post('/hiring-manager/evaluations', evaluationData);
   return response.data;
 };
 
 export const getOfferForApplication = async (applicationId) => {
   try {
-    const response = await api.get(`/offers/application/${applicationId}`);
+    const response = await api.get(`/hiring-manager/offers/application/${applicationId}`);
     return response.data;
   } catch (error) {
     if (error.response && error.response.status === 404) {
@@ -73,16 +73,16 @@ export const getOfferForApplication = async (applicationId) => {
 };
 
 export const submitOffer = async (offerData) => {
-  const response = await api.post('/offers', offerData);
+  const response = await api.post('/hiring-manager/offers', offerData);
   return response.data;
 };
 
 export const getAllInterviews = async () => {
-  const response = await api.get('/interviews');
+  const response = await api.get('/hiring-manager/interviews');
   return response.data;
 };
 
 export const getAllOffers = async () => {
-  const response = await api.get('/offers');
+  const response = await api.get('/hiring-manager/offers');
   return response.data;
 };

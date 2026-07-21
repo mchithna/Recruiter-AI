@@ -10,7 +10,7 @@ namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/interviews")]
-[Authorize(Roles = "Recruiter,HiringManager")]
+[Authorize(Roles = "Recruiter")]
 public class InterviewsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -27,16 +27,10 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var query = _context.Interviews
             .AsNoTracking()
             .Where(i => i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
 
         var interviews = await query
             .OrderBy(i => i.ScheduledTime)
@@ -51,16 +45,10 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var query = _context.Interviews
             .AsNoTracking()
             .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
 
         var interviews = await query
             .OrderBy(i => i.ScheduledTime)
@@ -167,7 +155,6 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var interview = await _context.Interviews
             .Include(i => i.Application)
@@ -178,11 +165,6 @@ public class InterviewsController : ControllerBase
         if (interview == null || interview.Application.Job.Department.CompanyId != companyId)
         {
             return NotFound(new { message = "Interview not found." });
-        }
-
-        if (!isRecruiter && interview.InterviewerId != userId)
-        {
-            return Forbid();
         }
 
         var status = Clamp(request.Status, 50, "Status is required.");

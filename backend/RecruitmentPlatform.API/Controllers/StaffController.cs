@@ -78,15 +78,21 @@ public class StaffController : ControllerBase
         var companyId = GetCompanyId();
 
         var hiringManagerRole = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Name == "HiringManager");
-        if (hiringManagerRole == null)
+        var recruiterRole = await _unitOfWork.Roles.FirstOrDefaultAsync(r => r.Name == "Recruiter");
+        
+        if (hiringManagerRole == null && recruiterRole == null)
         {
             return Ok(Array.Empty<HiringManagerPickerDto>());
         }
 
+        var allowedRoleIds = new List<int>();
+        if (hiringManagerRole != null) allowedRoleIds.Add(hiringManagerRole.Id);
+        if (recruiterRole != null) allowedRoleIds.Add(recruiterRole.Id);
+
         var hiringManagers = await _unitOfWork.Users.FindAsync(u =>
             u.CompanyId == companyId &&
             u.IsActive &&
-            u.RoleId == hiringManagerRole.Id);
+            allowedRoleIds.Contains(u.RoleId));
 
         var result = hiringManagers
             .OrderBy(u => u.FirstName)
