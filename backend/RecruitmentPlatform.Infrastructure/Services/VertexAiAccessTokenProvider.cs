@@ -1,5 +1,6 @@
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
+using System.Text;
 
 namespace RecruitmentPlatform.Infrastructure.Services;
 
@@ -26,7 +27,7 @@ internal sealed class VertexAiAccessTokenProvider
         }
 
         var credential = await GetCredentialAsync(cancellationToken);
-        return await credential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
+        return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
     }
 
     private async Task<GoogleCredential> GetCredentialAsync(CancellationToken cancellationToken)
@@ -38,9 +39,15 @@ internal sealed class VertexAiAccessTokenProvider
         {
             if (_credential != null) return _credential;
 
-            _credential = string.IsNullOrWhiteSpace(_serviceAccountJson)
-                ? await GoogleCredential.GetApplicationDefaultAsync(cancellationToken)
-                : GoogleCredential.FromJson(_serviceAccountJson);
+            if (string.IsNullOrWhiteSpace(_serviceAccountJson))
+            {
+                _credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
+            }
+            else
+            {
+                await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(_serviceAccountJson));
+                _credential = (await CredentialFactory.FromStreamAsync<ServiceAccountCredential>(stream, cancellationToken)).ToGoogleCredential();
+            }
 
             if (_credential.IsCreateScopedRequired)
             {
