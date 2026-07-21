@@ -78,7 +78,8 @@ public class GeminiChatService : IAiChatService
                     {
                         temperature = 0.2,
                         topP = 0.8,
-                        maxOutputTokens = 800
+                        maxOutputTokens = 800,
+                        thinkingConfig = new { thinkingBudget = 0 }
                     }
                 };
 
@@ -178,7 +179,7 @@ public class GeminiChatService : IAiChatService
         var projectId = Uri.EscapeDataString(_vertexProjectId);
         var location = Uri.EscapeDataString(_vertexLocation);
         var modelId = Uri.EscapeDataString(model);
-        return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
+        return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>

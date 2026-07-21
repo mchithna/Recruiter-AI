@@ -451,7 +451,7 @@ public class RecruiterAiController : ControllerBase
 
         return JsonSerializer.Serialize(new
         {
-            task = "Create a concise, role-specific job post draft from the supplied title and fields. Do not use a generic template. If only title is present, infer common responsibilities and requirements for that role. Return JSON only: title, description, requirements, reviewNotes. Description: 2 short paragraphs, under 120 words. Requirements: 5 bullets, under 90 words total. reviewNotes: max 2 short items.",
+            task = "Create a concise, role-specific job post draft from the supplied title and fields. Do not use a generic template. If only title is present, infer common responsibilities and requirements for that role. Return JSON only with exactly these fields: title (string), description (string), requirements (string with bullet lines separated by newline), reviewNotes (array of short strings). Description: 2 short paragraphs, under 120 words. Requirements: 5 bullets, under 90 words total. reviewNotes: max 2 short items.",
             authorizedData = data
         });
     }

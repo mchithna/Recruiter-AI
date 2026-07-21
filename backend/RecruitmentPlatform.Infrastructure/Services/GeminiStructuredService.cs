@@ -82,7 +82,8 @@ public class GeminiStructuredService : IGeminiStructuredService
                         temperature = 0.1,
                         topP = 0.8,
                         maxOutputTokens,
-                        responseMimeType = "application/json"
+                        responseMimeType = "application/json",
+                        thinkingConfig = new { thinkingBudget = 0 }
                     }
                 };
 
@@ -183,7 +184,7 @@ public class GeminiStructuredService : IGeminiStructuredService
         var projectId = Uri.EscapeDataString(_vertexProjectId);
         var location = Uri.EscapeDataString(_vertexLocation);
         var modelId = Uri.EscapeDataString(model);
-        return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
+        return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
