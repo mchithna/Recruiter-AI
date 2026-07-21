@@ -1,4 +1,4 @@
-import { ArrowLeft, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '../../components/ui';
 import { StatusBadge } from '../../components/ui';
-import { getApplicationsByJob } from './services/mockData';
+import { recruiterApi } from './services/recruiterApi';
 import { useRecruiterJobs } from './useRecruiterJobs';
 
 const formatAppliedAt = (appliedAt) => {
@@ -39,6 +39,7 @@ export function JobApplicationsList() {
   const { getJobById } = useRecruiterJobs();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [aiPanel, setAiPanel] = useState({ loading: '', error: '', title: '', disclaimer: '', result: null });
 
   const job = getJobById(jobId);
   const sortedApplications = useMemo(
@@ -56,16 +57,47 @@ export function JobApplicationsList() {
     let isActive = true;
     setIsLoading(true);
 
-    getApplicationsByJob(jobId).then((mockApplications) => {
-      if (!isActive) return;
-      setApplications(mockApplications);
-      setIsLoading(false);
-    });
+    recruiterApi.getApplicationsByJob(jobId)
+      .then((loadedApplications) => {
+        if (!isActive) return;
+        setApplications(loadedApplications);
+      })
+      .catch((error) => {
+        console.error('Failed to load applications:', error);
+        if (isActive) setApplications([]);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
 
     return () => {
       isActive = false;
     };
   }, [jobId]);
+
+  const runAiAction = async (action) => {
+    setAiPanel({ loading: action, error: '', title: '', disclaimer: '', result: null });
+    try {
+      const response = action === 'compare'
+        ? await recruiterApi.compareCandidates(jobId)
+        : await recruiterApi.screeningAssistance(jobId);
+      setAiPanel({
+        loading: '',
+        error: '',
+        title: action === 'compare' ? 'Explainable Candidate Comparison' : 'Screening Assistance',
+        disclaimer: response.disclaimer,
+        result: response.result,
+      });
+    } catch (error) {
+      setAiPanel({
+        loading: '',
+        error: error?.response?.data?.message || 'AI could not complete this request right now.',
+        title: '',
+        disclaimer: '',
+        result: null,
+      });
+    }
+  };
 
   return (
     <div className="relative z-10 space-y-6 animate-slide-up">
@@ -101,16 +133,86 @@ export function JobApplicationsList() {
       </section>
 
       <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          leftIcon={<ArrowLeft size={18} />}
-          onClick={() => navigate('/recruiter/jobs')}
-          className="w-full sm:w-auto"
-        >
-          Back to Jobs
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            type="button"
+            variant="ai"
+            leftIcon={<Sparkles size={16} />}
+            onClick={() => runAiAction('compare')}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+          >
+            {aiPanel.loading === 'compare' ? 'Comparing...' : 'Compare Candidates'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            leftIcon={<RefreshCw size={16} />}
+            onClick={() => runAiAction('screening')}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+          >
+            {aiPanel.loading === 'screening' ? 'Checking...' : 'Screening Assistance'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            leftIcon={<ArrowLeft size={18} />}
+            onClick={() => navigate('/recruiter/jobs')}
+          >
+            Back to Jobs
+          </Button>
+        </div>
       </div>
+
+      {(aiPanel.result || aiPanel.error) && (
+        <Card className="glass-card-heavy border-none">
+          <CardHeader className="mb-3">
+            <div>
+              <CardTitle>{aiPanel.title || 'AI Assistance'}</CardTitle>
+              <CardDescription>
+                {aiPanel.disclaimer || 'AI-generated output should be verified before recruiter decisions.'}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {aiPanel.error ? (
+              <p className="text-body-sm text-danger-600 dark:text-danger-300">{aiPanel.error}</p>
+            ) : aiPanel.result?.rankings ? (
+              <div className="space-y-4">
+                {aiPanel.result.rankings.map((item) => (
+                  <div key={item.applicationId} className="rounded-xl border border-secondary-100 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-body-lg font-semibold text-secondary-900 dark:text-white">
+                        #{item.explainableRank} {item.candidateName}
+                      </h3>
+                      <Badge variant="ai" size="sm">{item.matchScore}% match</Badge>
+                    </div>
+                    <p className="mt-2 text-body-sm text-secondary-600 dark:text-secondary-300">{item.explanation}</p>
+                    <p className="mt-3 text-caption font-semibold uppercase tracking-wide text-success-700 dark:text-success-300">Strengths</p>
+                    <p className="text-body-sm text-secondary-600 dark:text-secondary-300">{item.strengths?.join(', ') || 'None listed'}</p>
+                    <p className="mt-2 text-caption font-semibold uppercase tracking-wide text-warning-700 dark:text-warning-300">Qualification gaps</p>
+                    <p className="text-body-sm text-secondary-600 dark:text-secondary-300">{item.qualificationGaps?.join(', ') || 'None listed'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {Object.entries(aiPanel.result || {}).map(([key, value]) => (
+                  <div key={key} className="rounded-xl border border-secondary-100 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                    <h3 className="text-body-sm font-semibold capitalize text-secondary-900 dark:text-white">
+                      {key.replace(/([A-Z])/g, ' $1')}
+                    </h3>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-body-sm text-secondary-600 dark:text-secondary-300">
+                      {(Array.isArray(value) ? value : [String(value || '')]).map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="glass-card-heavy overflow-hidden border-none p-0">
         <CardHeader className="mb-0 p-6 pb-4">

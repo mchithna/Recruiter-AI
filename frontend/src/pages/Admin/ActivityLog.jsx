@@ -15,7 +15,7 @@ const ActivityLog = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const pageSize = 15;
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -32,19 +32,19 @@ const ActivityLog = () => {
           setTotalCount(data.totalCount || data.total || 0);
         }
       } catch (error) {
-        showToast('Failed to load activity log.', 'danger');
+        try { toast({ title: 'Failed to load activity log.', variant: 'danger' }); } catch (e) {}
       } finally {
         setLoading(false);
       }
     };
 
     fetchLogs();
-  }, [page, showToast]);
+  }, [page, toast]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="min-w-full max-w-none space-y-6">
       <div>
         <h3 className="text-h3 font-bold text-secondary-900 dark:text-white">Activity Log</h3>
         <p className="text-secondary-500 dark:text-secondary-400 text-body-sm mt-1">

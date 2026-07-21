@@ -13,9 +13,12 @@ import {
   Button,
   Skeleton,
   StatCard,
+  Modal,
 } from '../../components/ui';
 import { StatusBadge } from '../../components/ui';
 import { useRecruiterJobs } from './useRecruiterJobs';
+import { useToast } from '../../lib/ToastContext';
+import { useState } from 'react';
 
 const formatDeadline = (deadline) => {
   if (!deadline) return 'No deadline';
@@ -46,10 +49,35 @@ const workModeIcon = {
 
 export function JobsList() {
   const navigate = useNavigate();
-  const { jobs, isLoading } = useRecruiterJobs();
+  const { jobs, isLoading, updateJob } = useRecruiterJobs();
+  const { toast } = useToast();
+  
+  const [jobToPublish, setJobToPublish] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const openJobs = jobs.filter((job) => job.status === 'Open').length;
   const draftJobs = jobs.filter((job) => job.status === 'Draft').length;
   const pausedJobs = jobs.filter((job) => job.status === 'Paused').length;
+
+  const handlePublishJob = async () => {
+    if (!jobToPublish) return;
+    setIsPublishing(true);
+    try {
+      await updateJob(jobToPublish.id, { status: 'Open' });
+      toast({
+        title: `Job "${jobToPublish.title}" published successfully!`,
+        variant: 'success',
+      });
+      setJobToPublish(null);
+    } catch (error) {
+      toast({
+        title: error.message || 'Failed to publish job.',
+        variant: 'danger',
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   return (
     <div className="relative z-10 mx-auto max-w-7xl space-y-8 animate-slide-up">
@@ -205,6 +233,20 @@ export function JobsList() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
+                      {job.status === 'Draft' && (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setJobToPublish(job);
+                          }}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          Publish
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -230,6 +272,35 @@ export function JobsList() {
           })}
         </div>
       )}
+      
+      {/* Publish Confirmation Modal */}
+      <Modal
+        isOpen={!!jobToPublish}
+        onClose={() => !isPublishing && setJobToPublish(null)}
+        title="Publish Job"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setJobToPublish(null)}
+              disabled={isPublishing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handlePublishJob}
+              disabled={isPublishing}
+            >
+              {isPublishing ? 'Publishing...' : 'Publish'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Are you sure you want to publish the job <strong>{jobToPublish?.title}</strong>? It will become visible to candidates immediately.
+        </p>
+      </Modal>
     </div>
   );
 }

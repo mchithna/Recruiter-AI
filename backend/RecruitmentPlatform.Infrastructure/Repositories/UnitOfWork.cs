@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Department>? _departments;
     private IRepository<CandidateProfile>? _candidateProfiles;
     private IRepository<Role>? _roles;
+    private IRepository<ApplicationStatusHistory>? _applicationStatusHistories;
 
     private IRepository<UserInvitation>? _userInvitations;
     private bool _disposed;
@@ -36,6 +37,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<CandidateProfile> CandidateProfiles => _candidateProfiles ??= new Repository<CandidateProfile>(_context);
 
     public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context);
+
+    public IRepository<ApplicationStatusHistory> ApplicationStatusHistories => _applicationStatusHistories ??= new Repository<ApplicationStatusHistory>(_context);
 
 
 
