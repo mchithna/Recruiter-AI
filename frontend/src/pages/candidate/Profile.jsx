@@ -506,14 +506,62 @@ function AnalysisResult({ analysis }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <AiList title="Missing profile information" items={result.missingProfileInformation} icon={AlertCircle} tone="warning" />
-        <AiList title="Missing resume information" items={result.missingResumeInformation} icon={FileText} tone="danger" />
-        <AiList title="Extracted skills" items={result.extractedSkills} icon={Sparkles} tone="ai" />
-        <AiList title="Education" items={result.education} icon={GraduationCap} tone="success" />
-        <AiList title="Experience" items={result.experience} icon={Briefcase} tone="primary" />
-        <AiList title="Projects" items={result.projects} icon={CheckCircle2} tone="success" emptyText="No projects were found in the current profile or resume data." />
-        <AiList title="Certifications" items={result.certifications} icon={FileText} tone="primary" emptyText="No certifications were found in the current profile or resume data." />
-        <AiList title="Suggestions" items={result.suggestions} icon={Lightbulb} tone="ai" />
+        <AiList
+          title="Missing profile information"
+          items={result.missingProfileInformation}
+          icon={AlertCircle}
+          tone="warning"
+          emptyText="✨ All core profile fields (location, summary, experience) are complete."
+        />
+        <AiList
+          title="Missing resume information"
+          items={result.missingResumeInformation}
+          icon={FileText}
+          tone="danger"
+          emptyText="📄 Primary resume document uploaded and verified."
+        />
+        <AiList
+          title="Extracted skills"
+          items={result.extractedSkills}
+          icon={Sparkles}
+          tone="ai"
+          emptyText="Add key skills below to enable AI job matching."
+        />
+        <AiList
+          title="Education"
+          items={result.education}
+          icon={GraduationCap}
+          tone="success"
+          emptyText="Add education details below to highlight your academic credentials."
+        />
+        <AiList
+          title="Experience"
+          items={result.experience}
+          icon={Briefcase}
+          tone="primary"
+          emptyText="Add work experience below to showcase your career timeline."
+        />
+        <AiList
+          title="Projects"
+          items={result.projects}
+          icon={CheckCircle2}
+          tone="success"
+          emptyText="No GitHub or portfolio projects linked yet. Adding project links boosts recruiter interest."
+        />
+        <AiList
+          title="Certifications"
+          items={result.certifications}
+          icon={FileText}
+          tone="primary"
+          emptyText="No certifications listed. Industry certificates (AWS, PMP, Scrum) improve profile ranking."
+        />
+        <AiList
+          title="Suggestions"
+          items={result.suggestions}
+          icon={Lightbulb}
+          tone="ai"
+          emptyText="Your profile is looking great! Keep your summary updated with key accomplishments."
+        />
       </div>
 
       <p className="rounded-xl border border-secondary-100 bg-secondary-50 px-4 py-3 text-caption text-secondary-500 dark:border-white/10 dark:bg-white/5 dark:text-secondary-400">

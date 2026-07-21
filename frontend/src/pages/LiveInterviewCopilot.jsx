@@ -6,6 +6,7 @@ import {
   BrainCircuit,
   Camera,
   CheckCircle2,
+  ChevronRight,
   Clock,
   Captions,
   FileText,
@@ -20,7 +21,10 @@ import {
   ShieldAlert,
   SkipForward,
   Sparkles,
+  Target,
+  TrendingUp,
   Video,
+  Zap,
 } from 'lucide-react';
 import {
   Avatar,
@@ -77,6 +81,20 @@ const detectTopic = (text) => {
   return matches.slice(-4).join(' ');
 };
 
+const scoreColor = (val) => {
+  if (val == null) return 'text-secondary-400';
+  if (val >= 75) return 'text-emerald-400';
+  if (val >= 50) return 'text-amber-400';
+  return 'text-danger-400';
+};
+
+const scoreRing = (val) => {
+  if (val == null) return 'border-secondary-600';
+  if (val >= 75) return 'border-emerald-500';
+  if (val >= 50) return 'border-amber-500';
+  return 'border-danger-500';
+};
+
 export default function LiveInterviewCopilot() {
   const { interviewId } = useParams();
   const navigate = useNavigate();
@@ -115,8 +133,8 @@ export default function LiveInterviewCopilot() {
   const skippedCount = questions.filter((q) => q.status === 'Skipped').length;
   const expectedPoints = useMemo(() => currentQuestion?.expectedPoints || [], [currentQuestion]);
   const transcriptText = [answerNotes, liveInterim].filter(Boolean).join('\n');
-  const latestConcern = latestInsight?.potentialConcern || 'No concern recorded yet.';
-  const confidence = latestInsight?.confidence || (isListening ? 'Listening live' : 'Waiting for answer');
+  const latestConcern = latestInsight?.potentialConcern || null;
+  const confidence = latestInsight?.confidence || (isListening ? 'Listening live…' : 'Waiting for answer');
 
   const stopCapture = useCallback(() => {
     shouldListenRef.current = false;
@@ -189,7 +207,7 @@ export default function LiveInterviewCopilot() {
       recognition.start();
       setSpeechSupported(true);
       setIsListening(true);
-      setCaptureStatus('Listening live. Candidate speech is being added to the transcript.');
+      setCaptureStatus('Listening live. Candidate speech is being transcribed in real time.');
     } catch {
       setCaptureStatus('Speech detection could not start. Camera is still available.');
     }
@@ -214,22 +232,17 @@ export default function LiveInterviewCopilot() {
   const startMeetingCapture = async () => {
     setError('');
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       mediaStreamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
-      stream.getTracks().forEach((track) => {
-        track.onended = stopCapture;
-      });
+      stream.getTracks().forEach((track) => { track.onended = stopCapture; });
       shouldListenRef.current = true;
       setCameraOn(true);
       setCaptureMode('meeting');
-      setCaptureStatus('Meeting tab is captured. Keep candidate audio audible, or paste the meeting transcript below.');
+      setCaptureStatus('Meeting tab captured. Ensure candidate audio is audible, or paste the transcript below.');
       startSpeechRecognition();
     } catch (err) {
-      setError('Meeting tab capture was cancelled or blocked. Share the meeting tab/window with audio enabled and try again.');
+      setError('Meeting tab capture was cancelled or blocked. Share the meeting tab/window with audio enabled.');
       setCaptureStatus(err?.message || 'Meeting capture could not start.');
     }
   };
@@ -280,7 +293,7 @@ export default function LiveInterviewCopilot() {
       setCurrentQuestion(question);
       await refreshSession(session.sessionId);
     } catch (err) {
-      setError(err?.response?.data?.message || 'AI could not generate a question from the provider. The local fallback should still be available after refreshing the session.');
+      setError(err?.response?.data?.message || 'AI could not generate a question. Local fallback should still be available.');
     } finally {
       setLoadingAction('');
     }
@@ -310,10 +323,9 @@ export default function LiveInterviewCopilot() {
   const submitAnswer = async () => {
     if (!session || !currentQuestion) return;
     if (!transcriptText.trim()) {
-      setError('Start live capture or add answer notes before analyzing.');
+      setError('Start live capture or add answer notes before running AI analysis.');
       return;
     }
-
     setLoadingAction('answer');
     setError('');
     try {
@@ -352,333 +364,697 @@ export default function LiveInterviewCopilot() {
   };
 
   return (
-    <div className="relative z-10 mx-auto max-w-[1500px] space-y-5 animate-slide-up">
-      <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-secondary-950 via-slate-950 to-primary-950/60 p-5 shadow-glass">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(backPath)}>
-            Back
-          </Button>
-          <div>
-            <Badge variant="primary" size="sm" icon={<BrainCircuit size={12} />}>
-              Vertex-ready AI interviewer
-            </Badge>
-            <h1 className="mt-2 text-h1 text-white">Live Interview Copilot</h1>
-            <p className="mt-1 text-body-sm text-secondary-300">
-              Capture the remote candidate answer, analyze it with AI, and end the meeting cleanly.
-            </p>
+    <div className="relative z-10 mx-auto max-w-[1600px] space-y-5 animate-slide-up">
+
+      {/* ─── TOP HEADER BAR ─── */}
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-slate-950 via-secondary-950 to-primary-950/70 shadow-[0_8px_60px_rgba(99,102,241,0.18)]">
+        {/* Animated gradient top stripe */}
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary-500 via-ai-500 to-emerald-400 animate-pulse" />
+        {/* Subtle background glow */}
+        <div className="pointer-events-none absolute -right-32 -top-32 h-64 w-64 rounded-full bg-primary-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 -bottom-32 h-64 w-64 rounded-full bg-ai-500/10 blur-3xl" />
+
+        <div className="relative flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          {/* Left: Back + Title */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<ArrowLeft size={15} />}
+              onClick={() => navigate(backPath)}
+              className="shrink-0 border-white/15 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              Back
+            </Button>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-500/30 bg-primary-500/10 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary-300">
+                  <BrainCircuit size={11} className="animate-pulse" />
+                  AI Copilot Active
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                  <Zap size={10} />
+                  Vertex AI
+                </span>
+              </div>
+              <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-white">
+                Live Interview Copilot
+              </h1>
+              <p className="text-[13px] text-secondary-400">
+                Real-time AI assistance · question generation · live answer analysis
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Timer + End */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Live timer pill */}
+            <div className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 font-mono text-base font-bold tabular-nums transition-colors ${session && session.status !== 'Ended' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-white/10 bg-white/5 text-secondary-400'}`}>
+              <Radio size={13} className={session && session.status !== 'Ended' ? 'animate-pulse text-emerald-400' : 'text-secondary-500'} />
+              {elapsed}
+            </div>
+
+            {session && (
+              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] font-semibold text-secondary-300">
+                <span className="text-primary-400">{askedCount}</span> asked
+                <span className="text-secondary-600">·</span>
+                <span className="text-amber-400">{skippedCount}</span> skipped
+              </div>
+            )}
+
+            <Button
+              variant="danger"
+              size="sm"
+              leftIcon={<PhoneOff size={14} />}
+              disabled={!session || session.status === 'Ended'}
+              isLoading={loadingAction === 'end'}
+              onClick={endSession}
+              className="shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+            >
+              End Session
+            </Button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant={isListening ? 'success' : 'secondary'} size="sm" icon={<Clock size={12} />}>
-            {elapsed}
-          </Badge>
-          <Button variant="danger" size="sm" leftIcon={<PhoneOff size={14} />} disabled={!session || session.status === 'Ended'} isLoading={loadingAction === 'end'} onClick={endSession}>
-            End Meeting
-          </Button>
-        </div>
-        </div>
-      </section>
+      </header>
 
+      {/* ─── ERROR BANNER ─── */}
       {error && (
-        <div className="rounded-2xl border border-danger-500/30 bg-danger-950/20 px-4 py-3 text-body-sm font-semibold text-danger-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-2xl border border-danger-500/30 bg-danger-950/20 px-5 py-4 text-sm font-medium text-danger-200 shadow-sm">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-danger-400" />
+          <span>{error}</span>
+          <button type="button" onClick={() => setError('')} className="ml-auto text-danger-400 hover:text-danger-200">✕</button>
         </div>
       )}
 
+      {/* ─── PRE-SESSION SETUP ─── */}
       {!session ? (
-        <Card className="overflow-hidden border-white/10 bg-secondary-950/40">
-          <div className="h-1.5 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
-          <CardHeader>
-            <CardTitle>Start AI Interview Assistant</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-4">
-            <Select label="Question mode" value={mode} onChange={(event) => setMode(event.target.value)} options={MODE_OPTIONS} />
-            <Select label="Difficulty" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} options={DIFFICULTY_OPTIONS} />
-            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-body-sm font-semibold text-secondary-700 dark:text-secondary-200 md:mt-6">
-              <input type="checkbox" checked={consentRecorded} onChange={(event) => setConsentRecorded(event.target.checked)} />
-              Consent recorded
-            </label>
-            <Button variant="ai" className="md:mt-6" leftIcon={<Sparkles size={16} />} isLoading={loadingAction === 'start'} onClick={startSession}>
-              Start Assistant
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
-          <Card className="border-white/10 bg-secondary-950/40">
-            <CardHeader>
-              <CardTitle>Candidate</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex items-center gap-3">
-                <Avatar name={context?.candidateName || 'Candidate'} src={context?.candidatePhotoUrl} size="lg" />
-                <div className="min-w-0">
-                  <h2 className="truncate text-h3 text-secondary-900 dark:text-white">{context?.candidateName}</h2>
-                  <p className="truncate text-body-sm text-secondary-500 dark:text-secondary-400">{context?.position}</p>
-                </div>
-              </div>
-              <Info label="Experience" value={context?.experienceYears ? `${context.experienceYears} years` : 'Not listed'} />
-              <Info label="Stage" value={context?.interviewStage || 'Interview'} />
-              <Info label="Duration" value={`${context?.interviewDurationMinutes || 0} minutes`} />
-              <Info label="Previous score" value={context?.previousInterviewScore ? `${context.previousInterviewScore}/100` : 'Not available'} />
-              <SectionList title="Candidate skills" items={context?.candidateSkills || []} />
-              <SectionList title="Required skills" items={context?.requiredJobSkills || []} />
-              <div>
-                <p className="text-caption font-bold uppercase text-secondary-400">CV summary</p>
-                <p className="mt-2 text-body-sm leading-relaxed text-secondary-600 dark:text-secondary-300">
-                  {context?.cvSummary || 'No CV summary is available yet.'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-secondary-950/80 via-slate-900/60 to-primary-950/30 p-8 shadow-glass backdrop-blur-xl">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary-500/8 blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-ai-500/8 blur-3xl" />
 
-          <Card className="overflow-hidden border-white/10 bg-secondary-950/40">
-            <div className="h-1.5 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
-            <CardHeader>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <CardTitle>Interview Workspace</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" leftIcon={<Video size={14} />} disabled={!context?.meetingLink} onClick={joinMeeting}>
-                    Join Link
-                  </Button>
-                  <Button variant="outline" size="sm" leftIcon={<MonitorUp size={14} />} onClick={startMeetingCapture}>
-                    Capture Meeting Tab
-                  </Button>
-                  <Button variant={isListening ? 'danger' : 'ai'} size="sm" leftIcon={isListening ? <MicOff size={14} /> : <Mic size={14} />} onClick={isListening ? stopCapture : startCapture}>
-                    {isListening ? 'Stop Capture' : 'My Camera + Mic'}
-                  </Button>
+          <div className="relative mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 via-ai-500 to-primary-600 shadow-[0_0_30px_rgba(99,102,241,0.4)]">
+              <Sparkles size={28} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">Configure AI Interview Assistant</h2>
+            <p className="mt-1 text-[14px] text-secondary-400">
+              Set up the question mode, difficulty, and consent before starting the live session.
+            </p>
+          </div>
+
+          <div className="relative grid gap-5 md:grid-cols-4">
+            <div className="space-y-1.5">
+              <Select
+                label="Question mode"
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+                options={MODE_OPTIONS}
+              />
+              <p className="text-[11px] text-secondary-500">How AI selects next questions</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Select
+                label="Difficulty"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                options={DIFFICULTY_OPTIONS}
+              />
+              <p className="text-[11px] text-secondary-500">Adjust question complexity</p>
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/8 md:mt-0 md:self-end">
+              <div className="relative mt-0.5">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={consentRecorded}
+                  onChange={(e) => setConsentRecorded(e.target.checked)}
+                />
+                <div className={`h-5 w-5 rounded-md border-2 transition-colors ${consentRecorded ? 'border-primary-500 bg-primary-500' : 'border-secondary-600 bg-transparent'}`} />
+                {consentRecorded && (
+                  <CheckCircle2 size={14} className="absolute inset-0 m-auto text-white" />
+                )}
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-white">Consent recorded</p>
+                <p className="text-[11px] text-secondary-500">Candidate agreed to be recorded</p>
+              </div>
+            </label>
+
+            <Button
+              variant="ai"
+              className="md:self-end shadow-[0_0_25px_rgba(99,102,241,0.35)]"
+              leftIcon={<Sparkles size={16} />}
+              isLoading={loadingAction === 'start'}
+              onClick={startSession}
+            >
+              Start AI Assistant
+            </Button>
+          </div>
+        </div>
+      ) : (
+        /* ─── ACTIVE SESSION ─── */
+        <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
+
+          {/* ──── LEFT: CANDIDATE CARD ──── */}
+          <aside className="space-y-4">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-secondary-900/60 to-secondary-950/80 p-5 shadow-glass backdrop-blur-xl">
+              {/* Glow */}
+              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary-500/8 blur-2xl" />
+
+              {/* Avatar + name */}
+              <div className="relative flex flex-col items-center gap-3 text-center">
+                <div className="relative">
+                  <div className="h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-primary-500/30">
+                    <Avatar name={context?.candidateName || 'Candidate'} src={context?.candidatePhotoUrl} size="lg" className="h-full w-full" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-emerald-500 shadow">
+                    <Radio size={10} className="animate-pulse text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">{context?.candidateName || 'Candidate'}</h2>
+                  <p className="text-[12px] text-secondary-400">{context?.position || 'Position not specified'}</p>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_80px_rgba(79,70,229,0.18)]">
-                  <div className="aspect-video w-full">
-                    <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
-                    {!cameraOn && (
-                      <div className="-mt-[56.25%] flex aspect-video items-center justify-center text-center text-body-sm text-secondary-400">
-                        <div>
-                          <Camera size={28} className="mx-auto mb-2 text-secondary-500" />
-                          Remote meeting preview off
-                        </div>
+
+              {/* Stats row */}
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <CandidateStat label="Experience" value={context?.experienceYears ? `${context.experienceYears} yrs` : '—'} />
+                <CandidateStat label="Stage" value={context?.interviewStage || 'Interview'} />
+                <CandidateStat label="Duration" value={`${context?.interviewDurationMinutes || 0} min`} />
+                <CandidateStat label="Prior Score" value={context?.previousInterviewScore ? `${context.previousInterviewScore}/100` : '—'} />
+              </div>
+
+              {/* Skills */}
+              {(context?.candidateSkills?.length > 0 || context?.requiredJobSkills?.length > 0) && (
+                <div className="mt-4 space-y-3 border-t border-white/5 pt-4">
+                  <SkillChips label="Candidate skills" items={context?.candidateSkills || []} color="primary" />
+                  <SkillChips label="Required skills" items={context?.requiredJobSkills || []} color="ai" />
+                </div>
+              )}
+
+              {/* CV Summary */}
+              {context?.cvSummary && (
+                <div className="mt-4 rounded-xl border border-white/5 bg-white/3 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-secondary-500">CV Summary</p>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-secondary-300">
+                    {context.cvSummary}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Meeting join card */}
+            {context?.meetingLink && (
+              <button
+                type="button"
+                onClick={joinMeeting}
+                className="group w-full rounded-2xl border border-primary-500/20 bg-gradient-to-br from-primary-950/40 to-ai-950/20 p-4 text-left transition-all hover:border-primary-400/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500/20">
+                      <Video size={15} className="text-primary-400" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-primary-300">Meeting Link</p>
+                      <p className="text-[11px] text-secondary-500">Click to open in new tab</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className="text-primary-400 transition-transform group-hover:translate-x-1" />
+                </div>
+              </button>
+            )}
+          </aside>
+
+          {/* ──── CENTER: INTERVIEW WORKSPACE ──── */}
+          <div className="space-y-4">
+            {/* Capture toolbar */}
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-secondary-950/60 px-4 py-3 backdrop-blur-md">
+              <div className="flex items-center gap-1.5 text-[12px] font-semibold text-secondary-400 mr-2">
+                <Camera size={13} />
+                Capture
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MonitorUp size={13} />}
+                onClick={startMeetingCapture}
+                className="border-white/15 bg-white/5 text-white/80"
+              >
+                Capture Meeting Tab
+              </Button>
+              <Button
+                variant={isListening ? 'danger' : 'ai'}
+                size="sm"
+                leftIcon={isListening ? <MicOff size={13} /> : <Mic size={13} />}
+                onClick={isListening ? stopCapture : startCapture}
+              >
+                {isListening ? 'Stop Capture' : 'My Camera + Mic'}
+              </Button>
+              <div className="ml-auto flex items-center gap-2 text-[11px]">
+                <span className={`inline-flex items-center gap-1 ${isListening ? 'text-emerald-400' : 'text-secondary-500'}`}>
+                  <Radio size={10} className={isListening ? 'animate-pulse' : ''} />
+                  {captureMode === 'meeting' ? 'Meeting tab' : isListening ? 'Mic active' : 'Manual'}
+                </span>
+                <span className={speechSupported ? 'text-secondary-500' : 'text-amber-500'}>
+                  {speechSupported ? '· Speech ready' : '· Speech unsupported'}
+                </span>
+              </div>
+            </div>
+
+            {/* Video + current question */}
+            <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+              {/* Camera preview */}
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
+                <div className="aspect-video w-full relative">
+                  <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+                  {!cameraOn && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-secondary-950/80 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                        <Camera size={22} className="text-secondary-500" />
                       </div>
+                      <p className="text-[11px] text-secondary-500">Preview off</p>
+                    </div>
+                  )}
+                  {isListening && (
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/80 px-2.5 py-1 text-[10px] font-bold text-emerald-400">
+                      <Radio size={9} className="animate-pulse" /> LIVE
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-white/5 px-3 py-2 text-[11px] text-secondary-500">
+                  {captureStatus}
+                </div>
+              </div>
+
+              {/* Current question panel */}
+              <div className="relative overflow-hidden rounded-2xl border border-primary-500/25 bg-gradient-to-br from-primary-950/50 via-slate-950/60 to-ai-950/20 p-5 shadow-inner">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary-500/8 blur-2xl" />
+                <div className="relative">
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-500/20">
+                      <Target size={13} className="text-primary-400" />
+                    </div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary-400">Current Question</p>
+                    {currentQuestion?.skill && (
+                      <span className="ml-auto rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold text-secondary-400 border border-white/10">
+                        {currentQuestion.skill}
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between border-t border-white/10 px-3 py-2 text-caption text-secondary-300">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Radio size={11} className={isListening ? 'animate-pulse text-success-400' : 'text-secondary-500'} />
-                      {captureMode === 'meeting' ? 'Meeting tab' : isListening ? 'Interviewer mic' : 'Manual mode'}
-                    </span>
-                    <span>{speechSupported ? 'Speech ready' : 'Speech unsupported'}</span>
-                  </div>
-                </div>
 
-                <div className="rounded-2xl border border-primary-500/20 bg-gradient-to-br from-primary-950/30 to-ai-950/10 p-5 shadow-inner">
-                  <p className="text-caption font-bold uppercase text-primary-300">Current question</p>
-                  <h2 className="mt-2 text-h3 leading-snug text-secondary-900 dark:text-white">
-                    {currentQuestion?.question || 'Generate the first adaptive question when you are ready.'}
+                  <h2 className="text-[17px] font-semibold leading-snug text-white">
+                    {currentQuestion?.question || 'Generate the first AI question when you are ready.'}
                   </h2>
+
                   {currentQuestion?.reason && (
-                    <p className="mt-3 text-body-sm text-secondary-500 dark:text-secondary-300">{currentQuestion.reason}</p>
+                    <p className="mt-3 rounded-xl border border-white/5 bg-white/3 px-3 py-2 text-[12px] text-secondary-400">
+                      💡 {currentQuestion.reason}
+                    </p>
                   )}
+
                   {expectedPoints.length > 0 && (
-                    <details className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-body-sm text-secondary-600 dark:text-secondary-300">
-                      <summary className="cursor-pointer font-bold text-secondary-900 dark:text-white">Expected points</summary>
-                      <ul className="mt-2 list-disc space-y-1 pl-5">
-                        {expectedPoints.map((point) => <li key={point}>{point}</li>)}
+                    <details className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <summary className="cursor-pointer text-[12px] font-bold text-secondary-300 hover:text-white transition-colors">
+                        Expected Answer Points ({expectedPoints.length})
+                      </summary>
+                      <ul className="mt-3 space-y-1.5">
+                        {expectedPoints.map((point, i) => (
+                          <li key={point} className="flex items-start gap-2 text-[12px] text-secondary-400">
+                            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-500/20 text-[9px] font-bold text-primary-400">{i + 1}</span>
+                            {point}
+                          </li>
+                        ))}
                       </ul>
                     </details>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="flex items-center gap-2 text-caption font-bold uppercase text-secondary-400">
-                      <Captions size={13} /> Candidate answer transcript
-                    </p>
-                    <p className="text-caption text-secondary-500">{captureStatus}</p>
+            {/* Transcript panel */}
+            <div className="rounded-2xl border border-white/10 bg-secondary-950/50 p-4 backdrop-blur-md">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/5 border border-white/10">
+                    <Captions size={13} className="text-secondary-400" />
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => { setAnswerNotes(''); setLiveInterim(''); }}>
-                    Clear
-                  </Button>
+                  <div>
+                    <p className="text-[12px] font-bold text-white">Candidate Answer Transcript</p>
+                    {liveInterim && (
+                      <p className="text-[11px] italic text-secondary-500 animate-pulse">
+                        {liveInterim}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <Textarea
-                  label="Candidate answer transcript and notes"
-                  rows={7}
-                  value={transcriptText}
-                  onChange={(event) => {
-                    setAnswerNotes(event.target.value);
-                    setLiveInterim('');
-                  }}
-                  placeholder="For a remote candidate, capture the meeting tab with audio, paste the meeting transcript, or type the candidate's answer here before AI analysis."
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button variant="primary" size="sm" leftIcon={<CheckCircle2 size={14} />} disabled={!currentQuestion} isLoading={loadingAction === 'Asked'} onClick={() => updateQuestion('Asked')}>
-                  Mark Asked
-                </Button>
-                <Button variant="ai" size="sm" leftIcon={<Sparkles size={14} />} disabled={!session || !currentQuestion} isLoading={loadingAction === 'answer'} onClick={submitAnswer}>
-                  Analyze Live Answer
-                </Button>
-                <Button variant="outline" size="sm" leftIcon={<SkipForward size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Skipped')}>
-                  Skip
-                </Button>
-                <Button variant="outline" size="sm" leftIcon={<Save size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Saved')}>
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" leftIcon={<ShieldAlert size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Rejected')}>
-                  Report
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setAnswerNotes(''); setLiveInterim(''); }}
+                  className="border-white/10 bg-white/5 text-secondary-400 hover:text-white"
+                >
+                  Clear
                 </Button>
               </div>
+              <Textarea
+                label=""
+                rows={6}
+                value={transcriptText}
+                onChange={(e) => { setAnswerNotes(e.target.value); setLiveInterim(''); }}
+                placeholder="For a remote interview, capture the meeting tab with audio enabled, paste the transcript, or type the candidate's answer before AI analysis."
+                className="resize-none font-mono text-[13px]"
+              />
+            </div>
 
-              <div>
-                <h3 className="text-h4 text-secondary-900 dark:text-white">Question history</h3>
-                <div className="mt-3 max-h-72 space-y-3 overflow-y-auto pr-2">
-                  {questions.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-white/10 p-5 text-center text-body-sm text-secondary-500">No questions generated yet.</p>
-                  ) : questions.map((question) => (
-                    <button
-                      key={question.questionId}
-                      type="button"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-primary-400/50"
-                      onClick={() => setCurrentQuestion(question)}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="line-clamp-2 text-body-sm font-semibold text-secondary-900 dark:text-white">{question.question}</p>
-                        <Badge variant="secondary" size="sm">{question.status}</Badge>
-                      </div>
-                      <p className="mt-1 text-caption text-secondary-400">{question.skill || question.category || 'General'}</p>
-                    </button>
-                  ))}
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<CheckCircle2 size={14} />}
+                disabled={!currentQuestion}
+                isLoading={loadingAction === 'Asked'}
+                onClick={() => updateQuestion('Asked')}
+              >
+                Mark Asked
+              </Button>
+              <Button
+                variant="ai"
+                size="sm"
+                leftIcon={<Sparkles size={14} />}
+                disabled={!session || !currentQuestion}
+                isLoading={loadingAction === 'answer'}
+                onClick={submitAnswer}
+                className="shadow-[0_0_16px_rgba(99,102,241,0.25)]"
+              >
+                Analyze Live Answer
+              </Button>
+              <Button variant="outline" size="sm" leftIcon={<SkipForward size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Skipped')} className="border-white/10 bg-white/5 text-secondary-300">
+                Skip
+              </Button>
+              <Button variant="outline" size="sm" leftIcon={<Save size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Saved')} className="border-white/10 bg-white/5 text-secondary-300">
+                Save
+              </Button>
+              <Button variant="outline" size="sm" leftIcon={<ShieldAlert size={14} />} disabled={!currentQuestion} onClick={() => updateQuestion('Rejected')} className="border-white/10 bg-white/5 text-secondary-300">
+                Report
+              </Button>
+            </div>
+
+            {/* Question history */}
+            <div className="rounded-2xl border border-white/10 bg-secondary-950/40 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[13px] font-bold text-white">Question History</p>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-secondary-400">
+                  {questions.length} generated
+                </span>
+              </div>
+              <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
+                {questions.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-white/10 py-6 text-center text-[13px] text-secondary-500">
+                    No questions generated yet.
+                  </p>
+                ) : (
+                  questions.map((question) => {
+                    const isActive = question.questionId === currentQuestion?.questionId;
+                    return (
+                      <button
+                        key={question.questionId}
+                        type="button"
+                        className={`w-full rounded-xl border p-3 text-left transition-all ${isActive ? 'border-primary-500/40 bg-primary-950/30' : 'border-white/5 bg-white/3 hover:border-white/15 hover:bg-white/5'}`}
+                        onClick={() => setCurrentQuestion(question)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="line-clamp-2 text-[12px] font-medium text-secondary-100">{question.question}</p>
+                          <StatusPill status={question.status} />
+                        </div>
+                        <p className="mt-1 text-[11px] text-secondary-500">{question.skill || question.category || 'General'}</p>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ──── RIGHT: AI COMMAND CENTER ──── */}
+          <aside className="space-y-4">
+            {/* Header */}
+            <div className="relative overflow-hidden rounded-3xl border border-ai-500/25 bg-gradient-to-b from-ai-950/40 via-primary-950/30 to-secondary-950/50 p-5 shadow-[0_4px_30px_rgba(99,102,241,0.12)] backdrop-blur-xl">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-ai-500/8 blur-2xl" />
+              <div className="relative mb-4 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ai-500 to-primary-600 shadow-[0_0_16px_rgba(99,102,241,0.4)]">
+                  <BrainCircuit size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white">AI Command Center</p>
+                  <p className="text-[11px] text-ai-400">Real-time intelligence</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="overflow-hidden border-primary-500/20 bg-primary-950/20">
-            <div className="h-1.5 bg-gradient-to-r from-ai-500 to-primary-400" />
-            <CardHeader>
-              <CardTitle>AI Command Center</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-2 gap-3">
-                <Info label="Listening" value={isListening ? 'ON' : 'OFF'} />
-                <Info label="Confidence" value={confidence} />
-                <Info label="Asked" value={askedCount} />
-                <Info label="Skipped" value={skippedCount} />
+              {/* Status metrics */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <AiMetric label="Mic" value={isListening ? 'Live' : 'Off'} active={isListening} color={isListening ? 'emerald' : 'secondary'} />
+                <AiMetric label="Confidence" value={confidence} color="ai" />
+                <AiMetric label="Asked" value={askedCount} color="primary" />
+                <AiMetric label="Skipped" value={skippedCount} color="amber" />
               </div>
 
+              {/* Answer scores */}
               {latestInsight && (
-                <div className="grid grid-cols-3 gap-2">
-                  <Score label="Relevant" value={latestInsight.relevanceScore} />
-                  <Score label="Depth" value={latestInsight.depthScore} />
-                  <Score label="Clarity" value={latestInsight.clarityScore} />
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  <ScoreRing label="Relevant" value={latestInsight.relevanceScore} />
+                  <ScoreRing label="Depth" value={latestInsight.depthScore} />
+                  <ScoreRing label="Clarity" value={latestInsight.clarityScore} />
                 </div>
               )}
 
-              <Textarea
-                label="Detected topic"
-                rows={2}
-                value={currentTopic}
-                onChange={(event) => setCurrentTopic(event.target.value)}
-                placeholder="Detected from speech, or type a topic..."
-              />
+              {/* Concern */}
+              {latestConcern && (
+                <div className="mb-4 rounded-xl border border-danger-500/20 bg-danger-950/20 p-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-danger-400">
+                    <AlertTriangle size={11} />
+                    Potential Concern
+                  </p>
+                  <p className="mt-2 text-[12px] text-secondary-200">{latestConcern}</p>
+                </div>
+              )}
 
-              <div className="rounded-2xl border border-danger-500/20 bg-danger-950/10 p-4">
-                <p className="flex items-center gap-2 text-caption font-bold uppercase text-danger-300">
-                  <AlertTriangle size={14} /> Possible concern
-                </p>
-                <p className="mt-2 text-body-sm text-secondary-700 dark:text-secondary-200">{latestConcern}</p>
-              </div>
-
+              {/* Follow-up suggestion */}
               {latestInsight?.suggestedFollowUpQuestion && (
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-ai-500/20 bg-ai-950/10 p-4 text-left transition hover:border-ai-400"
+                  className="mb-4 w-full rounded-xl border border-ai-500/20 bg-ai-950/20 p-3 text-left transition-all hover:border-ai-400/40 hover:bg-ai-950/30"
                   onClick={() => generateQuestion('Ask Follow-up')}
                 >
-                  <p className="text-caption font-bold uppercase text-ai-300">Suggested follow-up</p>
-                  <p className="mt-2 text-body-sm font-semibold text-secondary-900 dark:text-white">{latestInsight.suggestedFollowUpQuestion}</p>
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ai-400">
+                    <TrendingUp size={11} />
+                    Suggested Follow-up
+                  </p>
+                  <p className="mt-2 text-[12px] font-semibold text-white leading-snug">
+                    {latestInsight.suggestedFollowUpQuestion}
+                  </p>
+                  <p className="mt-1.5 text-[10px] text-ai-500">Click to use this question →</p>
                 </button>
               )}
 
-              <div className="grid grid-cols-1 gap-2">
-                <Button variant="ai" leftIcon={<Sparkles size={16} />} isLoading={loadingAction === 'Generate'} onClick={() => generateQuestion('Generate')}>
-                  Generate Question
+              {/* Topic input */}
+              <Textarea
+                label="Detected topic / hint"
+                rows={2}
+                value={currentTopic}
+                onChange={(e) => setCurrentTopic(e.target.value)}
+                placeholder="Auto-detected from speech, or type a topic…"
+                className="text-[12px]"
+              />
+            </div>
+
+            {/* Generate controls */}
+            <div className="rounded-3xl border border-white/10 bg-secondary-950/50 p-4 backdrop-blur-md">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-secondary-500">Question Controls</p>
+              <div className="space-y-2">
+                <Button
+                  variant="ai"
+                  className="w-full shadow-[0_0_20px_rgba(99,102,241,0.25)] justify-center"
+                  leftIcon={<Sparkles size={15} />}
+                  isLoading={loadingAction === 'Generate'}
+                  onClick={() => generateQuestion('Generate')}
+                >
+                  Generate Next Question
                 </Button>
-                <Button variant="outline" leftIcon={<Gauge size={16} />} onClick={() => generateQuestion('Make Easier')}>
-                  Make Easier
-                </Button>
-                <Button variant="outline" leftIcon={<Gauge size={16} />} onClick={() => generateQuestion('Make Harder')}>
-                  Make Harder
-                </Button>
-                <Button variant="outline" leftIcon={<MessageSquare size={16} />} onClick={() => generateQuestion('Ask Follow-up')}>
-                  Follow Up
-                </Button>
-                <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => generateQuestion('Change Topic')}>
-                  Change Topic
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<Gauge size={13} />}
+                    onClick={() => generateQuestion('Make Easier')}
+                    className="border-white/10 bg-white/5 text-secondary-300 justify-center"
+                  >
+                    Easier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<Gauge size={13} />}
+                    onClick={() => generateQuestion('Make Harder')}
+                    className="border-white/10 bg-white/5 text-secondary-300 justify-center"
+                  >
+                    Harder
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<MessageSquare size={13} />}
+                    onClick={() => generateQuestion('Ask Follow-up')}
+                    className="border-white/10 bg-white/5 text-secondary-300 justify-center"
+                  >
+                    Follow-up
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<FileText size={13} />}
+                    onClick={() => generateQuestion('Change Topic')}
+                    className="border-white/10 bg-white/5 text-secondary-300 justify-center"
+                  >
+                    New Topic
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </aside>
         </div>
       )}
 
+      {/* ─── POST-SESSION SUMMARY ─── */}
       {summary && (
-        <Card className="border-success-500/20 bg-success-950/10">
-          <CardHeader>
-            <CardTitle>Interview Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-5 md:grid-cols-3">
-            <SectionList title="Strong areas" items={summary.strongAreas || []} />
-            <SectionList title="Areas requiring validation" items={summary.areasRequiringValidation || []} />
-            <div>
-              <p className="text-caption font-bold uppercase text-secondary-400">AI recommendation</p>
-              <p className="mt-2 text-body-sm font-semibold text-secondary-900 dark:text-white">{summary.aiRecommendation}</p>
-              <p className="mt-3 text-caption text-secondary-500">{summary.disclaimer}</p>
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 via-secondary-950/60 to-slate-950 p-6 shadow-[0_8px_40px_rgba(16,185,129,0.1)]">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-emerald-500/8 blur-3xl" />
+          <div className="relative">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/20">
+                <CheckCircle2 size={22} className="text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Interview Summary</h2>
+                <p className="text-[12px] text-secondary-400">AI-generated post-session analysis</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <SummaryList title="Strong Areas" items={summary.strongAreas || []} color="emerald" />
+              <SummaryList title="Areas for Validation" items={summary.areasRequiringValidation || []} color="amber" />
+              <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-secondary-500">AI Recommendation</p>
+                <p className="mt-2 text-[14px] font-semibold leading-relaxed text-white">{summary.aiRecommendation}</p>
+                {summary.disclaimer && (
+                  <p className="mt-3 text-[11px] text-secondary-500">{summary.disclaimer}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function Info({ label, value }) {
+/* ─── Helper Sub-components ─── */
+
+function CandidateStat({ label, value }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-      <p className="text-caption font-bold uppercase text-secondary-400">{label}</p>
-      <p className="mt-1 text-body-sm font-semibold text-secondary-900 dark:text-white">{value}</p>
+    <div className="rounded-xl border border-white/5 bg-white/3 p-2.5 text-center">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-secondary-500">{label}</p>
+      <p className="mt-0.5 text-[13px] font-semibold text-white">{value}</p>
     </div>
   );
 }
 
-function Score({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
-      <p className="text-caption font-bold uppercase text-secondary-400">{label}</p>
-      <p className="mt-1 text-h3 text-secondary-900 dark:text-white">{value ?? '-'}</p>
-    </div>
-  );
-}
-
-function SectionList({ title, items }) {
+function SkillChips({ label, items, color }) {
+  if (!items.length) return null;
+  const colorMap = {
+    primary: 'border-primary-500/20 bg-primary-500/10 text-primary-300',
+    ai: 'border-ai-500/20 bg-ai-500/10 text-ai-300',
+  };
   return (
     <div>
-      <p className="text-caption font-bold uppercase text-secondary-400">{title}</p>
+      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-secondary-500">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <span key={item} className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${colorMap[color] || colorMap.primary}`}>
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AiMetric({ label, value, active, color }) {
+  const colorMap = {
+    emerald: 'text-emerald-400',
+    ai: 'text-ai-400',
+    primary: 'text-primary-400',
+    amber: 'text-amber-400',
+    secondary: 'text-secondary-400',
+  };
+  return (
+    <div className={`rounded-xl border p-2.5 text-center transition-colors ${active ? 'border-emerald-500/25 bg-emerald-500/8' : 'border-white/5 bg-white/3'}`}>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-secondary-500">{label}</p>
+      <p className={`mt-0.5 text-[13px] font-bold ${colorMap[color] || 'text-white'}`}>{value}</p>
+    </div>
+  );
+}
+
+function ScoreRing({ label, value }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-white/5 bg-white/3 p-3">
+      <div className={`flex h-12 w-12 items-center justify-center rounded-full border-2 ${scoreRing(value)}`}>
+        <span className={`text-[14px] font-bold tabular-nums ${scoreColor(value)}`}>
+          {value ?? '—'}
+        </span>
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-secondary-500">{label}</p>
+    </div>
+  );
+}
+
+function StatusPill({ status }) {
+  const map = {
+    Asked: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400',
+    Skipped: 'border-amber-500/25 bg-amber-500/10 text-amber-400',
+    Saved: 'border-primary-500/25 bg-primary-500/10 text-primary-400',
+    Rejected: 'border-danger-500/25 bg-danger-500/10 text-danger-400',
+  };
+  return (
+    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${map[status] || 'border-white/10 bg-white/5 text-secondary-400'}`}>
+      {status || 'Pending'}
+    </span>
+  );
+}
+
+function SummaryList({ title, items, color }) {
+  const colorMap = {
+    emerald: 'text-emerald-400 bg-emerald-500/20',
+    amber: 'text-amber-400 bg-amber-500/20',
+  };
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-secondary-500">{title}</p>
       {items.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <ul className="mt-3 space-y-2">
           {items.map((item) => (
-            <Badge key={item} variant="secondary" size="sm">{item}</Badge>
+            <li key={item} className="flex items-start gap-2 text-[12px] text-secondary-200">
+              <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${colorMap[color]?.split(' ')[1] || 'bg-white/20'}`} />
+              {item}
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
-        <p className="mt-2 text-body-sm text-secondary-500">Not available</p>
+        <p className="mt-2 text-[12px] text-secondary-500">Not available</p>
       )}
     </div>
   );
