@@ -10,6 +10,7 @@ internal sealed class VertexAiAccessTokenProvider
 
     private readonly string _configuredAccessToken;
     private readonly string _serviceAccountJson;
+    private readonly string _serviceAccountPath;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private GoogleCredential? _credential;
 
@@ -17,6 +18,7 @@ internal sealed class VertexAiAccessTokenProvider
     {
         _configuredAccessToken = GeminiConfiguration.GetVertexAccessToken(configuration);
         _serviceAccountJson = GeminiConfiguration.GetVertexServiceAccountJson(configuration);
+        _serviceAccountPath = GeminiConfiguration.GetVertexServiceAccountPath(configuration);
     }
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
@@ -39,14 +41,19 @@ internal sealed class VertexAiAccessTokenProvider
         {
             if (_credential != null) return _credential;
 
-            if (string.IsNullOrWhiteSpace(_serviceAccountJson))
-            {
-                _credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
-            }
-            else
+            if (!string.IsNullOrWhiteSpace(_serviceAccountJson))
             {
                 await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(_serviceAccountJson));
                 _credential = (await CredentialFactory.FromStreamAsync<ServiceAccountCredential>(stream, cancellationToken)).ToGoogleCredential();
+            }
+            else if (!string.IsNullOrWhiteSpace(_serviceAccountPath))
+            {
+                await using var stream = File.OpenRead(ResolveServiceAccountPath(_serviceAccountPath));
+                _credential = (await CredentialFactory.FromStreamAsync<ServiceAccountCredential>(stream, cancellationToken)).ToGoogleCredential();
+            }
+            else
+            {
+                _credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
             }
 
             if (_credential.IsCreateScopedRequired)
@@ -60,5 +67,23 @@ internal sealed class VertexAiAccessTokenProvider
         {
             _lock.Release();
         }
+    }
+
+    private static string ResolveServiceAccountPath(string configuredPath)
+    {
+        var trimmedPath = configuredPath.Trim().Trim('"');
+        if (Path.IsPathRooted(trimmedPath) || File.Exists(trimmedPath))
+        {
+            return trimmedPath;
+        }
+
+        var currentDirectoryPath = Path.GetFullPath(trimmedPath, Directory.GetCurrentDirectory());
+        if (File.Exists(currentDirectoryPath))
+        {
+            return currentDirectoryPath;
+        }
+
+        var appBasePath = Path.GetFullPath(trimmedPath, AppContext.BaseDirectory);
+        return File.Exists(appBasePath) ? appBasePath : trimmedPath;
     }
 }

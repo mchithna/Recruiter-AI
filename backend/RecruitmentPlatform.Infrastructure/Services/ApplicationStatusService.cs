@@ -13,7 +13,7 @@ public sealed class ApplicationStatusService : IApplicationStatusService
         ["Interview Scheduled"] = ["Offer Extended", "Rejected", "Withdrawn"],
         ["Offer Extended"] = ["Hired", "Rejected", "Withdrawn"],
         ["Hired"] = [],
-        ["Rejected"] = [],
+        ["Rejected"] = ["Offer Extended"],
         ["Withdrawn"] = []
     };
 

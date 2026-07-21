@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Video, FileText, Check, X, Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
   Card,
@@ -12,6 +12,7 @@ import {
 import StatusBadge from './components/StatusBadge';
 import CalendarConnectButton from './components/CalendarConnectButton';
 import { getInterview, getEvaluationForInterview } from './services/hiringManagerApi';
+import { recruiterApi } from '../Recruiter/services/recruiterApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -25,6 +26,10 @@ const formatScheduledTime = (scheduledTime) => {
 export function InterviewDetail() {
   const { interviewId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isRecruiter = location.pathname.startsWith('/recruiter');
+  const basePath = isRecruiter ? '/recruiter' : '/hiring-manager';
+
   const [interview, setInterview] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,8 +40,11 @@ export function InterviewDetail() {
     async function loadInterviewData() {
       try {
         setIsLoading(true);
-        const data = await getInterview(interviewId);
-        const evalData = await getEvaluationForInterview(interviewId);
+        const fetchInterview = isRecruiter ? recruiterApi.getInterview : getInterview;
+        const fetchEvaluation = isRecruiter ? recruiterApi.getEvaluationForInterview : getEvaluationForInterview;
+
+        const data = await fetchInterview(interviewId);
+        const evalData = await fetchEvaluation(interviewId);
 
         if (isActive) {
           setInterview(data);
@@ -56,7 +64,7 @@ export function InterviewDetail() {
     return () => {
       isActive = false;
     };
-  }, [interviewId]);
+  }, [interviewId, isRecruiter]);
 
   const updateStatus = (newStatus) => {
     if (!interview) return;
@@ -87,8 +95,8 @@ export function InterviewDetail() {
       <div className="text-center py-12 animate-slide-up">
         <h2 className="text-h2 text-secondary-900 dark:text-white">Interview not found</h2>
         <p className="mt-2 text-body-sm text-secondary-500">The interview link may have expired or does not exist.</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate('/hiring-manager/queue')}>
-          Back to Queue
+        <Button variant="outline" className="mt-4" onClick={() => navigate(`${basePath}/interviews`)}>
+          Back to Interviews
         </Button>
       </div>
     );
@@ -104,7 +112,7 @@ export function InterviewDetail() {
             variant="outline"
             size="sm"
             leftIcon={<ArrowLeft size={16} />}
-            onClick={() => navigate(`/hiring-manager/applications/${interview.applicationId}`)}
+            onClick={() => navigate(`${basePath}/applications/${interview.applicationId}`)}
           >
             Back to Application
           </Button>
@@ -198,60 +206,51 @@ export function InterviewDetail() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Submitted Evaluation Record</CardTitle>
                 <div className="flex flex-col items-center">
-                  <span className="text-caption font-semibold uppercase text-secondary-400">Overall Rating</span>
-                  <span className="text-h2 font-extrabold text-primary-600 dark:text-primary-400">
+                  <span className="text-caption font-medium text-secondary-500 dark:text-secondary-400">
+                    Overall Score
+                  </span>
+                  <span className="text-h2 font-bold text-primary-600 dark:text-primary-400">
                     {evaluation.overallScore}/100
                   </span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-success-50/50 dark:bg-success-950/10 border border-success-200/50 dark:border-success-500/20 p-4">
-                    <h5 className="text-body-sm font-bold text-success-800 dark:text-success-400 mb-1.5 flex items-center gap-1.5">
+                <div>
+                  <h4 className="text-body-sm font-bold text-secondary-800 dark:text-white mb-1">
+                    Feedback Overview
+                  </h4>
+                  <p className="text-body-md text-secondary-600 dark:text-secondary-300 leading-relaxed whitespace-pre-wrap">
+                    {evaluation.feedbackText || 'No overall feedback provided.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-2xl bg-success-50/50 dark:bg-success-950/20 p-4 border border-success-100 dark:border-success-500/20">
+                    <h5 className="text-caption font-bold text-success-800 dark:text-success-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
                       <Check size={14} /> Key Strengths
                     </h5>
-                    <p className="text-body-sm text-secondary-600 dark:text-secondary-300 leading-relaxed whitespace-pre-wrap">
-                      {evaluation.strengthsText || 'No strengths noted.'}
+                    <p className="text-body-sm text-secondary-700 dark:text-secondary-300 whitespace-pre-wrap">
+                      {evaluation.strengthsText || 'None specified.'}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-danger-50/30 dark:bg-danger-950/10 border border-danger-200/30 dark:border-danger-500/20 p-4">
-                    <h5 className="text-body-sm font-bold text-danger-800 dark:text-danger-400 mb-1.5 flex items-center gap-1.5">
-                      <AlertTriangle size={14} /> Key Concerns
+                  <div className="rounded-2xl bg-warning-50/50 dark:bg-warning-950/20 p-4 border border-warning-100 dark:border-warning-500/20">
+                    <h5 className="text-caption font-bold text-warning-800 dark:text-warning-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                      <AlertTriangle size={14} /> Areas of Concern
                     </h5>
-                    <p className="text-body-sm text-secondary-600 dark:text-secondary-300 leading-relaxed whitespace-pre-wrap">
-                      {evaluation.concernsText || 'No major concerns noted.'}
+                    <p className="text-body-sm text-secondary-700 dark:text-secondary-300 whitespace-pre-wrap">
+                      {evaluation.concernsText || 'None specified.'}
                     </p>
                   </div>
-                </div>
-                <div className="rounded-2xl border border-secondary-100 dark:border-white/5 p-4">
-                  <h5 className="text-body-sm font-bold text-secondary-800 dark:text-white mb-1.5">
-                    Detailed Notes
-                  </h5>
-                  <p className="text-body-sm text-secondary-600 dark:text-secondary-300 leading-relaxed whitespace-pre-wrap">
-                    {evaluation.feedbackText}
-                  </p>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Action Panel Side column */}
+        {/* Sidebar Controls */}
         <div className="space-y-6">
-          {/* Calendar Sync Card */}
-          <Card className="shadow-glass border-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-body-lg font-bold">Calendar Integration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
-                Connect your account calendar to automatically sync interview loops and prevent schedule overlap.
-              </p>
-              <CalendarConnectButton provider="Google Calendar" />
-            </CardContent>
-          </Card>
+          <CalendarConnectButton interview={interview} />
 
-          {/* Action Decision Card */}
           <Card className="shadow-glass border-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-body-lg font-bold">Interview Actions</CardTitle>
@@ -264,7 +263,7 @@ export function InterviewDetail() {
                 variant="ai"
                 className="w-full"
                 leftIcon={<Sparkles size={16} />}
-                onClick={() => navigate(`/hiring-manager/interviews/${interviewId}/live-copilot`)}
+                onClick={() => navigate(`${basePath}/interviews/${interviewId}/live-copilot`)}
               >
                 Open Live Copilot
               </Button>
@@ -281,7 +280,7 @@ export function InterviewDetail() {
                         variant="primary"
                         className="w-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"
                         leftIcon={<Sparkles size={16} />}
-                        onClick={() => navigate(`/hiring-manager/applications/${interview.applicationId}/offer`)}
+                        onClick={() => navigate(`${basePath}/applications/${interview.applicationId}/offer`)}
                       >
                         Proceed to Offer
                       </Button>
@@ -345,7 +344,7 @@ export function InterviewDetail() {
                           variant="primary"
                           className="w-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"
                           leftIcon={<Sparkles size={16} />}
-                          onClick={() => navigate(`/hiring-manager/interviews/${interviewId}/evaluate`)}
+                          onClick={() => navigate(`${basePath}/interviews/${interviewId}/evaluate`)}
                         >
                           Submit Evaluation
                         </Button>

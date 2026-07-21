@@ -16,6 +16,10 @@ public class GeminiLiveInterviewService : IGeminiLiveInterviewService
     private readonly HttpClient _httpClient;
     private readonly string[] _apiKeys;
     private readonly string[] _models;
+    private readonly bool _useVertexAi;
+    private readonly string _vertexProjectId;
+    private readonly string _vertexLocation;
+    private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
     private readonly ILogger<GeminiLiveInterviewService> _logger;
 
     public GeminiLiveInterviewService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiLiveInterviewService> logger)
@@ -23,6 +27,10 @@ public class GeminiLiveInterviewService : IGeminiLiveInterviewService
         _httpClient = httpClient;
         _apiKeys = LiveInterviewGeminiConfiguration.GetApiKeys(configuration);
         _models = LiveInterviewGeminiConfiguration.GetModels(configuration);
+        _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
+        _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
+        _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
+        _vertexAccessTokenProvider = new VertexAiAccessTokenProvider(configuration);
         _logger = logger;
     }
 
@@ -32,9 +40,9 @@ public class GeminiLiveInterviewService : IGeminiLiveInterviewService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (_apiKeys.Length == 0)
+        if (_apiKeys.Length == 0 && (!_useVertexAi || string.IsNullOrWhiteSpace(_vertexProjectId)))
         {
-            _logger.LogWarning("Live interview Gemini API keys are missing.");
+            _logger.LogWarning("Live interview AI is missing both Gemini API keys and Vertex AI configuration.");
             return default;
         }
 
@@ -122,7 +130,37 @@ public class GeminiLiveInterviewService : IGeminiLiveInterviewService
             }
         }
 
+        if (_useVertexAi && !string.IsNullOrWhiteSpace(_vertexProjectId))
+        {
+            var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
+
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildVertexAiUrl(model))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new("Bearer", accessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsFallbackStatus(response.StatusCode)) return response;
+                _logger.LogWarning("Vertex AI live interview model {Model} failed with status {StatusCode}. Trying fallback.", model, response.StatusCode);
+                lastResponse = response;
+            }
+        }
+
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private string BuildVertexAiUrl(string model)
+    {
+        var projectId = Uri.EscapeDataString(_vertexProjectId);
+        var location = Uri.EscapeDataString(_vertexLocation);
+        var modelId = Uri.EscapeDataString(model);
+        return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
 
     private static bool IsFallbackStatus(System.Net.HttpStatusCode statusCode) =>

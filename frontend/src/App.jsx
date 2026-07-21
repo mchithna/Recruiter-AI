@@ -91,6 +91,7 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['HiringManager']} />}>
                 <Route path="/hiring-manager" element={<HiringManagerRoutes />}>
                   <Route index element={<HiringManagerIndexRedirect />} />
+                  <Route path="queue" element={<Navigate to="/hiring-manager/home" replace />} />
                   <Route path="home" element={<HiringManagerHome />} />
                   <Route path="jobs" element={<HiringManagerJobsList />} />
                   <Route path="jobs/:jobId/applications" element={<HiringManagerJobApplications />} />
@@ -134,6 +135,7 @@ function App() {
                 <Route path="jobs/:jobId/applications" element={<JobApplicationsList />} />
                 <Route path="applications/:applicationId" element={<ApplicationDetail />} />
                 <Route path="interviews" element={<InterviewsList />} />
+                <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
                 <Route path="interviews/:interviewId/live-copilot" element={<LiveInterviewCopilot />} />
                 <Route path="messages" element={<MessagesList />} />
               </Route>

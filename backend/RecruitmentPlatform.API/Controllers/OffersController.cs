@@ -107,6 +107,7 @@ public class OffersController : ControllerBase
         var offer = new Offer
         {
             ApplicationId = request.ApplicationId,
+            InitiatedBy = userId,
             OfferedSalary = request.OfferedSalary,
             SalaryCurrency = request.SalaryCurrency,
             ProposedStartDate = request.ProposedStartDate,
@@ -118,21 +119,23 @@ public class OffersController : ControllerBase
             UpdatedAt = DateTime.UtcNow
         };
 
+        if (!application.Status.Equals("Offer Extended", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await _applicationStatusService.ChangeStatusAsync(
+                    application.Id,
+                    "Offer Extended",
+                    userId,
+                    "Offer initiated.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         _context.Offers.Add(offer);
-
-        try
-        {
-            await _applicationStatusService.ChangeStatusAsync(
-                application.Id,
-                "Offer Extended",
-                userId,
-                "Offer initiated.");
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new OfferDto

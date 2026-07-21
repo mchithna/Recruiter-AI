@@ -83,6 +83,23 @@ export const recruiterApi = {
     return (data || []).map(normalizeInterview);
   },
 
+  async getInterview(interviewId) {
+    const { data } = await api.get(`/interviews/${interviewId}`);
+    return normalizeInterview(data);
+  },
+
+  async getEvaluationForInterview(interviewId) {
+    try {
+      const { data } = await api.get(`/evaluations/interview/${interviewId}`);
+      return data;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
   async getInterviewsByApplication(applicationId) {
     const { data } = await api.get(`/interviews/application/${applicationId}`);
     return (data || []).map(normalizeInterview);

@@ -40,6 +40,26 @@ public class InterviewsController : ControllerBase
         return Ok(interviews.Select(ToInterviewDto).ToList());
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<InterviewDto>> GetInterviewById(int id, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interview = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .FirstOrDefaultAsync(i => i.Id == id && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        return Ok(ToInterviewDto(interview));
+    }
+
     [HttpGet("application/{applicationId:int}")]
     public async Task<ActionResult<List<InterviewDto>>> GetInterviewsForApplication(int applicationId, CancellationToken cancellationToken)
     {

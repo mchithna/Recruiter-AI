@@ -122,4 +122,13 @@ internal static class GeminiConfiguration
             configuration["GeminiSettings:VertexServiceAccountJson"],
             configuration["VertexAI:ServiceAccountJson"]);
     }
+
+    public static string GetVertexServiceAccountPath(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["VERTEX_AI_SERVICE_ACCOUNT_PATH"],
+            configuration["GOOGLE_APPLICATION_CREDENTIALS"],
+            configuration["GeminiSettings:VertexServiceAccountPath"],
+            configuration["VertexAI:ServiceAccountPath"]);
+    }
 }

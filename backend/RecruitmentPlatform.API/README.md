@@ -57,6 +57,7 @@ For deployment, do not use `VERTEX_AI_ACCESS_TOKEN`. Prefer one of these instead
 
 - Configure workload identity or application default credentials on the host.
 - Set `GOOGLE_APPLICATION_CREDENTIALS` to a service account JSON file path.
+- Set `VERTEX_AI_SERVICE_ACCOUNT_PATH` to a service account JSON file path.
 - Store the full service account JSON as a secret named `VERTEX_AI_SERVICE_ACCOUNT_JSON`.
 
 The service account needs permission to call Vertex AI, for example `roles/aiplatform.user`.

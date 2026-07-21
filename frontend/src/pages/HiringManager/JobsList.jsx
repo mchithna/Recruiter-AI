@@ -1,12 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, ChevronRight, Sparkles, UserCheck } from 'lucide-react';
-import {
-  Badge,
-  Skeleton,
-} from '../../components/ui';
+import { ArrowRight, Briefcase, Layers, Sparkles, Users } from 'lucide-react';
+import { Badge, Skeleton } from '../../components/ui';
 import { getJobs } from './services/hiringManagerApi';
 
+/* ── tiny helpers ───────────────────────────────────────────── */
+const gradients = [
+  { stripe: 'from-violet-500 via-purple-500 to-indigo-500', icon: 'from-violet-500 to-indigo-600', ring: 'ring-violet-500/20' },
+  { stripe: 'from-blue-500 via-cyan-500 to-teal-400',       icon: 'from-blue-500 to-cyan-500',     ring: 'ring-blue-500/20'   },
+  { stripe: 'from-rose-500 via-pink-500 to-fuchsia-400',    icon: 'from-rose-500 to-fuchsia-500',  ring: 'ring-rose-500/20'   },
+  { stripe: 'from-amber-500 via-orange-400 to-yellow-400',  icon: 'from-amber-500 to-orange-500',  ring: 'ring-amber-500/20'  },
+  { stripe: 'from-emerald-500 via-teal-400 to-cyan-400',    icon: 'from-emerald-500 to-teal-500',  ring: 'ring-emerald-500/20'},
+];
+const pickGradient = (id) => gradients[(id ?? 0) % gradients.length];
+
+function StatPill({ icon: Icon, label, value, highlight }) {
+  return (
+    <div
+      className={[
+        'flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 transition-colors min-h-[88px]',
+        highlight
+          ? 'bg-primary-50 dark:bg-primary-900/25'
+          : 'bg-secondary-50 dark:bg-white/5',
+      ].join(' ')}
+    >
+      <Icon
+        size={14}
+        strokeWidth={2}
+        className={highlight ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-400 dark:text-secondary-500'}
+      />
+      <span className={`text-[22px] font-extrabold leading-none tabular-nums ${highlight ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-800 dark:text-white'}`}>
+        {value ?? 0}
+      </span>
+      <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-wide text-secondary-400 dark:text-secondary-500">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ── main page ──────────────────────────────────────────────── */
 export function JobsList() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
@@ -19,28 +52,22 @@ export function JobsList() {
       try {
         setIsLoading(true);
         const data = await getJobs();
-        if (isActive) {
-          setJobs(data);
-        }
+        if (isActive) setJobs(data);
       } catch (err) {
         console.error('Failed to load hiring manager jobs', err);
       } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
+        if (isActive) setIsLoading(false);
       }
     }
 
     loadJobs();
-
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, []);
 
   return (
     <div className="relative z-10 mx-auto max-w-7xl space-y-8 animate-slide-up">
-      {/* Hero Banner */}
+
+      {/* ── Hero Banner ── */}
       <section className="glass-card-heavy relative overflow-hidden rounded-3xl border-none p-0">
         <img
           src="/images/card-bg-company.png"
@@ -61,26 +88,23 @@ export function JobsList() {
               Manage your candidate pipelines for the jobs you are overseeing.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 to-ai-600 text-white shadow-glow-primary sm:flex">
-              <Briefcase size={42} strokeWidth={1.5} />
-            </div>
+          <div className="hidden h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 to-ai-600 text-white shadow-glow-primary sm:flex">
+            <Briefcase size={42} strokeWidth={1.5} />
           </div>
         </div>
       </section>
 
-      {/* Job Cards Grid */}
+      {/* ── Cards Grid ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Skeleton height="10rem" className="rounded-2xl" />
-          <Skeleton height="10rem" className="rounded-2xl" />
-          <Skeleton height="10rem" className="rounded-2xl" />
-          <Skeleton height="10rem" className="rounded-2xl" />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((n) => (
+            <Skeleton key={n} height="14rem" className="rounded-2xl" />
+          ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <div className="rounded-full bg-secondary-100 p-3 text-secondary-500 dark:bg-white/5 dark:text-secondary-400">
-            <Briefcase size={24} />
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="rounded-full bg-secondary-100 p-4 text-secondary-500 dark:bg-white/5 dark:text-secondary-400">
+            <Briefcase size={28} />
           </div>
           <h3 className="mt-4 text-body-lg font-semibold text-secondary-900 dark:text-white">No Jobs Assigned</h3>
           <p className="mt-2 text-body-sm text-secondary-500 dark:text-secondary-400">
@@ -88,59 +112,66 @@ export function JobsList() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job, index) => (
-            <div
-              key={job.id}
-              onClick={() => navigate(`/hiring-manager/jobs/${job.id}/applications`)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  navigate(`/hiring-manager/jobs/${job.id}/applications`);
-                }
-              }}
-              role="link"
-              tabIndex={0}
-              className="glass-card-heavy group cursor-pointer overflow-hidden rounded-2xl border-none p-0 transition-all duration-base hover:-translate-y-1"
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-              {/* Gradient accent bar */}
-              <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 to-ai-400" />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {jobs.map((job, index) => {
+            const g = pickGradient(index);
+            const total = (job.shortlistedCount ?? 0) + (job.interviewingCount ?? 0);
 
-              <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="truncate text-h3 text-secondary-900 transition-colors group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
-                    {job.title}
-                  </h3>
-                  <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
-                    {job.departmentName}
-                  </p>
-                </div>
+            return (
+              <div
+                key={job.id}
+                onClick={() => navigate(`/hiring-manager/jobs/${job.id}/applications`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') navigate(`/hiring-manager/jobs/${job.id}/applications`);
+                }}
+                role="link"
+                tabIndex={0}
+                style={{ animationDelay: `${index * 80}ms` }}
+                className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-secondary-200/50 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none dark:border-white/10 dark:bg-secondary-900/80"
+              >
+                {/* Coloured top stripe */}
+                <div className={`h-1 w-full bg-gradient-to-r ${g.stripe}`} />
 
-                <div className="mb-5 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-body-sm text-secondary-600 dark:text-secondary-400">Shortlisted:</span>
-                    <span className="font-semibold text-secondary-900 dark:text-white">{job.shortlistedCount}</span>
+                <div className="flex flex-1 flex-col gap-4 p-5">
+
+                  {/* ── Top row: icon + title + department ── */}
+                  <div className="flex items-start gap-4">
+                    {/* Gradient icon box */}
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${g.icon} shadow-md ring-4 ${g.ring} text-white`}>
+                      <Layers size={20} strokeWidth={1.75} />
+                    </div>
+
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <h3 className="truncate text-body-lg font-bold leading-snug text-secondary-900 transition-colors group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
+                        {job.title}
+                      </h3>
+                      <p className="mt-0.5 truncate text-caption font-medium text-secondary-500 dark:text-secondary-400">
+                        {job.departmentName}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-body-sm text-secondary-600 dark:text-secondary-400">Interviewing:</span>
-                    <span className="font-semibold text-secondary-900 dark:text-white">{job.interviewingCount}</span>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between border-t border-secondary-100 pt-4 dark:border-white/10">
-                  <div className="flex items-center gap-2">
+                  {/* ── Stat pills ── */}
+                  <div className="flex gap-2">
+                    <StatPill icon={Users}   label="Shortlisted"  value={job.shortlistedCount}  highlight={job.shortlistedCount > 0}  />
+                    <StatPill icon={Briefcase} label="Interviewing" value={job.interviewingCount} highlight={job.interviewingCount > 0} />
+                    <StatPill icon={Sparkles} label="Total Active" value={total}                 highlight={false}                      />
+                  </div>
+
+                  {/* ── Footer CTA ── */}
+                  <div className="mt-auto flex items-center justify-between border-t border-secondary-100 pt-4 dark:border-white/10">
                     <span className="text-caption font-semibold text-primary-600 dark:text-primary-400">
-                      View Pipeline
+                      Review Candidates
+                    </span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-50 text-primary-600 transition-all group-hover:bg-primary-600 group-hover:text-white dark:bg-primary-900/30 dark:text-primary-400 dark:group-hover:bg-primary-600 dark:group-hover:text-white">
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                     </span>
                   </div>
-                  <ChevronRight
-                    size={18}
-                    className="text-primary-500 transition-transform group-hover:translate-x-1"
-                  />
+
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

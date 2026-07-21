@@ -7,11 +7,13 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  Captions,
   FileText,
   Gauge,
   MessageSquare,
   Mic,
   MicOff,
+  MonitorUp,
   PhoneOff,
   Radio,
   Save,
@@ -103,6 +105,7 @@ export default function LiveInterviewCopilot() {
   const [error, setError] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const [captureMode, setCaptureMode] = useState('manual');
   const [speechSupported, setSpeechSupported] = useState(Boolean(getSpeechRecognition()));
   const [captureStatus, setCaptureStatus] = useState('Camera and speech capture are off.');
 
@@ -124,6 +127,7 @@ export default function LiveInterviewCopilot() {
     if (videoRef.current) videoRef.current.srcObject = null;
     setIsListening(false);
     setCameraOn(false);
+    setCaptureMode('manual');
     setLiveInterim('');
     setCaptureStatus('Camera and speech capture are off.');
   }, []);
@@ -199,10 +203,34 @@ export default function LiveInterviewCopilot() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       shouldListenRef.current = true;
       setCameraOn(true);
+      setCaptureMode('camera');
       startSpeechRecognition();
     } catch (err) {
       setError('Camera or microphone permission was blocked. Allow access and try again.');
       setCaptureStatus(err?.message || 'Camera and microphone could not start.');
+    }
+  };
+
+  const startMeetingCapture = async () => {
+    setError('');
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      stream.getTracks().forEach((track) => {
+        track.onended = stopCapture;
+      });
+      shouldListenRef.current = true;
+      setCameraOn(true);
+      setCaptureMode('meeting');
+      setCaptureStatus('Meeting tab is captured. Keep candidate audio audible, or paste the meeting transcript below.');
+      startSpeechRecognition();
+    } catch (err) {
+      setError('Meeting tab capture was cancelled or blocked. Share the meeting tab/window with audio enabled and try again.');
+      setCaptureStatus(err?.message || 'Meeting capture could not start.');
     }
   };
 
@@ -252,7 +280,7 @@ export default function LiveInterviewCopilot() {
       setCurrentQuestion(question);
       await refreshSession(session.sessionId);
     } catch (err) {
-      setError(err?.response?.data?.message || 'The AI assistant is temporarily unavailable. Continue manually and retry shortly.');
+      setError(err?.response?.data?.message || 'AI could not generate a question from the provider. The local fallback should still be available after refreshing the session.');
     } finally {
       setLoadingAction('');
     }
@@ -325,16 +353,21 @@ export default function LiveInterviewCopilot() {
 
   return (
     <div className="relative z-10 mx-auto max-w-[1500px] space-y-5 animate-slide-up">
-      <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-secondary-950 via-slate-950 to-primary-950/60 p-5 shadow-glass">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(backPath)}>
             Back
           </Button>
           <div>
             <Badge variant="primary" size="sm" icon={<BrainCircuit size={12} />}>
-              Private interviewer assistant
+              Vertex-ready AI interviewer
             </Badge>
-            <h1 className="mt-2 text-h1 text-secondary-900 dark:text-white">Live Interview Copilot</h1>
+            <h1 className="mt-2 text-h1 text-white">Live Interview Copilot</h1>
+            <p className="mt-1 text-body-sm text-secondary-300">
+              Capture the remote candidate answer, analyze it with AI, and end the meeting cleanly.
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -345,6 +378,7 @@ export default function LiveInterviewCopilot() {
             End Meeting
           </Button>
         </div>
+        </div>
       </section>
 
       {error && (
@@ -354,7 +388,8 @@ export default function LiveInterviewCopilot() {
       )}
 
       {!session ? (
-        <Card className="border-white/10 bg-secondary-950/40">
+        <Card className="overflow-hidden border-white/10 bg-secondary-950/40">
+          <div className="h-1.5 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
           <CardHeader>
             <CardTitle>Start AI Interview Assistant</CardTitle>
           </CardHeader>
@@ -399,7 +434,8 @@ export default function LiveInterviewCopilot() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-secondary-950/40">
+          <Card className="overflow-hidden border-white/10 bg-secondary-950/40">
+            <div className="h-1.5 bg-gradient-to-r from-primary-500 via-ai-500 to-success-400" />
             <CardHeader>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <CardTitle>Interview Workspace</CardTitle>
@@ -407,36 +443,39 @@ export default function LiveInterviewCopilot() {
                   <Button variant="outline" size="sm" leftIcon={<Video size={14} />} disabled={!context?.meetingLink} onClick={joinMeeting}>
                     Join Link
                   </Button>
+                  <Button variant="outline" size="sm" leftIcon={<MonitorUp size={14} />} onClick={startMeetingCapture}>
+                    Capture Meeting Tab
+                  </Button>
                   <Button variant={isListening ? 'danger' : 'ai'} size="sm" leftIcon={isListening ? <MicOff size={14} /> : <Mic size={14} />} onClick={isListening ? stopCapture : startCapture}>
-                    {isListening ? 'Stop Capture' : 'Start Camera + AI Listen'}
+                    {isListening ? 'Stop Capture' : 'My Camera + Mic'}
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+              <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_80px_rgba(79,70,229,0.18)]">
                   <div className="aspect-video w-full">
                     <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
                     {!cameraOn && (
                       <div className="-mt-[56.25%] flex aspect-video items-center justify-center text-center text-body-sm text-secondary-400">
                         <div>
                           <Camera size={28} className="mx-auto mb-2 text-secondary-500" />
-                          Camera preview off
+                          Remote meeting preview off
                         </div>
                       </div>
                     )}
                   </div>
                   <div className="flex items-center justify-between border-t border-white/10 px-3 py-2 text-caption text-secondary-300">
                     <span className="inline-flex items-center gap-1.5">
-                      <Radio size={11} className={isListening ? 'text-success-400' : 'text-secondary-500'} />
-                      {isListening ? 'Live capture' : 'Manual mode'}
+                      <Radio size={11} className={isListening ? 'animate-pulse text-success-400' : 'text-secondary-500'} />
+                      {captureMode === 'meeting' ? 'Meeting tab' : isListening ? 'Interviewer mic' : 'Manual mode'}
                     </span>
                     <span>{speechSupported ? 'Speech ready' : 'Speech unsupported'}</span>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-primary-500/20 bg-primary-950/10 p-5">
+                <div className="rounded-2xl border border-primary-500/20 bg-gradient-to-br from-primary-950/30 to-ai-950/10 p-5 shadow-inner">
                   <p className="text-caption font-bold uppercase text-primary-300">Current question</p>
                   <h2 className="mt-2 text-h3 leading-snug text-secondary-900 dark:text-white">
                     {currentQuestion?.question || 'Generate the first adaptive question when you are ready.'}
@@ -458,7 +497,9 @@ export default function LiveInterviewCopilot() {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-caption font-bold uppercase text-secondary-400">Live transcript</p>
+                    <p className="flex items-center gap-2 text-caption font-bold uppercase text-secondary-400">
+                      <Captions size={13} /> Candidate answer transcript
+                    </p>
                     <p className="text-caption text-secondary-500">{captureStatus}</p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => { setAnswerNotes(''); setLiveInterim(''); }}>
@@ -473,7 +514,7 @@ export default function LiveInterviewCopilot() {
                     setAnswerNotes(event.target.value);
                     setLiveInterim('');
                   }}
-                  placeholder="Start camera + AI listen, or type short answer notes here."
+                  placeholder="For a remote candidate, capture the meeting tab with audio, paste the meeting transcript, or type the candidate's answer here before AI analysis."
                 />
               </div>
 
@@ -519,7 +560,8 @@ export default function LiveInterviewCopilot() {
             </CardContent>
           </Card>
 
-          <Card className="border-primary-500/20 bg-primary-950/20">
+          <Card className="overflow-hidden border-primary-500/20 bg-primary-950/20">
+            <div className="h-1.5 bg-gradient-to-r from-ai-500 to-primary-400" />
             <CardHeader>
               <CardTitle>AI Command Center</CardTitle>
             </CardHeader>
