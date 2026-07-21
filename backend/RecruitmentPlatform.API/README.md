@@ -61,6 +61,16 @@ For deployment, do not use `VERTEX_AI_ACCESS_TOKEN`. Prefer one of these instead
 
 The service account needs permission to call Vertex AI, for example `roles/aiplatform.user`.
 
+Live Interview Copilot uses separate Gemini API keys from the rest of the dashboard AI. Keep these backend-only:
+
+```env
+LIVE_INTERVIEW_GEMINI_API_KEYS=your-rotated-interview-key-1,your-rotated-interview-key-2
+LIVE_INTERVIEW_GEMINI_MODELS=gemini-2.5-flash-native-audio-preview-12-2025,gemini-3-flash-preview,gemini-3.5-live-translate-preview
+LIVE_INTERVIEW_GEMINI_TEXT_FALLBACK_MODEL=gemini-3.1-flash-lite
+```
+
+Do not place live interview Gemini keys in React or any `VITE_` variable.
+
 ## Chatbot flow
 
 The chat API resolves the active assistant context from trusted route and authenticated role claims, not from a user-supplied dashboard name. Home chat is public and limited to website help. Candidate, Recruiter, Admin, and Hiring Manager chat require authentication and are restricted to authorized backend data for that user, role, company, department, and dashboard.
@@ -84,6 +94,9 @@ Use the same keys as the `.env` file:
 - `VERTEX_AI_LOCATION`
 - `VERTEX_AI_ACCESS_TOKEN`
 - `VERTEX_AI_SERVICE_ACCOUNT_JSON`
+- `LIVE_INTERVIEW_GEMINI_API_KEYS`
+- `LIVE_INTERVIEW_GEMINI_MODELS`
+- `LIVE_INTERVIEW_GEMINI_TEXT_FALLBACK_MODEL`
 
 ## Swagger
 

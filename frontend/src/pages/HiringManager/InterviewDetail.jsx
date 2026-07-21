@@ -260,6 +260,14 @@ export function InterviewDetail() {
               <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
                 Manage the schedule lifecycle. Status transitions occur instantly in local workspace.
               </p>
+              <Button
+                variant="ai"
+                className="w-full"
+                leftIcon={<Sparkles size={16} />}
+                onClick={() => navigate(`/hiring-manager/interviews/${interviewId}/live-copilot`)}
+              >
+                Open Live Copilot
+              </Button>
               
               <div className="space-y-3">
                 {evaluation ? (

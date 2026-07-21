@@ -6,11 +6,13 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  Sparkles,
   Video,
 } from 'lucide-react';
 import {
   Avatar,
   Badge,
+  Button,
   Card,
   EmptyState,
   Select,
@@ -300,12 +302,26 @@ export default function InterviewsList() {
                       <p className="text-[13px] font-medium text-[#64748b]">
                         with {interview.interviewerName}
                       </p>
-                      {interview.meetingLink && (
-                        <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
-                          <Video size={14} strokeWidth={2.5} />
-                          Video
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {interview.meetingLink && (
+                          <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
+                            <Video size={14} strokeWidth={2.5} />
+                            Video
+                          </div>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ai"
+                          size="sm"
+                          leftIcon={<Sparkles size={14} />}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/recruiter/interviews/${interview.id}/live-copilot`);
+                          }}
+                        >
+                          Live Copilot
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
