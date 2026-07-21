@@ -65,7 +65,7 @@ public class GeminiStructuredService : IGeminiStructuredService
             {
                 var requestBody = new
                 {
-                    system_instruction = new
+                    systemInstruction = new
                     {
                         parts = new[] { new { text = systemInstruction } }
                     },

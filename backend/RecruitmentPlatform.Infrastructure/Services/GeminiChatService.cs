@@ -69,7 +69,7 @@ public class GeminiChatService : IAiChatService
 
                 var requestBody = new
                 {
-                    system_instruction = new
+                    systemInstruction = new
                     {
                         parts = new[] { new { text = request.SystemInstruction } }
                     },

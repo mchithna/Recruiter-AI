@@ -289,7 +289,15 @@ public class RecruiterAiController : ControllerBase
 
     private IActionResult ToAiResponse<T>(T? result, string? failureMessage = null)
     {
-        if (result == null) return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = failureMessage ?? RecruiterAiMessages.MissingData });
+        if (result == null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = failureMessage ?? "Vertex AI did not return a usable response. Please try again.",
+                provider = "vertex",
+                model = "gemini-2.5-flash"
+            });
+        }
         return Ok(new RecruiterAiResponse<T> { Result = result });
     }
 
