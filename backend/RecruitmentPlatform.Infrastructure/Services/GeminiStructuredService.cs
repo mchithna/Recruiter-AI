@@ -19,7 +19,7 @@ public class GeminiStructuredService : IGeminiStructuredService
     private readonly bool _useVertexAi;
     private readonly string _vertexProjectId;
     private readonly string _vertexLocation;
-    private readonly string _vertexAccessToken;
+    private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
     private readonly ILogger<GeminiStructuredService> _logger;
 
     public GeminiStructuredService(
@@ -34,7 +34,7 @@ public class GeminiStructuredService : IGeminiStructuredService
         _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
         _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
         _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
-        _vertexAccessToken = GeminiConfiguration.GetVertexAccessToken(configuration);
+        _vertexAccessTokenProvider = new VertexAiAccessTokenProvider(configuration);
         _logger = logger;
     }
 
@@ -44,9 +44,9 @@ public class GeminiStructuredService : IGeminiStructuredService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (_useVertexAi && (string.IsNullOrWhiteSpace(_vertexProjectId) || string.IsNullOrWhiteSpace(_vertexAccessToken)))
+        if (_useVertexAi && string.IsNullOrWhiteSpace(_vertexProjectId))
         {
-            _logger.LogWarning("Vertex AI Gemini is missing project id or access token.");
+            _logger.LogWarning("Vertex AI Gemini is missing project id.");
             return default;
         }
 
@@ -140,6 +140,8 @@ public class GeminiStructuredService : IGeminiStructuredService
 
         if (_useVertexAi)
         {
+            var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
+
             foreach (var model in _models)
             {
                 lastResponse?.Dispose();
@@ -148,7 +150,7 @@ public class GeminiStructuredService : IGeminiStructuredService
                 {
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
-                request.Headers.Authorization = new("Bearer", _vertexAccessToken);
+                request.Headers.Authorization = new("Bearer", accessToken);
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
 

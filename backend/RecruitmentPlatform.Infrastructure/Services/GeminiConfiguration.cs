@@ -89,4 +89,13 @@ internal static class GeminiConfiguration
             configuration["GeminiSettings:VertexAccessToken"],
             configuration["VertexAI:AccessToken"]);
     }
+
+    public static string GetVertexServiceAccountJson(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["VERTEX_AI_SERVICE_ACCOUNT_JSON"],
+            configuration["GOOGLE_APPLICATION_CREDENTIALS_JSON"],
+            configuration["GeminiSettings:VertexServiceAccountJson"],
+            configuration["VertexAI:ServiceAccountJson"]);
+    }
 }

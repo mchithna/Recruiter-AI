@@ -15,7 +15,7 @@ public class GeminiChatService : IAiChatService
     private readonly bool _useVertexAi;
     private readonly string _vertexProjectId;
     private readonly string _vertexLocation;
-    private readonly string _vertexAccessToken;
+    private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
     private readonly ILogger<GeminiChatService> _logger;
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
@@ -26,15 +26,15 @@ public class GeminiChatService : IAiChatService
         _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
         _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
         _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
-        _vertexAccessToken = GeminiConfiguration.GetVertexAccessToken(configuration);
+        _vertexAccessTokenProvider = new VertexAiAccessTokenProvider(configuration);
         _logger = logger;
     }
 
     public async Task<string> GenerateResponseAsync(ChatGenerationRequest request, CancellationToken cancellationToken = default)
     {
-        if (_useVertexAi && (string.IsNullOrWhiteSpace(_vertexProjectId) || string.IsNullOrWhiteSpace(_vertexAccessToken)))
+        if (_useVertexAi && string.IsNullOrWhiteSpace(_vertexProjectId))
         {
-            _logger.LogWarning("Vertex AI Gemini is missing project id or access token.");
+            _logger.LogWarning("Vertex AI Gemini is missing project id.");
             return "The AI assistant is not configured yet. Please contact support or try again later.";
         }
 
@@ -139,6 +139,8 @@ public class GeminiChatService : IAiChatService
 
         if (_useVertexAi)
         {
+            var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
+
             foreach (var model in _models)
             {
                 lastResponse?.Dispose();
@@ -147,7 +149,7 @@ public class GeminiChatService : IAiChatService
                 {
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
-                request.Headers.Authorization = new("Bearer", _vertexAccessToken);
+                request.Headers.Authorization = new("Bearer", accessToken);
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
 

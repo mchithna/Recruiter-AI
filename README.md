@@ -142,6 +142,7 @@ GEMINI_MODEL=gemini-2.5-flash
 VERTEX_AI_PROJECT_ID=
 VERTEX_AI_LOCATION=us-central1
 VERTEX_AI_ACCESS_TOKEN=
+VERTEX_AI_SERVICE_ACCOUNT_JSON=
 EmailSettings__AppPassword=
 ```
 
@@ -179,7 +180,8 @@ Environment variables are intentionally kept out of source control. Use local `.
 | Backend | `GEMINI_MODEL` | Gemini model used by all backend AI features. Defaults to `gemini-2.5-flash` |
 | Backend | `VERTEX_AI_PROJECT_ID` | Google Cloud project id used when `GEMINI_PROVIDER=vertex` |
 | Backend | `VERTEX_AI_LOCATION` | Vertex AI location, for example `us-central1` |
-| Backend | `VERTEX_AI_ACCESS_TOKEN` | Short-lived Google access token for local Vertex AI testing |
+| Backend | `VERTEX_AI_ACCESS_TOKEN` | Short-lived Google access token for local Vertex AI testing only |
+| Backend | `VERTEX_AI_SERVICE_ACCOUNT_JSON` | Service account JSON secret for deployed Vertex AI auth |
 | Backend | `EmailSettings__AppPassword` | App password for email notifications |
 
 Never commit `.env` files, API keys, database credentials, JWT secrets, or email passwords.
@@ -212,6 +214,8 @@ For local Vertex AI testing, refresh the token before starting the backend:
 $env:VERTEX_AI_ACCESS_TOKEN = gcloud auth print-access-token
 dotnet run --launch-profile http
 ```
+
+For deployment, do not use `VERTEX_AI_ACCESS_TOKEN`. Use workload identity/application default credentials, set `GOOGLE_APPLICATION_CREDENTIALS` to a mounted service account JSON file, or store the full service account JSON as `VERTEX_AI_SERVICE_ACCOUNT_JSON`. The service account needs Vertex AI access, for example `roles/aiplatform.user`.
 
 Do not put a real Gemini key or Vertex token in frontend `.env` files, source code, browser requests, logs, or committed examples. The committed `.env.example` files intentionally contain empty placeholders only.
 

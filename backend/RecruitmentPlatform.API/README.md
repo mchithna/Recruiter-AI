@@ -44,6 +44,14 @@ $env:VERTEX_AI_ACCESS_TOKEN = gcloud auth print-access-token
 dotnet run --launch-profile http
 ```
 
+For deployment, do not use `VERTEX_AI_ACCESS_TOKEN`. Prefer one of these instead:
+
+- Configure workload identity or application default credentials on the host.
+- Set `GOOGLE_APPLICATION_CREDENTIALS` to a service account JSON file path.
+- Store the full service account JSON as a secret named `VERTEX_AI_SERVICE_ACCOUNT_JSON`.
+
+The service account needs permission to call Vertex AI, for example `roles/aiplatform.user`.
+
 ## Chatbot flow
 
 The chat API resolves the active assistant context from trusted route and authenticated role claims, not from a user-supplied dashboard name. Home chat is public and limited to website help. Candidate, Recruiter, Admin, and Hiring Manager chat require authentication and are restricted to authorized backend data for that user, role, company, department, and dashboard.
@@ -64,6 +72,7 @@ Use the same keys as the `.env` file:
 - `VERTEX_AI_PROJECT_ID`
 - `VERTEX_AI_LOCATION`
 - `VERTEX_AI_ACCESS_TOKEN`
+- `VERTEX_AI_SERVICE_ACCOUNT_JSON`
 
 ## Swagger
 
