@@ -87,7 +87,7 @@ public class CandidateAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CandidateJobRecommendationsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Recommend suitable active jobs. Scores must be 0-100 integers and explanations must be based only on supplied data.", new
+            BuildPrompt("Recommend suitable active jobs. Return exactly one JSON object with this shape: { \"recommendations\": [{ \"jobId\": number, \"matchScore\": number, \"matchingSkills\": string[], \"missingSkills\": string[], \"relevantStrengths\": string[], \"explanation\": string }] }. Scores must be 0-100 integers. Explanations must be based only on supplied data.", new
             {
                 candidate = BuildCandidateSnapshot(profile),
                 jobs = jobs.Select(BuildJobSnapshot)

@@ -216,9 +216,50 @@ public class GeminiStructuredService : IGeminiStructuredService
         }
 
         var firstObject = trimmed.IndexOf('{');
-        var lastObject = trimmed.LastIndexOf('}');
-        if (firstObject < 0 || lastObject <= firstObject) return null;
+        if (firstObject < 0) return null;
 
-        return trimmed[firstObject..(lastObject + 1)];
+        var depth = 0;
+        var inString = false;
+        var isEscaped = false;
+
+        for (var index = firstObject; index < trimmed.Length; index++)
+        {
+            var current = trimmed[index];
+
+            if (isEscaped)
+            {
+                isEscaped = false;
+                continue;
+            }
+
+            if (current == '\\' && inString)
+            {
+                isEscaped = true;
+                continue;
+            }
+
+            if (current == '"')
+            {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString) continue;
+
+            if (current == '{')
+            {
+                depth++;
+            }
+            else if (current == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return trimmed[firstObject..(index + 1)];
+                }
+            }
+        }
+
+        return null;
     }
 }

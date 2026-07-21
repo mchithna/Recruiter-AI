@@ -52,6 +52,17 @@ public class RecruiterAiSecurityTests
     }
 
     [Fact]
+    public async Task Structured_gemini_uses_first_balanced_json_object()
+    {
+        var service = CreateService(new JsonHandler("{\"overallMatchScore\":81}\n,\n{\"overallMatchScore\":12}"), SettingsWithKey());
+
+        var result = await service.GenerateJsonAsync<CandidateJobMatchResultDto>("test", "test");
+
+        Assert.NotNull(result);
+        Assert.Equal(81, result!.OverallMatchScore);
+    }
+
+    [Fact]
     public async Task Structured_gemini_falls_back_when_configured_model_is_unavailable()
     {
         var handler = new ModelFallbackHandler();
