@@ -28,8 +28,8 @@ public class GeminiStructuredService : IGeminiStructuredService
         ILogger<GeminiStructuredService> logger)
     {
         _httpClient = httpClient;
-        var apiKey = GeminiConfiguration.GetApiKey(configuration);
-        _apiKeys = string.IsNullOrWhiteSpace(apiKey) ? [string.Empty] : [apiKey];
+        _apiKeys = GeminiConfiguration.GetApiKeys(configuration);
+        if (_apiKeys.Length == 0) _apiKeys = [string.Empty];
         _models = GeminiConfiguration.GetModels(configuration);
         _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
         _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
@@ -139,7 +139,23 @@ public class GeminiStructuredService : IGeminiStructuredService
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
 
-        if (_useVertexAi)
+        foreach (var apiKey in _apiKeys)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey)) continue;
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
+                var response = await _httpClient.PostAsync(url, content, cancellationToken);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Gemini AI Studio model {Model} on key {KeyPrefix}... failed with status {StatusCode}. Trying fallback.", model, apiKey[..Math.Min(apiKey.Length, 6)], response.StatusCode);
+                lastResponse = response;
+            }
+        }
+
+        if (_useVertexAi && !string.IsNullOrWhiteSpace(_vertexProjectId))
         {
             var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
 
@@ -155,23 +171,9 @@ public class GeminiStructuredService : IGeminiStructuredService
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode)) return response;
-                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
-                lastResponse = response;
-            }
-            return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
-        }
-
-        foreach (var apiKey in _apiKeys)
-        {
-            foreach (var model in _models)
-            {
-                lastResponse?.Dispose();
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
-                var response = await _httpClient.PostAsync(url, content, cancellationToken);
                 if (response.IsSuccessStatusCode) return response;
                 if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
                 lastResponse = response;
             }
         }
@@ -188,7 +190,12 @@ public class GeminiStructuredService : IGeminiStructuredService
     }
 
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
-        statusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest;
+        statusCode is System.Net.HttpStatusCode.NotFound 
+                   or System.Net.HttpStatusCode.BadRequest
+                   or System.Net.HttpStatusCode.TooManyRequests
+                   or System.Net.HttpStatusCode.ServiceUnavailable
+                   or System.Net.HttpStatusCode.InternalServerError
+                   or System.Net.HttpStatusCode.Forbidden;
 
     private static string TruncateForLog(string value) =>
         value.Length <= 500 ? value : value[..500];

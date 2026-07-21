@@ -8,18 +8,24 @@ internal static class GeminiConfiguration
 
     private static readonly string[] ModelFallbacks =
     [
-        DefaultModel,
+        "gemini-3.5-flash",
+        "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
-        "gemini-flash-latest",
-        "gemini-2.0-flash"
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-3.1-flash-lite"
     ];
 
-    public static string GetApiKey(IConfiguration configuration)
+    public static string[] GetApiKeys(IConfiguration configuration)
     {
-        return FirstConfigured(
+        var keysString = FirstConfigured(
+            configuration["GEMINI_API_KEYS"],
             configuration["GEMINI_API_KEY"],
-            configuration["GeminiSettings:ApiKey"],
-            configuration["RecruiterGeminiSettings:ApiKey"]);
+            configuration["GeminiSettings:ApiKeys"],
+            configuration["GeminiSettings:ApiKey"]);
+
+        if (string.IsNullOrWhiteSpace(keysString)) return [];
+        return keysString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     public static string[] GetModels(IConfiguration configuration)
@@ -54,12 +60,7 @@ internal static class GeminiConfiguration
 
     public static bool UseVertexAi(IConfiguration configuration)
     {
-        var provider = FirstConfigured(
-            configuration["GEMINI_PROVIDER"],
-            configuration["GeminiSettings:Provider"]);
-
-        return provider.Equals("vertex", StringComparison.OrdinalIgnoreCase)
-            || provider.Equals("vertex-ai", StringComparison.OrdinalIgnoreCase);
+        return !string.IsNullOrWhiteSpace(GetVertexProjectId(configuration));
     }
 
     public static string GetVertexProjectId(IConfiguration configuration)
