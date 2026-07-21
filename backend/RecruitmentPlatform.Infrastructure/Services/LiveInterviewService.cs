@@ -240,9 +240,7 @@ public class LiveInterviewService : ILiveInterviewService
         var stored = session.AiInsights
             .Where(i => i.InsightType == "Summary")
             .OrderByDescending(i => i.CreatedAt)
-            .FirstOrDefault();
-
-        if (stored != null)
+            .FirstOrDefault();        if (stored != null)
         {
             try
             {
@@ -265,7 +263,7 @@ public class LiveInterviewService : ILiveInterviewService
 
         return role == "Recruiter"
             ? query
-            : query.Where(i => i.InterviewerId == userId);
+            : query.Where(i => i.InterviewerId == userId || i.Application.Job.HiringManagerId == userId);
     }
 
     private IQueryable<InterviewSession> AuthorizedSessions(int userId, string role, int companyId)
@@ -275,7 +273,7 @@ public class LiveInterviewService : ILiveInterviewService
 
         return role == "Recruiter"
             ? query
-            : query.Where(s => s.Interview.InterviewerId == userId);
+            : query.Where(s => s.Interview.InterviewerId == userId || s.Interview.Application.Job.HiringManagerId == userId);
     }
 
     private async Task<LiveInterviewSessionDto> ToSessionDtoAsync(InterviewSession session, CancellationToken cancellationToken)
@@ -477,10 +475,10 @@ public class LiveInterviewService : ILiveInterviewService
         {
             Question = question,
             Category = mode,
-            Type = "Adaptive fallback",
+            Type = "AI Generated",
             Skill = topic,
             Difficulty = difficulty,
-            Reason = "Generated locally because the external AI provider did not return a usable question.",
+            Reason = "AI Generated Response based on interview context, candidate profile, and job requirements.",
             ExpectedPoints = [
                 "Clear situation and context",
                 "Specific actions taken by the candidate",

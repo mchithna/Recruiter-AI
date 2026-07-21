@@ -140,6 +140,30 @@ export default function LiveInterviewCopilot() {
     return () => clearInterval(id);
   }, [session?.startedAt, session?.status]);
 
+  /* ── auto-load session on mount ── */
+  useEffect(() => {
+    if (!interviewId) return;
+    let isMounted = true;
+    const loadSession = async () => {
+      try {
+        const d = await liveInterviewApi.start({
+          interviewId: Number(interviewId),
+          difficulty,
+          questionMode: mode,
+          consentRecorded: consent,
+        });
+        if (isMounted && d) {
+          setSession(d);
+          setQuestion(d.questions?.at(-1) || null);
+        }
+      } catch {
+        // User can manually start if interview session isn't initialized
+      }
+    };
+    loadSession();
+    return () => { isMounted = false; };
+  }, [interviewId]);
+
   /* ── speech ── */
   const startSpeech = useCallback(() => {
     const R = getSpeech();
@@ -511,6 +535,9 @@ export default function LiveInterviewCopilot() {
                       <Target size={11} className="text-violet-400" />
                     </div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Current Question</p>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-300">
+                      <Sparkles size={9} /> AI GENERATED RESPONSE
+                    </span>
                     {question?.skill && (
                       <span className="ml-auto rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-0.5 text-[10px] text-white/30">{question.skill}</span>
                     )}

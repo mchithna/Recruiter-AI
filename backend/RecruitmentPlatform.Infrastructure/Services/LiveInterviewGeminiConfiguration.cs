@@ -20,9 +20,12 @@ internal static class LiveInterviewGeminiConfiguration
             configuration["LIVE_INTERVIEW_GEMINI_API_KEYS"],
             configuration["LiveInterviewGemini:ApiKeys"]);
 
-        return string.IsNullOrWhiteSpace(keys)
-            ? []
-            : keys.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (!string.IsNullOrWhiteSpace(keys))
+        {
+            return keys.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+
+        return GeminiConfiguration.GetApiKeys(configuration);
     }
 
     public static string[] GetModels(IConfiguration configuration)
@@ -40,8 +43,11 @@ internal static class LiveInterviewGeminiConfiguration
             ? DefaultLiveModels
             : configuredModels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+        var generalModels = GeminiConfiguration.GetModels(configuration);
+
         return liveModels
             .Concat([fallbackModel])
+            .Concat(generalModels)
             .Select(NormalizeModel)
             .Where(model => !string.IsNullOrWhiteSpace(model))
             .Distinct(StringComparer.OrdinalIgnoreCase)

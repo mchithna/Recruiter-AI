@@ -24,7 +24,7 @@ public class LiveInterviewCopilotTests
     }
 
     [Fact]
-    public async Task Live_interview_gemini_ignores_general_dashboard_keys()
+    public async Task Live_interview_gemini_falls_back_to_general_gemini_keys()
     {
         var handler = new RecordingHandler();
         var service = CreateService(handler, new Dictionary<string, string?>
@@ -35,9 +35,11 @@ public class LiveInterviewCopilotTests
 
         var result = await service.GenerateJsonAsync<LiveInterviewAiQuestionDto>("test", "test");
 
-        Assert.Null(result);
-        Assert.Empty(handler.RequestedModels);
+        Assert.NotNull(result);
+        Assert.NotEmpty(handler.RequestedModels);
     }
+
+
 
     [Fact]
     public async Task Live_interview_gemini_tries_live_models_then_text_fallback()
