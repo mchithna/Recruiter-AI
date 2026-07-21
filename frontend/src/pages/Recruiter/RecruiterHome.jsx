@@ -244,15 +244,15 @@ export default function RecruiterHome() {
                     <p className="truncate text-body-sm text-secondary-500 dark:text-secondary-300">
                       {topCandidate.jobTitle}
                     </p>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge variant="ai" size="sm">{topCandidate.aiMatchScore}% AI match</Badge>
-                      <StatusBadge status={topCandidate.status?.toLowerCase().replace(/ /g, '_')} />
+                      <StatusBadge status={topCandidate.status?.toLowerCase().replace(/ /g, '_')} size="sm" />
                     </div>
                   </div>
                 </div>
               )}
               {topCandidate && (
-                <Link to={`/recruiter/applications/${topCandidate.id}`}>
+                <Link to={`/recruiter/applications/${topCandidate.id}`} className="block">
                   <Button
                     type="button"
                     variant="ai"

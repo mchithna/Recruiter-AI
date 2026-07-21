@@ -1,13 +1,15 @@
 import PropTypes from 'prop-types';
-import { CalendarClock, Clock, User, Video } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CalendarClock, Clock, ExternalLink, Sparkles, User, Video } from 'lucide-react';
 import {
   Avatar,
   Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
+  StatusBadge,
 } from '../../../components/ui';
-import { StatusBadge } from '../../../components/ui';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -18,10 +20,12 @@ const formatScheduledTime = (scheduledTime) => {
   }).format(new Date(scheduledTime));
 };
 
-export function InterviewCard({ interview }) {
+export function InterviewCard({ interview, onStartCopilot }) {
+  const navigate = useNavigate();
   if (!interview) return null;
 
   const {
+    id,
     interviewType,
     scheduledTime,
     durationMinutes,
@@ -31,6 +35,21 @@ export function InterviewCard({ interview }) {
     interviewerName,
     meetingLink,
   } = interview;
+
+  const handleStartInterview = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (meetingLink) {
+      window.open(meetingLink, '_blank');
+    }
+
+    if (onStartCopilot) {
+      onStartCopilot(interview);
+    } else {
+      navigate(`/recruiter/interviews/${id}/live-copilot`);
+    }
+  };
 
   return (
     <Card hoverable className="h-full overflow-hidden border-none p-0">
@@ -84,10 +103,31 @@ export function InterviewCard({ interview }) {
             </div>
           )}
           {meetingLink && (
-            <Badge variant="primary" size="sm" icon={<Video size={10} />}>
-              Video
-            </Badge>
+            <a
+              href={meetingLink}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-caption font-semibold text-primary-600 hover:underline dark:text-primary-400"
+            >
+              <Video size={12} />
+              Meeting Link
+              <ExternalLink size={10} />
+            </a>
           )}
+        </div>
+
+        <div className="pt-2 border-t border-secondary-100 dark:border-white/10">
+          <Button
+            type="button"
+            variant="ai"
+            size="sm"
+            className="w-full"
+            leftIcon={<Sparkles size={14} />}
+            onClick={handleStartInterview}
+          >
+            Start Interview & Live Copilot
+          </Button>
         </div>
       </CardContent>
     </Card>

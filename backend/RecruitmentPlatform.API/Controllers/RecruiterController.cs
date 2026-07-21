@@ -337,24 +337,33 @@ public class RecruiterController : ControllerBase
         if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
         if (!TryGetUserId(out var userId)) return Unauthorized(new { message = "Your recruiter profile could not be verified. Please sign out and sign in again." });
 
-        return await _context.CommunicationMessages
+        var applications = await _context.Applications
             .AsNoTracking()
-            .Where(m => m.Application.Job.Department.CompanyId == companyId
-                || m.RecipientId == userId
-                || m.SenderId == userId)
-            .GroupBy(m => m.ApplicationId)
-            .Select(g => g.OrderByDescending(m => m.SentAt).First())
-            .OrderByDescending(m => m.SentAt)
-            .Select(m => new RecruiterConversationDto
-            {
-                ApplicationId = m.ApplicationId,
-                CandidateName = m.Application.Candidate.FirstName + " " + m.Application.Candidate.LastName,
-                JobTitle = m.Application.Job.Title,
-                Body = m.Body,
-                SentAt = m.SentAt,
-                Unread = !m.IsRead && m.SenderId == m.Application.CandidateId
-            })
+            .Include(a => a.Candidate)
+            .Include(a => a.Job)
+            .Include(a => a.CommunicationMessages)
+            .Where(a => a.Job.Department.CompanyId == companyId)
             .ToListAsync(cancellationToken);
+
+        var conversations = applications
+            .Select(a =>
+            {
+                var messages = a.CommunicationMessages.OrderByDescending(m => m.SentAt).ToList();
+                var lastMsg = messages.FirstOrDefault();
+                return new RecruiterConversationDto
+                {
+                    ApplicationId = a.Id,
+                    CandidateName = a.Candidate != null ? $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim() : "Unknown Candidate",
+                    JobTitle = a.Job?.Title ?? "Unknown Job",
+                    Body = lastMsg != null ? lastMsg.Body : (string.IsNullOrWhiteSpace(a.CoverLetterText) ? "No messages yet" : a.CoverLetterText),
+                    SentAt = lastMsg != null ? lastMsg.SentAt : a.AppliedAt,
+                    Unread = messages.Any(m => !m.IsRead && m.RecipientId == userId)
+                };
+            })
+            .OrderByDescending(c => c.SentAt)
+            .ToList();
+
+        return Ok(conversations);
     }
 
     [HttpGet("applications/{applicationId:int}/messages")]
@@ -393,7 +402,7 @@ public class RecruiterController : ControllerBase
             .Select(m => new RecruiterApplicationMessageDto
             {
                 Id = m.Id,
-                SenderName = m.Sender.FirstName + " " + m.Sender.LastName,
+                SenderName = m.Sender != null ? (m.Sender.FirstName + " " + m.Sender.LastName).Trim() : "Unknown",
                 Body = m.Body,
                 SentAt = m.SentAt,
                 IsMine = m.SenderId == userId
