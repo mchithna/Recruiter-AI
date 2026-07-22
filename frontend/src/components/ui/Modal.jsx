@@ -98,18 +98,18 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    /* Backdrop — z-overlay (40) */
+    /* Backdrop — high z-index 100 with backdrop-blur */
     <div
       className={[
         'fixed inset-0 flex items-center justify-center p-4',
-        'bg-black/50',
-        'z-overlay',
+        'bg-black/70 backdrop-blur-md',
+        'z-[100]',
         'transition-opacity duration-base',
       ].join(' ')}
       onClick={onClose}
       aria-hidden="true"
     >
-      {/* Panel — z-modal (50), stops backdrop click from propagating */}
+      {/* Panel — z-[101], stops backdrop click from propagating */}
       <div
         ref={panelRef}
         role="dialog"
@@ -118,8 +118,8 @@ export function Modal({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={[
-          'relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden bg-surface rounded-xl shadow-modal',
-          'z-modal',
+          'relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-white dark:bg-secondary-900 shadow-2xl border border-secondary-100 dark:border-white/10',
+          'z-[101]',
           SIZE_CLASSES[size],
           // Transition classes — enters from scale-95/opacity-0
           'transition-all duration-base',
@@ -129,8 +129,8 @@ export function Modal({
         aria-hidden="false"
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between gap-4 px-6 pt-6 pb-4 border-b border-secondary-100">
-          <h2 id={titleId} className="text-h3 text-secondary-900">
+        <div className="flex shrink-0 items-center justify-between gap-4 px-6 pt-6 pb-4 border-b border-secondary-100 dark:border-white/10">
+          <h2 id={titleId} className="text-h3 font-bold text-secondary-900 dark:text-white">
             {title}
           </h2>
           <button
@@ -138,8 +138,8 @@ export function Modal({
             onClick={onClose}
             aria-label="Close dialog"
             className={[
-              'flex items-center justify-center h-8 w-8 rounded-button',
-              'text-secondary-400 hover:text-secondary-600 hover:bg-secondary-100',
+              'flex items-center justify-center h-8 w-8 rounded-xl',
+              'text-secondary-400 hover:text-secondary-600 hover:bg-secondary-100 dark:hover:bg-white/10 dark:hover:text-white',
               'transition-colors duration-fast focus-ring',
             ].join(' ')}
           >
@@ -148,11 +148,11 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-body-lg text-secondary-800">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-body-lg text-secondary-800 dark:text-secondary-200">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="shrink-0 px-6 pb-6 pt-4 border-t border-secondary-100 flex items-center justify-end gap-3">
+          <div className="shrink-0 px-6 pb-6 pt-4 border-t border-secondary-100 dark:border-white/10 flex items-center justify-end gap-3">
             {footer}
           </div>
         )}

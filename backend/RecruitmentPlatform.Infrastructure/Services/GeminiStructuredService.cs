@@ -16,6 +16,10 @@ public class GeminiStructuredService : IAiStructuredService
     private readonly HttpClient _httpClient;
     private readonly string[] _apiKeys;
     private readonly string[] _models;
+    private readonly bool _useVertexAi;
+    private readonly string _vertexProjectId;
+    private readonly string _vertexLocation;
+    private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
     private readonly ILogger<GeminiStructuredService> _logger;
 
     public GeminiStructuredService(
@@ -24,9 +28,13 @@ public class GeminiStructuredService : IAiStructuredService
         ILogger<GeminiStructuredService> logger)
     {
         _httpClient = httpClient;
-        var apiKey = GeminiConfiguration.GetApiKey(configuration);
-        _apiKeys = string.IsNullOrWhiteSpace(apiKey) ? [string.Empty] : [apiKey];
+        _apiKeys = GeminiConfiguration.GetApiKeys(configuration);
+        if (_apiKeys.Length == 0) _apiKeys = [string.Empty];
         _models = GeminiConfiguration.GetModels(configuration);
+        _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
+        _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
+        _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
+        _vertexAccessTokenProvider = new VertexAiAccessTokenProvider(configuration);
         _logger = logger;
     }
 
@@ -36,7 +44,13 @@ public class GeminiStructuredService : IAiStructuredService
         int maxOutputTokens = 1200,
         CancellationToken cancellationToken = default)
     {
-        if (_apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
+        if (_useVertexAi && string.IsNullOrWhiteSpace(_vertexProjectId))
+        {
+            _logger.LogWarning("Vertex AI Gemini is missing project id.");
+            return default;
+        }
+
+        if (!_useVertexAi && _apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return default;
@@ -51,7 +65,7 @@ public class GeminiStructuredService : IAiStructuredService
             {
                 var requestBody = new
                 {
-                    system_instruction = new
+                    systemInstruction = new
                     {
                         parts = new[] { new { text = systemInstruction } }
                     },
@@ -68,7 +82,8 @@ public class GeminiStructuredService : IAiStructuredService
                         temperature = 0.1,
                         topP = 0.8,
                         maxOutputTokens,
-                        responseMimeType = "application/json"
+                        responseMimeType = "application/json",
+                        thinkingConfig = new { thinkingBudget = 0 }
                     }
                 };
 
@@ -126,32 +141,39 @@ public class GeminiStructuredService : IAiStructuredService
 
         foreach (var apiKey in _apiKeys)
         {
+            if (string.IsNullOrWhiteSpace(apiKey)) continue;
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
+                var response = await _httpClient.PostAsync(url, content, cancellationToken);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Gemini AI Studio model {Model} on key {KeyPrefix}... failed with status {StatusCode}. Trying fallback.", model, apiKey[..Math.Min(apiKey.Length, 6)], response.StatusCode);
+                lastResponse = response;
+            }
+        }
+
+        if (_useVertexAi && !string.IsNullOrWhiteSpace(_vertexProjectId))
+        {
+            var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
+
             foreach (var model in _models)
             {
                 lastResponse?.Dispose();
 
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
-                var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-                if (response.IsSuccessStatusCode)
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildVertexAiUrl(model))
                 {
-                    return response;
-                }
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new("Bearer", accessToken);
 
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    _logger.LogWarning("Gemini API key rate limited. Trying next key.");
-                    lastResponse = response;
-                    break; 
-                }
+                var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                if (!IsModelUnavailable(response.StatusCode))
-                {
-                    return response;
-                }
-
-                _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Vertex AI Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
                 lastResponse = response;
             }
         }
@@ -159,8 +181,20 @@ public class GeminiStructuredService : IAiStructuredService
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
     }
 
+    private string BuildVertexAiUrl(string model)
+    {
+        var projectId = Uri.EscapeDataString(_vertexProjectId);
+        var location = Uri.EscapeDataString(_vertexLocation);
+        var modelId = Uri.EscapeDataString(model);
+        return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
+    }
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
-        statusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest;
+        statusCode is System.Net.HttpStatusCode.NotFound 
+                   or System.Net.HttpStatusCode.BadRequest
+                   or System.Net.HttpStatusCode.TooManyRequests
+                   or System.Net.HttpStatusCode.ServiceUnavailable
+                   or System.Net.HttpStatusCode.InternalServerError
+                   or System.Net.HttpStatusCode.Forbidden;
 
     private static string TruncateForLog(string value) =>
         value.Length <= 500 ? value : value[..500];
@@ -181,9 +215,50 @@ public class GeminiStructuredService : IAiStructuredService
         }
 
         var firstObject = trimmed.IndexOf('{');
-        var lastObject = trimmed.LastIndexOf('}');
-        if (firstObject < 0 || lastObject <= firstObject) return null;
+        if (firstObject < 0) return null;
 
-        return trimmed[firstObject..(lastObject + 1)];
+        var depth = 0;
+        var inString = false;
+        var isEscaped = false;
+
+        for (var index = firstObject; index < trimmed.Length; index++)
+        {
+            var current = trimmed[index];
+
+            if (isEscaped)
+            {
+                isEscaped = false;
+                continue;
+            }
+
+            if (current == '\\' && inString)
+            {
+                isEscaped = true;
+                continue;
+            }
+
+            if (current == '"')
+            {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString) continue;
+
+            if (current == '{')
+            {
+                depth++;
+            }
+            else if (current == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return trimmed[firstObject..(index + 1)];
+                }
+            }
+        }
+
+        return null;
     }
 }

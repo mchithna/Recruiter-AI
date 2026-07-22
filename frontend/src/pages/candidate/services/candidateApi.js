@@ -89,6 +89,11 @@ export const getStatusHistory = async (applicationId) => {
   return response.data;
 };
 
+export const getMyInterviews = async () => {
+  const response = await api.get('/candidate/interviews');
+  return response.data;
+};
+
 export const getMessages = async (applicationId) => {
   const response = await api.get(`/candidate/applications/${applicationId}/messages`);
   return response.data;

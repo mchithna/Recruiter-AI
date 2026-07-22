@@ -19,6 +19,8 @@ export function ApplicationDetail() {
   const [application, setApplication] = useState(null);
   const [interviews, setInterviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [interviewsError, setInterviewsError] = useState('');
 
   useEffect(() => {
     let isActive = true;
@@ -26,16 +28,33 @@ export function ApplicationDetail() {
     async function loadApplicationData() {
       try {
         setIsLoading(true);
+        setLoadError('');
+        setInterviewsError('');
         const appData = await getApplication(applicationId);
-        const interviewData = await getInterviewsForApplication(applicationId);
 
         if (isActive) {
           setApplication(appData);
-          setInterviews(interviewData);
-          setIsLoading(false);
+        }
+
+        try {
+          const interviewData = await getInterviewsForApplication(applicationId);
+          if (isActive) {
+            setInterviews(interviewData);
+          }
+        } catch (interviewError) {
+          console.error('Failed to load application interviews', interviewError);
+          if (isActive) {
+            setInterviews([]);
+            setInterviewsError('Interview details are not available right now.');
+          }
         }
       } catch (error) {
         console.error('Failed to load application detail', error);
+        if (isActive) {
+          setApplication(null);
+          setLoadError(error?.response?.data?.message || 'The application may have been removed or you may not have access to it.');
+        }
+      } finally {
         if (isActive) {
           setIsLoading(false);
         }
@@ -69,7 +88,7 @@ export function ApplicationDetail() {
     return (
       <div className="text-center py-12 animate-slide-up">
         <h2 className="text-h2 text-secondary-900 dark:text-white">Application not found</h2>
-        <p className="mt-2 text-body-sm text-secondary-500">The application may have been removed or does not exist.</p>
+        <p className="mt-2 text-body-sm text-secondary-500">{loadError || 'The application may have been removed or does not exist.'}</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate('/hiring-manager/queue')}>
           Back to Queue
         </Button>
@@ -118,12 +137,12 @@ export function ApplicationDetail() {
 
         {/* Interviews Side list */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-h3 font-semibold text-secondary-900 dark:text-white">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-h3 font-semibold leading-7 text-secondary-900 dark:text-white">
               Interviews ({interviews.length})
             </h3>
             {interviews.length > 0 && (
-              <Badge variant="primary" size="sm" icon={<Calendar size={12} />}>
+              <Badge variant="primary" size="sm" icon={<Calendar size={12} />} className="shrink-0">
                 Scheduled Loops
               </Badge>
             )}
@@ -132,7 +151,7 @@ export function ApplicationDetail() {
           {interviews.length === 0 ? (
             <Card className="glass-card border-none bg-white/60 dark:bg-white/5">
               <CardContent className="text-secondary-500 text-body-sm py-8 text-center">
-                No interviews scheduled for this candidate yet.
+                {interviewsError || 'No interviews scheduled for this candidate yet.'}
               </CardContent>
             </Card>
           ) : (

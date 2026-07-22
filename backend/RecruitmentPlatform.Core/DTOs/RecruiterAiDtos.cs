@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace RecruitmentPlatform.Core.DTOs;
 
 public static class RecruiterAiMessages
@@ -87,8 +90,72 @@ public class JobDescriptionResultDto
 {
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
+    [JsonConverter(typeof(StringOrStringArrayConverter))]
     public string Requirements { get; set; } = "";
+    [JsonConverter(typeof(StringListOrStringConverter))]
     public List<string> ReviewNotes { get; set; } = new();
+}
+
+public sealed class StringOrStringArrayConverter : JsonConverter<string>
+{
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString() ?? string.Empty,
+            JsonTokenType.StartArray => string.Join(Environment.NewLine, ReadArray(ref reader)),
+            JsonTokenType.Null => string.Empty,
+            _ => throw new JsonException("Expected a string or an array of strings.")
+        };
+    }
+
+    private static List<string> ReadArray(ref Utf8JsonReader reader)
+    {
+        var values = new List<string>();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+        {
+            if (reader.TokenType != JsonTokenType.String) throw new JsonException("Expected an array of strings.");
+            var value = reader.GetString();
+            if (!string.IsNullOrWhiteSpace(value)) values.Add(value.Trim());
+        }
+        return values;
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => writer.WriteStringValue(value);
+}
+
+public sealed class StringListOrStringConverter : JsonConverter<List<string>>
+{
+    public override List<string> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var value = reader.GetString();
+            return string.IsNullOrWhiteSpace(value) ? [] : [value.Trim()];
+        }
+
+        if (reader.TokenType == JsonTokenType.StartArray)
+        {
+            var values = new List<string>();
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                if (reader.TokenType != JsonTokenType.String) throw new JsonException("Expected an array of strings.");
+                var value = reader.GetString();
+                if (!string.IsNullOrWhiteSpace(value)) values.Add(value.Trim());
+            }
+            return values;
+        }
+
+        if (reader.TokenType == JsonTokenType.Null) return [];
+        throw new JsonException("Expected a string or an array of strings.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, List<string> value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        foreach (var item in value) writer.WriteStringValue(item);
+        writer.WriteEndArray();
+    }
 }
 
 public class InterviewQuestionResultDto

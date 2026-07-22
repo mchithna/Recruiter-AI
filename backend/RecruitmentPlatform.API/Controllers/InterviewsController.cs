@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using System.Linq.Expressions;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using RecruitmentPlatform.Core.Entities;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -16,11 +18,19 @@ public class InterviewsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IApplicationStatusService _applicationStatusService;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<InterviewsController> _logger;
 
-    public InterviewsController(ApplicationDbContext context, IApplicationStatusService applicationStatusService)
+    public InterviewsController(
+        ApplicationDbContext context,
+        IApplicationStatusService applicationStatusService,
+        IConfiguration configuration,
+        ILogger<InterviewsController> logger)
     {
         _context = context;
         _applicationStatusService = applicationStatusService;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -28,18 +38,13 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
             .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
@@ -47,23 +52,38 @@ public class InterviewsController : ControllerBase
         return Ok(interviews);
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<InterviewDto>> GetInterviewById(int id, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interview = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .FirstOrDefaultAsync(i => i.Id == id && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        return Ok(ToInterviewDto(interview));
+    }
+
     [HttpGet("application/{applicationId:int}")]
     public async Task<ActionResult<List<InterviewDto>>> GetInterviewsForApplication(int applicationId, CancellationToken cancellationToken)
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
-        var query = _context.Interviews
+        var interviews = await _context.Interviews
             .AsNoTracking()
-            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId);
-
-        if (!isRecruiter)
-        {
-            query = query.Where(i => i.InterviewerId == userId);
-        }
-
-        var interviews = await query
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
             .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
@@ -117,6 +137,10 @@ public class InterviewsController : ControllerBase
         {
             await _applicationStatusService.ChangeStatusAsync(application.Id, "Interview Scheduled", recruiterId, request.Notes);
 
+            var meetingLink = string.IsNullOrWhiteSpace(request.MeetingLink)
+                ? await GenerateGoogleMeetLinkAsync(request.ScheduledTime, request.DurationMinutes, application.CandidateName, application.JobTitle, cancellationToken)
+                : ClampOptional(request.MeetingLink, 500);
+
             var interview = new Interview
             {
                 ApplicationId = application.Id,
@@ -124,7 +148,7 @@ public class InterviewsController : ControllerBase
                 InterviewType = Clamp(request.InterviewType, 50, "Interview type is required."),
                 ScheduledTime = request.ScheduledTime,
                 DurationMinutes = request.DurationMinutes <= 0 ? 60 : request.DurationMinutes,
-                MeetingLink = ClampOptional(request.MeetingLink, 500),
+                MeetingLink = meetingLink,
                 Status = "Scheduled",
                 Notes = ClampOptional(request.Notes, 4000),
                 CreatedAt = DateTime.UtcNow,
@@ -168,7 +192,6 @@ public class InterviewsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var interview = await _context.Interviews
             .Include(i => i.Application)
@@ -179,11 +202,6 @@ public class InterviewsController : ControllerBase
         if (interview == null || interview.Application.Job.Department.CompanyId != companyId)
         {
             return NotFound(new { message = "Interview not found." });
-        }
-
-        if (!isRecruiter && interview.InterviewerId != userId)
-        {
-            return Forbid();
         }
 
         var status = Clamp(request.Status, 50, "Status is required.");
@@ -207,6 +225,8 @@ public class InterviewsController : ControllerBase
         var companyId = GetCompanyId();
 
         var interview = await _context.Interviews
+            .Include(i => i.Application)
+            .ThenInclude(a => a.Candidate)
             .Include(i => i.Application)
             .ThenInclude(a => a.Job)
             .ThenInclude(j => j.Department)
@@ -249,7 +269,14 @@ public class InterviewsController : ControllerBase
 
         if (request.MeetingLink != null)
         {
-            interview.MeetingLink = ClampOptional(request.MeetingLink, 500);
+            interview.MeetingLink = string.IsNullOrWhiteSpace(request.MeetingLink)
+                ? await GenerateGoogleMeetLinkAsync(
+                    request.ScheduledTime == default ? interview.ScheduledTime : request.ScheduledTime,
+                    request.DurationMinutes > 0 ? request.DurationMinutes : interview.DurationMinutes,
+                    $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim(),
+                    interview.Application.Job.Title,
+                    cancellationToken)
+                : ClampOptional(request.MeetingLink, 500);
         }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
@@ -286,17 +313,247 @@ public class InterviewsController : ControllerBase
     {
         Id = interview.Id,
         ApplicationId = interview.ApplicationId,
-        CandidateName = interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName,
-        JobTitle = interview.Application.Job.Title,
-        InterviewType = interview.InterviewType,
+        CandidateName = interview.Application != null && interview.Application.Candidate != null
+            ? (interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName).Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application != null && interview.Application.Job != null ? interview.Application.Job.Title : "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
         ScheduledTime = interview.ScheduledTime,
         DurationMinutes = interview.DurationMinutes,
         MeetingLink = interview.MeetingLink,
-        Status = interview.Status,
+        Status = interview.Status ?? "",
         Notes = interview.Notes,
         InterviewerId = interview.InterviewerId,
-        InterviewerName = interview.Interviewer.FirstName + " " + interview.Interviewer.LastName
+        InterviewerName = interview.Interviewer != null
+            ? (interview.Interviewer.FirstName + " " + interview.Interviewer.LastName).Trim()
+            : "Unknown Interviewer"
     };
+
+    private static InterviewDto ToInterviewDto(Interview interview) => new InterviewDto
+    {
+        Id = interview.Id,
+        ApplicationId = interview.ApplicationId,
+        CandidateName = interview.Application?.Candidate != null
+            ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
+        ScheduledTime = interview.ScheduledTime,
+        DurationMinutes = interview.DurationMinutes,
+        MeetingLink = interview.MeetingLink,
+        Status = interview.Status ?? "",
+        Notes = interview.Notes,
+        InterviewerId = interview.InterviewerId,
+        InterviewerName = interview.Interviewer != null
+            ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
+            : "Unknown Interviewer"
+    };
+
+    private static readonly HttpClient MeetHttpClient = new();
+
+    private async Task<string> GenerateGoogleMeetLinkAsync(
+        DateTime scheduledTime,
+        int durationMinutes,
+        string candidateName,
+        string jobTitle,
+        CancellationToken cancellationToken)
+    {
+        var accessToken = await ResolveGoogleAccessTokenAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            var meetLink = await TryCreateMeetSpaceAsync(accessToken, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(meetLink))
+            {
+                return meetLink;
+            }
+
+            var calendarLink = await TryCreateCalendarMeetEventAsync(accessToken, scheduledTime, durationMinutes, candidateName, jobTitle, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(calendarLink))
+            {
+                return calendarLink;
+            }
+        }
+
+        return GenerateFallbackMeetUrl();
+    }
+
+    private async Task<string?> ResolveGoogleAccessTokenAsync(CancellationToken cancellationToken)
+    {
+        var rawToken = GetGoogleWorkspaceAccessToken();
+        if (string.IsNullOrWhiteSpace(rawToken)) return null;
+
+        if (rawToken.StartsWith("ya29.", StringComparison.OrdinalIgnoreCase))
+        {
+            return rawToken;
+        }
+
+        if (rawToken.StartsWith("4/", StringComparison.Ordinal))
+        {
+            try
+            {
+                var dict = new Dictionary<string, string>
+                {
+                    ["client_id"] = "206478989404-5q9q4k0m016e3v3m106m.apps.googleusercontent.com",
+                    ["code"] = rawToken,
+                    ["grant_type"] = "authorization_code",
+                    ["redirect_uri"] = "https://developers.google.com/oauthplayground"
+                };
+
+                using var req = new HttpRequestMessage(HttpMethod.Post, "https://oauth2.googleapis.com/token")
+                {
+                    Content = new FormUrlEncodedContent(dict)
+                };
+
+                var res = await MeetHttpClient.SendAsync(req, cancellationToken);
+                if (res.IsSuccessStatusCode)
+                {
+                    var json = await res.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("access_token", out var tokenProp) && !string.IsNullOrWhiteSpace(tokenProp.GetString()))
+                    {
+                        return tokenProp.GetString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to exchange auth code starting with 4/");
+            }
+        }
+
+        return rawToken;
+    }
+
+    private static string GenerateFallbackMeetUrl()
+    {
+        // https://meet.google.com/new opens a real, instant Google Meet room
+        return "https://meet.google.com/new";
+    }
+
+    private async Task<string?> TryCreateMeetSpaceAsync(string accessToken, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://meet.googleapis.com/v2/spaces")
+            {
+                Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
+            };
+            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await MeetHttpClient.SendAsync(requestMessage, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Google Meet space creation failed with status {StatusCode}.", (int)response.StatusCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("meetingUri", out var uriProp) && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+            {
+                return uriProp.GetString();
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            _logger.LogWarning(ex, "Google Meet space creation failed.");
+        }
+
+        return null;
+    }
+
+    private async Task<string?> TryCreateCalendarMeetEventAsync(
+        string accessToken,
+        DateTime scheduledTime,
+        int durationMinutes,
+        string candidateName,
+        string jobTitle,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var start = scheduledTime == default ? DateTime.UtcNow.AddHours(1) : scheduledTime.ToUniversalTime();
+            var safeDurationMinutes = durationMinutes <= 0 ? 60 : durationMinutes;
+            var payload = new
+            {
+                summary = $"Interview: {candidateName} - {jobTitle}",
+                description = "Recruiter AI interview session.",
+                start = new { dateTime = start.ToString("yyyy-MM-ddTHH:mm:ssZ") },
+                end = new { dateTime = start.AddMinutes(safeDurationMinutes).ToString("yyyy-MM-ddTHH:mm:ssZ") },
+                conferenceData = new
+                {
+                    createRequest = new
+                    {
+                        requestId = Guid.NewGuid().ToString("N"),
+                        conferenceSolutionKey = new { type = "hangoutsMeet" }
+                    }
+                }
+            };
+
+            using var calendarRequest = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1")
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+            };
+            calendarRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await MeetHttpClient.SendAsync(calendarRequest, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Google Calendar event creation failed with status {StatusCode}.", (int)response.StatusCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+
+            if (doc.RootElement.TryGetProperty("hangoutLink", out var linkProp) && !string.IsNullOrWhiteSpace(linkProp.GetString()))
+            {
+                return linkProp.GetString();
+            }
+
+            if (doc.RootElement.TryGetProperty("conferenceData", out var conferenceData)
+                && conferenceData.TryGetProperty("entryPoints", out var entryPoints)
+                && entryPoints.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var entryPoint in entryPoints.EnumerateArray())
+                {
+                    if (entryPoint.TryGetProperty("entryPointType", out var typeProp)
+                        && string.Equals(typeProp.GetString(), "video", StringComparison.OrdinalIgnoreCase)
+                        && entryPoint.TryGetProperty("uri", out var uriProp)
+                        && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+                    {
+                        return uriProp.GetString();
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            _logger.LogWarning(ex, "Google Calendar event creation failed.");
+        }
+
+        return null;
+    }
+
+    private string? GetGoogleWorkspaceAccessToken()
+    {
+        return FirstConfiguredValue(
+            "GOOGLE_WORKSPACE_ACCESS_TOKEN",
+            "GOOGLE_MEET_ACCESS_TOKEN",
+            "GOOGLE_CALENDAR_ACCESS_TOKEN",
+            "GOOGLE_ACCESS_TOKEN");
+    }
+
+    private string? FirstConfiguredValue(params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var value = _configuration[key] ?? Environment.GetEnvironmentVariable(key);
+            if (!string.IsNullOrWhiteSpace(value)) return value.Trim();
+        }
+
+        return null;
+    }
 
     private static string Clamp(string? value, int maxLength, string requiredMessage)
     {
