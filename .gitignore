@@ -48,6 +48,12 @@ Thumbs.db
 
 # Local workspace artifacts
 .dist/
+context.md
+
+# Local/protected credentials
+hirely-vertex-ai-key.json
+backend/RecruitmentPlatform.API/alert-parsec-503008-d0-ebd93a2f5943.json
+backend/RecruitmentPlatform.API/.keys/
 
 ## A streamlined .gitignore for modern .NET projects
 ## including temporary files, build results, and
