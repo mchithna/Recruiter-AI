@@ -33,6 +33,23 @@ const currencyOptions = [
   { value: 'AUD', label: 'AUD (A$)' },
 ];
 
+const toDateOnly = (dateTimeValue) => dateTimeValue?.slice(0, 10) || null;
+
+const getOfferSubmitError = (error) => {
+  const data = error?.response?.data;
+  if (typeof data === 'string' && data.trim()) return data;
+  if (data?.message) return data.message;
+  if (data?.title) return data.title;
+  if (data?.errors && typeof data.errors === 'object') {
+    const firstError = Object.values(data.errors).flat().find(Boolean);
+    if (firstError) return firstError;
+  }
+  if (error?.response?.status === 403) {
+    return 'You are not authorized to create an offer for this application.';
+  }
+  return 'An error occurred while creating the offer. Please try again.';
+};
+
 export function Offer() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
@@ -116,12 +133,12 @@ export function Offer() {
     try {
       setIsSubmitting(true);
       const newOffer = await submitOffer({
-        applicationId,
+        applicationId: Number(applicationId),
         candidateName: application.candidateName,
         offeredSalary: salaryNum,
         salaryCurrency,
-        proposedStartDate,
-        offerExpiryDate,
+        proposedStartDate: toDateOnly(proposedStartDate),
+        offerExpiryDate: toDateOnly(offerExpiryDate),
         notes,
       });
 
@@ -132,7 +149,7 @@ export function Offer() {
       setIsSubmitting(false);
     } catch (err) {
       console.error('Failed to submit job offer', err);
-      setFormError('An error occurred while creating the offer. Please try again.');
+      setFormError(getOfferSubmitError(err));
       setIsSubmitting(false);
     }
   };

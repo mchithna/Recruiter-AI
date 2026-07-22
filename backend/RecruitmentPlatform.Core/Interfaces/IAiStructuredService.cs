@@ -1,6 +1,6 @@
 namespace RecruitmentPlatform.Core.Interfaces;
 
-public interface IGeminiStructuredService
+public interface IAiStructuredService
 {
     Task<T?> GenerateJsonAsync<T>(
         string systemInstruction,

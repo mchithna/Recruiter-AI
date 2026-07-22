@@ -80,10 +80,27 @@ builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(25);
 });
-builder.Services.AddHttpClient<IGeminiStructuredService, GeminiStructuredService>(client =>
+var aiProvider = builder.Configuration["AI_PROVIDER"];
+if (aiProvider == "OpenAI")
+{
+    builder.Services.AddHttpClient<IAiStructuredService, OpenAiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+else
+{
+    builder.Services.AddHttpClient<IAiStructuredService, GeminiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+
+builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(25);
 });
+builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

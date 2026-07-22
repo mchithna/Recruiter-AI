@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, CalendarClock, CheckCircle2, Clock, Filter } from 'lucide-react';
+import { Calendar, CalendarClock, CheckCircle2, Clock, FileText, Filter, Sparkles } from 'lucide-react';
 import {
   Badge,
   Card,
@@ -27,7 +27,6 @@ export function Interviews() {
         setIsLoading(true);
         const data = await getAllInterviews();
         if (isActive) {
-          // Sort by date ascending
           const sorted = [...data].sort(
             (a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime)
           );
@@ -36,40 +35,30 @@ export function Interviews() {
         }
       } catch (error) {
         console.error('Failed to load interviews schedule', error);
-        if (isActive) {
-          setIsLoading(false);
-        }
+        if (isActive) setIsLoading(false);
       }
     }
 
     loadInterviews();
 
-    return () => {
-      isActive = false;
-    };
+    return () => { isActive = false; };
   }, []);
 
-  // Filter logic
   const filteredInterviews = useMemo(() => {
     const now = new Date();
     return interviews.filter((interview) => {
-      // Status filter
       if (statusFilter !== 'all' && interview.status.toLowerCase() !== statusFilter.toLowerCase()) {
         return false;
       }
-
-      // Time filter
       if (timeFilter !== 'all' && interview.scheduledTime) {
         const interviewTime = new Date(interview.scheduledTime);
         if (timeFilter === 'upcoming' && interviewTime < now) return false;
         if (timeFilter === 'past' && interviewTime >= now) return false;
       }
-
       return true;
     });
   }, [interviews, timeFilter, statusFilter]);
 
-  // Dynamic status options from data
   const statusOptions = useMemo(() => {
     const statuses = Array.from(new Set(interviews.map((int) => int.status)));
     return [
@@ -81,7 +70,6 @@ export function Interviews() {
     ];
   }, [interviews]);
 
-  // Statistics calculation
   const stats = useMemo(() => {
     const now = new Date();
     const upcoming = interviews.filter(
@@ -159,7 +147,7 @@ export function Interviews() {
         />
       </section>
 
-      {/* Filters Select Panel */}
+      {/* Filters */}
       <section className="relative flex flex-col items-start gap-4 rounded-3xl border border-secondary-100 bg-white/70 p-6 sm:flex-row sm:items-end shadow-glass dark:border-white/5 dark:bg-[#0b0e1e]">
         <div className="flex h-10 items-center gap-2 text-caption font-bold uppercase tracking-wider text-secondary-500 dark:text-secondary-400">
           <Filter size={15} strokeWidth={2} />
@@ -187,29 +175,35 @@ export function Interviews() {
 
       {/* Grid of cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-48 rounded-2xl" />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
         </div>
       ) : filteredInterviews.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredInterviews.map((interview) => (
-            <div
-              key={interview.id}
-              onClick={() => navigate(`/hiring-manager/interviews/${interview.id}`)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  navigate(`/hiring-manager/interviews/${interview.id}`);
-                }
-              }}
-              role="link"
-              tabIndex={0}
-              className="cursor-pointer transition-transform hover:-translate-y-1 focus:outline-none"
-            >
-              <InterviewCard interview={interview} />
-            </div>
-          ))}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredInterviews.map((interview) => {
+            const isCompleted = interview.status?.trim().toLowerCase() === 'completed';
+            return (
+              <InterviewCard
+                key={interview.id}
+                interview={interview}
+                action={{
+                  label: isCompleted ? 'View Session Notes' : 'Start & Launch Copilot',
+                  icon: isCompleted ? <FileText size={14} /> : <Sparkles size={14} />,
+                  onClick: (event) => {
+                    event.stopPropagation();
+                    if (isCompleted) {
+                      navigate(`/hiring-manager/interviews/${interview.id}`);
+                    } else {
+                      navigate(`/hiring-manager/interviews/${interview.id}/live-copilot`);
+                    }
+                  },
+                  variant: isCompleted ? 'secondary' : 'ai',
+                }}
+              />
+            );
+          })}
         </div>
       ) : (
         <Card className="glass-card-heavy border-none py-12">

@@ -10,21 +10,36 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 public class GeminiChatService : IAiChatService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+    private readonly string[] _apiKeys;
     private readonly string[] _models;
+    private readonly bool _useVertexAi;
+    private readonly string _vertexProjectId;
+    private readonly string _vertexLocation;
+    private readonly VertexAiAccessTokenProvider _vertexAccessTokenProvider;
     private readonly ILogger<GeminiChatService> _logger;
 
     public GeminiChatService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiChatService> logger)
     {
         _httpClient = httpClient;
-        _apiKey = GeminiConfiguration.GetApiKey(configuration);
+        _apiKeys = GeminiConfiguration.GetApiKeys(configuration);
+        if (_apiKeys.Length == 0) _apiKeys = [string.Empty];
         _models = GeminiConfiguration.GetModels(configuration);
+        _useVertexAi = GeminiConfiguration.UseVertexAi(configuration);
+        _vertexProjectId = GeminiConfiguration.GetVertexProjectId(configuration);
+        _vertexLocation = GeminiConfiguration.GetVertexLocation(configuration);
+        _vertexAccessTokenProvider = new VertexAiAccessTokenProvider(configuration);
         _logger = logger;
     }
 
     public async Task<string> GenerateResponseAsync(ChatGenerationRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(_apiKey))
+        if (_useVertexAi && string.IsNullOrWhiteSpace(_vertexProjectId))
+        {
+            _logger.LogWarning("Vertex AI Gemini is missing project id.");
+            return "The AI assistant is not configured yet. Please contact support or try again later.";
+        }
+
+        if (!_useVertexAi && _apiKeys.Length == 1 && string.IsNullOrWhiteSpace(_apiKeys[0]))
         {
             _logger.LogWarning("Gemini API key is missing.");
             return "The AI assistant is not configured yet. Please contact support or try again later.";
@@ -55,7 +70,7 @@ public class GeminiChatService : IAiChatService
 
                 var requestBody = new
                 {
-                    system_instruction = new
+                    systemInstruction = new
                     {
                         parts = new[] { new { text = request.SystemInstruction } }
                     },
@@ -64,7 +79,8 @@ public class GeminiChatService : IAiChatService
                     {
                         temperature = 0.2,
                         topP = 0.8,
-                        maxOutputTokens = 800
+                        maxOutputTokens = 800,
+                        thinkingConfig = new { thinkingBudget = 0 }
                     }
                 };
 
@@ -108,6 +124,7 @@ public class GeminiChatService : IAiChatService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Gemini API.");
+                Console.Error.WriteLine($"Chat AI test diagnostic: {ex}");
                 if (attempt == 3)
                 {
                     return "I'm sorry, I couldn't process that request right now. Please try again later.";
@@ -123,28 +140,61 @@ public class GeminiChatService : IAiChatService
         var json = JsonSerializer.Serialize(requestBody);
         HttpResponseMessage? lastResponse = null;
 
-        foreach (var model in _models)
+        foreach (var apiKey in _apiKeys)
         {
-            lastResponse?.Dispose();
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(_apiKey)}";
-            var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-            if (response.IsSuccessStatusCode || !IsModelUnavailable(response.StatusCode))
+            if (string.IsNullOrWhiteSpace(apiKey)) continue;
+            foreach (var model in _models)
             {
-                return response;
+                lastResponse?.Dispose();
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
+                var response = await _httpClient.PostAsync(url, content, cancellationToken);
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Gemini AI Studio chat model {Model} on key {KeyPrefix}... failed with status {StatusCode}. Trying fallback.", model, apiKey[..Math.Min(apiKey.Length, 6)], response.StatusCode);
+                lastResponse = response;
             }
+        }
 
-            _logger.LogWarning("Gemini model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
-            lastResponse = response;
+        if (_useVertexAi && !string.IsNullOrWhiteSpace(_vertexProjectId))
+        {
+            var accessToken = await _vertexAccessTokenProvider.GetAccessTokenAsync(cancellationToken);
+
+            foreach (var model in _models)
+            {
+                lastResponse?.Dispose();
+                using var request = new HttpRequestMessage(HttpMethod.Post, BuildVertexAiUrl(model))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new("Bearer", accessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (response.IsSuccessStatusCode) return response;
+                if (!IsModelUnavailable(response.StatusCode)) return response;
+                _logger.LogWarning("Vertex AI Gemini chat model {Model} is unavailable with status code {StatusCode}. Trying fallback model.", model, response.StatusCode);
+                lastResponse = response;
+            }
         }
 
         return lastResponse ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
     }
 
+    private string BuildVertexAiUrl(string model)
+    {
+        var projectId = Uri.EscapeDataString(_vertexProjectId);
+        var location = Uri.EscapeDataString(_vertexLocation);
+        var modelId = Uri.EscapeDataString(model);
+        return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
+    }
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
-        statusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest;
+        statusCode is System.Net.HttpStatusCode.NotFound 
+                   or System.Net.HttpStatusCode.BadRequest
+                   or System.Net.HttpStatusCode.TooManyRequests
+                   or System.Net.HttpStatusCode.ServiceUnavailable
+                   or System.Net.HttpStatusCode.InternalServerError
+                   or System.Net.HttpStatusCode.Forbidden;
 
     private static string TruncateForLog(string value) =>
         value.Length <= 500 ? value : value[..500];

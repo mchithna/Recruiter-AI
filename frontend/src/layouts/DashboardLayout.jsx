@@ -18,6 +18,7 @@ import {
   FileCheck,
   User,
   UserCheck,
+  Video,
   X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -45,6 +46,7 @@ const navItemsByRole = {
     { name: 'Documents', path: '/candidate/documents', icon: FileText },
     { name: 'Jobs', path: '/candidate/jobs', icon: Briefcase },
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
+    { name: 'Meetings', path: '/candidate/meetings', icon: Video },
   ],
   HiringManager: [
     { name: 'Home', path: '/hiring-manager/home', icon: Home },
