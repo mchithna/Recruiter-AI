@@ -34,7 +34,11 @@ const getDeadlineUrgency = (deadline) => {
   if (!deadline) return null;
   const now = new Date();
   const deadlineDate = new Date(deadline);
-  const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetMidnight = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate());
+
+  const diffDays = Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return 'expired';
   if (diffDays <= 7) return 'urgent';
   if (diffDays <= 14) return 'soon';

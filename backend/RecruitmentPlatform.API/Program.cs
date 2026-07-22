@@ -95,6 +95,12 @@ else
         client.Timeout = TimeSpan.FromSeconds(25);
     });
 }
+
+builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+});
+builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

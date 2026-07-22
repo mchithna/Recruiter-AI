@@ -3,6 +3,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
 import Modal from '../../components/ui/Modal';
+import { useConfirmDialog } from '../../components/ui';
 import { useToast } from '../../lib/ToastContext';
 import api from '../../api';
 import { Plus, Edit2, Trash2, Network } from 'lucide-react';
@@ -10,6 +11,7 @@ import DepartmentDetailModal from './DepartmentDetailModal';
 
 const OrgChartBuilder = () => {
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalState, setModalState] = useState({
@@ -86,7 +88,15 @@ const OrgChartBuilder = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this department?')) return;
+    const department = departments.find((item) => item.id === id);
+    const confirmed = await confirm({
+      title: 'Delete department?',
+      description: 'This department will be removed from the organization chart.',
+      confirmLabel: 'Delete Department',
+      variant: 'danger',
+      details: department?.name,
+    });
+    if (!confirmed) return;
 
     try {
       await api.delete(`/departments/${id}`);
@@ -285,6 +295,7 @@ const OrgChartBuilder = () => {
         department={selectedDeptForDetail}
         allDepartments={departments}
       />
+      {confirmDialog}
     </div>
   );
 };

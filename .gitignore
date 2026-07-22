@@ -36,6 +36,9 @@ packages/
 !**/.env.example
 appsettings.Development.json
 secrets.json
+*service-account*.json
+*vertex-ai-key.json
+alert-parsec-503008-d0-ebd93a2f5943.json
 .keys/
 **/.keys/
 
@@ -45,6 +48,12 @@ Thumbs.db
 
 # Local workspace artifacts
 .dist/
+context.md
+
+# Local/protected credentials
+hirely-vertex-ai-key.json
+backend/RecruitmentPlatform.API/alert-parsec-503008-d0-ebd93a2f5943.json
+backend/RecruitmentPlatform.API/.keys/
 
 ## A streamlined .gitignore for modern .NET projects
 ## including temporary files, build results, and
@@ -109,3 +118,8 @@ context.md
 
 # Ignore markdown documentation
 docs/
+
+# Node dependencies
+node_modules/
+package-lock.json
+package.json

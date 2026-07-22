@@ -42,13 +42,31 @@ public class AdminAiController : ControllerBase
         var metrics = await CalculateMetrics(cancellationToken);
         if (!metrics.HasData) return BadRequest(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Summarize and explain these exact backend-calculated recruitment analytics. Do not invent metrics.
+            Return a JSON object with this exact structure:
+            {
+              "summary": "overall summary string",
+              "observations": ["observation 1", "observation 2"],
+              "suggestedActions": ["action 1", "action 2"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<AdminAnalyticsSummaryDto>(
             SafetySystemInstruction,
-            BuildPrompt("Summarize and explain these exact backend-calculated recruitment analytics. Do not invent metrics.", metrics.Data),
+            BuildPrompt(prompt, metrics.Data),
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
         result ??= BuildAnalyticsSummary(metrics.Data);
+        if (string.IsNullOrWhiteSpace(result.Summary))
+        {
+            var fallback = BuildAnalyticsSummary(metrics.Data);
+            result.Summary = fallback.Summary;
+            if (result.Observations.Count == 0) result.Observations = fallback.Observations;
+            if (result.SuggestedActions.Count == 0) result.SuggestedActions = fallback.SuggestedActions;
+        }
+
         result.Metrics = metrics.Data;
         return AdminResponse(result);
     }
@@ -60,13 +78,33 @@ public class AdminAiController : ControllerBase
         var metrics = await CalculateMetrics(cancellationToken);
         if (!metrics.HasData) return BadRequest(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Generate concise recruitment insights: activity levels, low-application vacancies, bottlenecks, slow stages, unusual changes, common skills, skill gaps, pipeline health, and trends.
+            Return a JSON object with this exact structure:
+            {
+              "recruitmentInsights": ["insight 1", "insight 2"],
+              "bottlenecks": ["bottleneck 1", "bottleneck 2"],
+              "attentionRequired": ["item 1", "item 2"],
+              "trends": ["trend 1", "trend 2"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<AdminInsightsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate concise recruitment insights: activity levels, low-application vacancies, bottlenecks, slow stages, unusual changes, common skills, skill gaps, pipeline health, and trends.", metrics.Data),
+            BuildPrompt(prompt, metrics.Data),
             maxOutputTokens: 1800,
             cancellationToken: cancellationToken);
 
         result ??= BuildInsights(metrics.Data);
+        if (result.RecruitmentInsights.Count == 0 && result.Bottlenecks.Count == 0)
+        {
+            var fallback = BuildInsights(metrics.Data);
+            if (result.RecruitmentInsights.Count == 0) result.RecruitmentInsights = fallback.RecruitmentInsights;
+            if (result.Bottlenecks.Count == 0) result.Bottlenecks = fallback.Bottlenecks;
+            if (result.AttentionRequired.Count == 0) result.AttentionRequired = fallback.AttentionRequired;
+            if (result.Trends.Count == 0) result.Trends = fallback.Trends;
+        }
+
         return AdminResponse(result);
     }
 
@@ -76,13 +114,31 @@ public class AdminAiController : ControllerBase
         if (!IsRateAllowed("activity")) return RateLimited();
         var activity = await BuildActivitySnapshot(cancellationToken);
 
+        var prompt = """
+            Summarize authorized recruitment activity logs, administrative activity, important system events, and recent changes requiring attention.
+            Return a JSON object with this exact structure:
+            {
+              "summary": "overall activity summary string",
+              "importantEvents": ["event 1", "event 2"],
+              "recentChangesRequiringAttention": ["item 1", "item 2"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<AdminActivitySummaryDto>(
             SafetySystemInstruction,
-            BuildPrompt("Summarize authorized recruitment activity logs, administrative activity, important system events, and recent changes requiring attention.", activity.Data),
+            BuildPrompt(prompt, activity.Data),
             maxOutputTokens: 1400,
             cancellationToken: cancellationToken);
 
         result ??= BuildActivitySummary(activity.Data, activity.HasData);
+        if (string.IsNullOrWhiteSpace(result.Summary))
+        {
+            var fallback = BuildActivitySummary(activity.Data, activity.HasData);
+            result.Summary = fallback.Summary;
+            if (result.ImportantEvents.Count == 0) result.ImportantEvents = fallback.ImportantEvents;
+            if (result.RecentChangesRequiringAttention.Count == 0) result.RecentChangesRequiringAttention = fallback.RecentChangesRequiringAttention;
+        }
+
         return AdminResponse(result);
     }
 
@@ -171,11 +227,16 @@ public class AdminAiController : ControllerBase
         return Math.Round(values.Average(v => (v.UpdatedAt - v.AppliedAt).TotalHours), 1);
     }
 
-    private IActionResult AdminResponse<T>(T result) => Ok(new DashboardAiResponse<T>
+    private IActionResult AdminResponse<T>(T? result)
     {
-        Result = result,
-        Disclaimer = DashboardAiMessages.AdminDisclaimer
-    });
+        return result == null ? AiUnavailable() : Ok(new DashboardAiResponse<T>
+        {
+            Result = result,
+            Disclaimer = DashboardAiMessages.AdminDisclaimer
+        });
+    }
+
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private static AdminAnalyticsSummaryDto BuildAnalyticsSummary(object metrics)
     {

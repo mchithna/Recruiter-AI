@@ -25,6 +25,14 @@ try:
 except ImportError:
     HAS_GEMINI = False
 
+# Try to import Vertex AI
+try:
+    import vertexai
+    from vertexai.generative_models import GenerativeModel as VertexGenerativeModel
+    HAS_VERTEX_AI = True
+except ImportError:
+    HAS_VERTEX_AI = False
+
 fake = Faker()
 
 # Load API keys from backend .env
@@ -34,12 +42,20 @@ if os.path.exists(backend_env):
 else:
     load_dotenv() # Fallback to root .env
 
+USE_VERTEX_AI = os.getenv("GEMINI_PROVIDER", "").lower() in ["vertex", "vertex-ai"]
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GeminiSettings__ApiKey")
-if HAS_GEMINI and api_key:
+
+if USE_VERTEX_AI and HAS_VERTEX_AI:
+    vertex_project = os.getenv("VERTEX_AI_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
+    vertex_location = os.getenv("VERTEX_AI_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION") or "us-central1"
+    vertexai.init(project=vertex_project, location=vertex_location)
+    print("Vertex AI configured. AI expansion enabled.")
+    HAS_GEMINI = True
+elif HAS_GEMINI and api_key:
     genai.configure(api_key=api_key)
     print("Gemini API key loaded. AI expansion enabled.")
 else:
-    print("Gemini API key not found. Using local generator template.")
+    print("Gemini/Vertex AI configuration not found. Using local generator template.")
     HAS_GEMINI = False
 
 def query_gemini_for_cv(input_data):

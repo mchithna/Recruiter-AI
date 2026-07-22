@@ -1,5 +1,5 @@
 import { ArrowLeft, RefreshCw, Sparkles, Users, Check, X, AlertTriangle, Briefcase, GraduationCap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Badge,
@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Modal,
   Skeleton,
   Table,
   TableBody,
@@ -38,7 +39,7 @@ const formatAppliedAt = (appliedAt) => {
 export function JobApplicationsList() {
   const navigate = useNavigate();
   const { jobId } = useParams();
-  const { getJobById } = useRecruiterJobs();
+  const { getJobById, updateJobStatus } = useRecruiterJobs();
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [aiPanel, setAiPanel] = useState({ loading: '', error: '', title: '', disclaimer: '', result: null });
@@ -48,7 +49,8 @@ export function JobApplicationsList() {
     () => {
       let apps = [...applications].sort((a, b) => b.aiMatchScore - a.aiMatchScore);
       if (job?.status === 'Closed') {
-        apps = apps.filter(app => app.status === 'Shortlisted');
+        const nonShortlistedStatuses = ['Applied', 'Under Review', 'In Review'];
+        apps = apps.filter(app => !nonShortlistedStatuses.includes(app.status));
       }
       return apps;
     },
@@ -60,6 +62,19 @@ export function JobApplicationsList() {
           applications.length
       )
     : 0;
+
+  const loadApplications = useCallback(async ({ showLoading = false } = {}) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const loadedApplications = await recruiterApi.getApplicationsByJob(jobId);
+      setApplications(loadedApplications);
+    } catch (error) {
+      console.error('Failed to load applications:', error);
+      setApplications([]);
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, [jobId]);
 
   useEffect(() => {
     let isActive = true;
@@ -112,6 +127,7 @@ export function JobApplicationsList() {
   const [strictExperience, setStrictExperience] = useState(false);
   const [strictEducation, setStrictEducation] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
 
   const handleStatusChange = async (e, applicationId, newStatus) => {
     e.stopPropagation();
@@ -126,15 +142,21 @@ export function JobApplicationsList() {
     }
   };
 
-  const handleCloseJob = async () => {
-    if (!window.confirm("Are you sure? This will prevent any further applications for this role.")) return;
+  const handlePromptCloseJob = () => {
+    setShowCloseModal(true);
+  };
+
+  const confirmCloseJob = async () => {
+    setShowCloseModal(false);
     setIsClosing(true);
     try {
-      await recruiterApi.updateJobStatus(jobId, { status: 'Closed' });
+      await updateJobStatus(jobId, 'Closed');
+      await loadApplications();
       toast({ title: 'Job successfully closed.', variant: 'success' });
-      navigate('/recruiter/jobs');
     } catch (error) {
+      console.error('Failed to close job:', error);
       toast({ title: 'Failed to close job.', variant: 'danger' });
+    } finally {
       setIsClosing(false);
     }
   };
@@ -172,14 +194,16 @@ export function JobApplicationsList() {
         </div>
       </section>
 
-      <div className="flex justify-end">
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
+        {/* Left: AI Feature Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="ai"
             leftIcon={<Sparkles size={16} />}
             onClick={() => runAiAction('compare')}
-            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0 || job?.status === 'Closed'}
+            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
           >
             {aiPanel.loading === 'compare' ? 'Comparing...' : 'Compare Candidates'}
           </Button>
@@ -188,16 +212,21 @@ export function JobApplicationsList() {
             variant="outline"
             leftIcon={<RefreshCw size={16} />}
             onClick={() => runAiAction('screening')}
-            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0 || job?.status === 'Closed'}
+            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
           >
             {aiPanel.loading === 'screening' ? 'Checking...' : 'Screening Assistance'}
           </Button>
+        </div>
+
+        {/* Right: Job Finalize & Navigation Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
-            variant="outline"
-            className="border-danger-200 text-danger-700 hover:bg-danger-50 hover:text-danger-800 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/30"
-            onClick={handleCloseJob}
+            variant="danger"
+            onClick={handlePromptCloseJob}
             disabled={isClosing || !job || job.status === 'Closed'}
+            className="bg-danger-600 hover:bg-danger-700 text-white font-medium shadow-sm shadow-danger-600/20"
           >
             {isClosing ? 'Closing...' : (job?.status === 'Closed' ? 'Job Closed' : 'Finalize & Close Job')}
           </Button>
@@ -373,6 +402,8 @@ export function JobApplicationsList() {
                             variant="ghost" 
                             className="h-8 text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900"
                             onClick={(e) => handleStatusChange(e, application.id, 'Applied')}
+                            disabled={job?.status === 'Closed'}
+                            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                           >
                             Revoke
                           </Button>
@@ -382,6 +413,8 @@ export function JobApplicationsList() {
                             variant="outline" 
                             className="h-8 border-success-200 text-success-700 hover:bg-success-50 hover:text-success-800 dark:border-success-900/50 dark:text-success-400 dark:hover:bg-success-900/30"
                             onClick={(e) => handleStatusChange(e, application.id, 'Shortlisted')}
+                            disabled={job?.status === 'Closed'}
+                            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                           >
                             <Check size={14} className="mr-1" /> Shortlist
                           </Button>
@@ -391,6 +424,8 @@ export function JobApplicationsList() {
                           variant="ghost" 
                           className="h-8 text-danger-600 hover:bg-danger-50 hover:text-danger-700 dark:text-danger-400 dark:hover:bg-danger-900/30"
                           onClick={(e) => handleStatusChange(e, application.id, 'Rejected')}
+                          disabled={job?.status === 'Closed'}
+                          title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                         >
                           <X size={14} className="mr-1" /> Reject
                         </Button>
@@ -404,6 +439,63 @@ export function JobApplicationsList() {
           )}
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={showCloseModal}
+        onClose={() => setShowCloseModal(false)}
+        title="Finalize & Close Job Posting"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCloseModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              leftIcon={<AlertTriangle size={16} />}
+              onClick={confirmCloseJob}
+              isLoading={isClosing}
+              className="bg-danger-600 hover:bg-danger-700 text-white"
+            >
+              Finalize & Close Job
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-1">
+          <div className="flex items-center gap-3.5 rounded-xl border border-danger-500/20 bg-danger-50/60 p-3.5 dark:border-danger-500/30 dark:bg-danger-500/10">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-danger-600 text-white shadow-md shadow-danger-600/30">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="text-body-sm font-semibold text-secondary-900 dark:text-white">
+                {job?.title || 'Job Position'}
+              </h4>
+              <p className="text-caption text-secondary-500 dark:text-secondary-400">
+                Finalizing job posting and locking applications
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-secondary-200 bg-secondary-50/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <p className="text-caption font-semibold uppercase tracking-wider text-danger-600 dark:text-danger-400 mb-1">
+              Warning
+            </p>
+            <p className="text-body-sm text-secondary-800 dark:text-secondary-200">
+              Are you sure? This will prevent any further applications for this role and finalize candidate status updates.
+            </p>
+          </div>
+
+          <p className="text-body-sm text-secondary-600 dark:text-secondary-300">
+            Click &quot;Finalize &amp; Close Job&quot; to confirm and close this vacancy.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

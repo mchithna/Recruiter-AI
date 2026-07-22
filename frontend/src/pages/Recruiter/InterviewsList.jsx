@@ -6,9 +6,9 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  Sparkles,
   Video,
   UserCheck,
-  Sparkles,
   Edit,
   ExternalLink,
 } from 'lucide-react';
@@ -40,13 +40,18 @@ const formatRelativeDay = (scheduledTime) => {
   if (!scheduledTime) return '';
   const now = new Date();
   const date = new Date(scheduledTime);
-  const diffMs = date - now;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const diffMs = targetMidnight - todayMidnight;
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
+  if (diffDays === -1) return 'Yesterday';
   if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
-  if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+  if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
   return '';
 };
 
@@ -460,8 +465,8 @@ export default function InterviewsList() {
       {activeTab === 'scheduled' && (
         <section className="space-y-6">
           {/* Filters UI */}
-          <div className="relative flex flex-col items-start gap-6 rounded-[20px] border border-white/5 bg-[#0b0e1e] p-6 sm:flex-row sm:items-end shadow-2xl">
-            <div className="relative z-10 flex h-[42px] items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#a3adc2]">
+          <div className="glass-card-heavy relative flex flex-col items-start gap-6 rounded-[20px] border border-secondary-200/80 bg-white/80 p-6 sm:flex-row sm:items-end shadow-sm dark:border-white/5 dark:bg-[#0b0e1e] dark:shadow-2xl">
+            <div className="relative z-10 flex h-[42px] items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-secondary-500 dark:text-[#a3adc2]">
               <Filter size={15} strokeWidth={2} />
               Filters
             </div>
@@ -509,14 +514,14 @@ export default function InterviewsList() {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="group relative block h-full cursor-pointer overflow-hidden rounded-[20px] bg-[#0f1225] border border-white/5 p-0 transition-all duration-base hover:-translate-y-1 shadow-xl"
+                    className="group relative block h-full cursor-pointer overflow-hidden rounded-[20px] bg-white border border-secondary-200/80 p-0 transition-all duration-base hover:-translate-y-1 shadow-card hover:shadow-card-hover dark:bg-[#0f1225] dark:border-white/5 dark:shadow-xl"
                     style={{ animationDelay: `${index * 60}ms` }}
                   >
-                    <div className="absolute top-0 left-0 right-0 h-[6px] bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#6366f1]" />
+                    <div className="absolute top-0 left-0 right-0 h-[6px] bg-gradient-to-r from-primary-500 via-ai-500 to-primary-500" />
                     <div className="relative p-6 pt-7">
                       <div className="mb-5 flex items-start justify-between gap-3">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold tracking-wide text-[#2563eb] shadow-sm">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold tracking-wide text-primary-600 shadow-sm dark:bg-white dark:text-[#2563eb]">
                             {interview.candidateName
                               .split(' ')
                               .map((n) => n[0])
@@ -525,10 +530,10 @@ export default function InterviewsList() {
                               .substring(0, 2)}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-[16px] font-bold text-white transition-colors group-hover:text-primary-300">
+                            <h3 className="truncate text-[16px] font-bold text-secondary-900 dark:text-white transition-colors group-hover:text-primary-600 dark:group-hover:text-primary-300">
                               {interview.candidateName}
                             </h3>
-                            <p className="truncate text-[13px] font-medium text-[#94a3b8] mt-0.5">
+                            <p className="truncate text-[13px] font-medium text-secondary-500 dark:text-[#94a3b8] mt-0.5">
                               {interview.jobTitle}
                             </p>
                           </div>
@@ -539,33 +544,47 @@ export default function InterviewsList() {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3 rounded-2xl bg-[#191e36] p-4 border border-white/[0.03]">
-                          <CalendarClock size={18} strokeWidth={2} className="shrink-0 text-[#8b5cf6]" />
+                        <div className="flex items-center gap-3 rounded-2xl bg-secondary-50 p-4 border border-secondary-200/60 dark:bg-[#191e36] dark:border-white/[0.03]">
+                          <CalendarClock size={18} strokeWidth={2} className="shrink-0 text-primary-600 dark:text-[#8b5cf6]" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[14px] font-bold text-white">
+                            <p className="text-[14px] font-bold text-secondary-900 dark:text-white">
                               {formatScheduledTime(interview.scheduledTime)}
                             </p>
-                            <p className="text-[12px] font-medium text-[#94a3b8] mt-0.5">
+                            <p className="text-[12px] font-medium text-secondary-500 dark:text-[#94a3b8] mt-0.5">
                               {interview.durationMinutes} min · {interview.interviewType}
                             </p>
                           </div>
                           {relDay && (
-                            <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-[#8b5cf6] shadow-sm">
+                            <span className="shrink-0 rounded-full bg-primary-100 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-primary-700 shadow-sm dark:bg-white dark:text-[#8b5cf6]">
                               {relDay}
                             </span>
                           )}
                         </div>
 
                         <div className="flex items-center justify-between pl-1">
-                          <p className="text-[13px] font-medium text-[#64748b]">
+                          <p className="text-[13px] font-medium text-secondary-500 dark:text-[#64748b]">
                             with {interview.interviewerName}
                           </p>
-                          {interview.meetingLink && (
-                            <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-[#6366f1] shadow-sm">
-                              <Video size={14} strokeWidth={2.5} />
-                              Video
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {interview.meetingLink && (
+                              <div className="flex items-center gap-1.5 rounded-full bg-primary-50 border border-primary-200/60 px-3 py-1.5 text-[12px] font-bold text-primary-600 shadow-sm dark:bg-white dark:border-none dark:text-[#6366f1]">
+                                <Video size={14} strokeWidth={2.5} />
+                                Video
+                              </div>
+                            )}
+                            <Button
+                              type="button"
+                              variant="ai"
+                              size="sm"
+                              leftIcon={<Sparkles size={14} />}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                navigate(`/recruiter/interviews/${interview.id}/live-copilot`);
+                              }}
+                            >
+                              Live Copilot
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -636,7 +655,7 @@ export default function InterviewsList() {
             type="url"
             value={interviewForm.meetingLink}
             onChange={handleFormChange('meetingLink')}
-            placeholder="https://meet.example.com/interview"
+            placeholder="Paste Google Meet link, or leave blank if Google Workspace OAuth is configured"
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t border-secondary-100 dark:border-secondary-800">
@@ -730,21 +749,35 @@ export default function InterviewsList() {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-secondary-100 dark:border-secondary-800">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-secondary-100 dark:border-white/10">
                   <Button
                     variant="outline"
-                    leftIcon={<ExternalLink size={14} />}
+                    size="md"
+                    leftIcon={<ExternalLink size={16} />}
                     onClick={() => {
                       setIsViewModalOpen(false);
                       navigate(`/recruiter/applications/${selectedInterview.applicationId}`);
                     }}
+                    className="w-full sm:w-auto shrink-0"
                   >
                     View Candidate Application
                   </Button>
-                  <div className="flex gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
+                    <Button
+                      variant="ai"
+                      size="md"
+                      leftIcon={<Sparkles size={16} />}
+                      onClick={() => {
+                        setIsViewModalOpen(false);
+                        navigate(`/recruiter/interviews/${selectedInterview.id}/live-copilot`);
+                      }}
+                    >
+                      Live Copilot
+                    </Button>
                     <Button
                       variant="primary"
-                      leftIcon={<Edit size={14} />}
+                      size="md"
+                      leftIcon={<Edit size={16} />}
                       onClick={() => setIsEditMode(true)}
                     >
                       Edit Details
@@ -801,7 +834,7 @@ export default function InterviewsList() {
                   type="url"
                   value={editForm.meetingLink}
                   onChange={handleEditFormChange('meetingLink')}
-                  placeholder="https://meet.example.com/interview"
+                  placeholder="Paste Google Meet link, or leave blank to auto-generate with OAuth"
                 />
 
                 <div>

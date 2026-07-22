@@ -55,6 +55,7 @@ public class CandidateAiController : ControllerBase
             cancellationToken: cancellationToken);
 
         result ??= BuildProfileAnalysis(profile);
+        NormalizeProfileAnalysis(result, profile);
         result.ProfileCompletenessScore = CalculateProfileScore(profile);
         result.ResumeCompletenessScore = CalculateResumeScore(profile);
         ClampScores(result);
@@ -89,7 +90,7 @@ public class CandidateAiController : ControllerBase
 
         var result = await _gemini.GenerateJsonAsync<CandidateJobRecommendationsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Recommend suitable active jobs. Scores must be 0-100 integers and explanations must be based only on supplied data.", new
+            BuildPrompt("Recommend suitable active jobs. Return exactly one JSON object with this shape: { \"recommendations\": [{ \"jobId\": number, \"matchScore\": number, \"matchingSkills\": string[], \"missingSkills\": string[], \"relevantStrengths\": string[], \"explanation\": string }] }. Scores must be 0-100 integers. Explanations must be based only on supplied data.", new
             {
                 candidate = BuildCandidateSnapshot(profile),
                 jobs = jobs.Select(BuildJobSnapshot)
@@ -120,13 +121,30 @@ public class CandidateAiController : ControllerBase
         var job = await GetActiveJob(jobId, cancellationToken);
         if (profile == null || job == null || !HasCandidateData(profile)) return NotFound(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Analyze skill gaps for this selected job. Do not promise employment outcomes.
+            Return a JSON object with this exact structure:
+            {
+              "availableRequiredSkills": ["skill 1", "skill 2"],
+              "missingRequiredSkills": ["missing skill 1"],
+              "preferredSkills": ["preferred skill 1"],
+              "suggestedLearningAreas": ["learning area 1"],
+              "practicalRecommendations": ["recommendation 1"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<CandidateSkillGapDto>(
             SafetySystemInstruction,
-            BuildPrompt("Analyze skill gaps for this selected job. Do not promise employment outcomes.", new { candidate = BuildCandidateSnapshot(profile), job = BuildJobSnapshot(job) }),
+            BuildPrompt(prompt, new { candidate = BuildCandidateSnapshot(profile), job = BuildJobSnapshot(job) }),
             maxOutputTokens: 1600,
             cancellationToken: cancellationToken);
 
         result ??= BuildSkillGap(profile, job);
+        if (result.AvailableRequiredSkills.Count == 0 && result.MissingRequiredSkills.Count == 0 && result.SuggestedLearningAreas.Count == 0)
+        {
+            result = BuildSkillGap(profile, job);
+        }
+
         result.JobId = job.Id;
         result.JobTitle = job.Title;
         return CandidateResponse(result);
@@ -143,9 +161,21 @@ public class CandidateAiController : ControllerBase
         var job = await GetActiveJob(request.JobId, cancellationToken);
         if (profile == null || job == null || !HasCandidateData(profile)) return NotFound(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Generate application tips, profile-summary suggestions, a cover-letter draft, and interview prep. Candidate must review and edit before use.
+            Return a JSON object with this exact structure:
+            {
+              "applicationTips": ["tip 1", "tip 2"],
+              "profileSummarySuggestions": ["suggestion 1"],
+              "coverLetterDraft": "Dear Hiring Manager,\n\nI am writing to express my interest...",
+              "interviewPreparationGuidance": ["guidance 1"],
+              "reviewChecklist": ["checklist item 1"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<CandidateApplicationAssistanceDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate application tips, profile-summary suggestions, a cover-letter draft, and interview prep. Candidate must review and edit before use.", new
+            BuildPrompt(prompt, new
             {
                 candidate = BuildCandidateSnapshot(profile),
                 job = BuildJobSnapshot(job),
@@ -155,6 +185,11 @@ public class CandidateAiController : ControllerBase
             cancellationToken: cancellationToken);
 
         result ??= BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        if (result.ApplicationTips.Count == 0 && string.IsNullOrWhiteSpace(result.CoverLetterDraft))
+        {
+            result = BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        }
+
         return CandidateResponse(result);
     }
 
@@ -199,19 +234,33 @@ public class CandidateAiController : ControllerBase
              return BadRequest(new { message = "No text found in the PDF." });
         }
 
-        var result = await _gemini.GenerateJsonAsync<List<string>>(
+        var prompt = """
+            Extract a comprehensive, flat list of professional and technical skills from this resume text.
+            Return a JSON object with this exact structure:
+            {
+              "skills": ["React", "JavaScript", "C#", "SQL", "Communication"]
+            }
+            """;
+
+        var aiResult = await _gemini.GenerateJsonAsync<ResumeExtractedSkillsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Extract a comprehensive, flat list of professional skills from this resume text. Return only the skill names as strings.", resumeText),
+            BuildPrompt(prompt, resumeText),
             maxOutputTokens: 1000,
             cancellationToken: cancellationToken);
 
-        if (result == null || result.Count == 0)
+        var extractedRawSkills = aiResult?.Skills ?? new List<string>();
+
+        // Fallback: If AI returned no skills, use keyword extraction on resume text
+        if (extractedRawSkills.Count == 0 && !string.IsNullOrWhiteSpace(resumeText))
         {
-            return BadRequest(new { message = "AI could not extract any skills from this document." });
+            extractedRawSkills = ExtractSkillKeywords(resumeText);
         }
 
-        var normalizedExtractedSkills = NormalizeList(result);
-        if (normalizedExtractedSkills.Count == 0) return BadRequest(new { message = "No valid skills extracted." });
+        var normalizedExtractedSkills = NormalizeList(extractedRawSkills);
+        if (normalizedExtractedSkills.Count == 0)
+        {
+            return BadRequest(new { message = "No readable skills found in this document. Please verify the resume contains text." });
+        }
 
         // Get existing skills from master list to avoid duplicates
         var existingMasterSkills = await _context.Skills
@@ -292,11 +341,16 @@ public class CandidateAiController : ControllerBase
             .Include(j => j.JobSkills).ThenInclude(s => s.Skill)
             .FirstOrDefaultAsync(j => j.Id == jobId && (j.Status == "Open" || j.Status == "Published"), cancellationToken);
 
-    private IActionResult CandidateResponse<T>(T result) => Ok(new DashboardAiResponse<T>
+    private IActionResult CandidateResponse<T>(T? result)
     {
-        Result = result,
-        Disclaimer = DashboardAiMessages.CandidateDisclaimer
-    });
+        return result == null ? AiUnavailable() : Ok(new DashboardAiResponse<T>
+        {
+            Result = result,
+            Disclaimer = DashboardAiMessages.CandidateDisclaimer
+        });
+    }
+
+    private IActionResult AiUnavailable() => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini did not return a usable result. Please try again." });
 
     private IActionResult RateLimited() =>
         StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Too many AI requests. Please wait a moment and try again." });
@@ -380,6 +434,50 @@ public class CandidateAiController : ControllerBase
         };
     }
 
+    private static void NormalizeProfileAnalysis(CandidateProfileResumeAnalysisDto result, CandidateProfile profile)
+    {
+        result.MissingProfileInformation = NormalizeList(result.MissingProfileInformation);
+        result.MissingResumeInformation = NormalizeList(result.MissingResumeInformation);
+        result.ExtractedSkills = NormalizeList(result.ExtractedSkills);
+        result.Education = NormalizeList(result.Education);
+        result.Experience = NormalizeList(result.Experience);
+        result.Projects = NormalizeList(result.Projects);
+        result.Certifications = NormalizeList(result.Certifications);
+        result.Suggestions = NormalizeList(result.Suggestions);
+
+        if (result.ExtractedSkills.Count == 0 && profile.CandidateSkills.Count > 0)
+        {
+            result.ExtractedSkills = NormalizeList(profile.CandidateSkills.Select(s => s.Skill.Name));
+        }
+
+        if (result.Education.Count == 0 && profile.CandidateEducations.Count > 0)
+        {
+            result.Education = NormalizeList(profile.CandidateEducations.Select(e =>
+                string.Join(" - ", new[] { e.Degree, e.FieldOfStudy, e.InstitutionName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        if (result.Experience.Count == 0 && profile.CandidateWorkExperiences.Count > 0)
+        {
+            result.Experience = NormalizeList(profile.CandidateWorkExperiences.Select(e =>
+                string.Join(" at ", new[] { e.JobTitle, e.CompanyName }.Where(v => !string.IsNullOrWhiteSpace(v)))));
+        }
+
+        var fallback = BuildProfileAnalysis(profile);
+        if (result.MissingProfileInformation.Count == 0 && fallback.MissingProfileInformation.Count > 0)
+        {
+            result.MissingProfileInformation = fallback.MissingProfileInformation;
+        }
+
+        if (result.MissingResumeInformation.Count == 0 && fallback.MissingResumeInformation.Count > 0)
+        {
+            result.MissingResumeInformation = fallback.MissingResumeInformation;
+        }
+
+        if (result.Suggestions.Count == 0)
+        {
+            result.Suggestions = fallback.Suggestions;
+        }
+    }
     private static CandidateJobRecommendationsDto BuildJobRecommendations(CandidateProfile profile, IEnumerable<Job> jobs)
     {
         var recommendations = jobs
