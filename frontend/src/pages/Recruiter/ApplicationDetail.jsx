@@ -160,6 +160,7 @@ function StatusAndInterviews({
   isStatusUpdating,
 }) {
   const status = application.status;
+  const isJobClosed = application.jobStatus === 'Closed';
   const canShortlist = status === 'Applied' || status === 'Under Review';
   const canReject = !['Rejected', 'Withdrawn', 'Hired'].includes(status);
   const isShortlisted = status === 'Shortlisted';
@@ -179,16 +180,21 @@ function StatusAndInterviews({
         <CardContent className="space-y-5">
           <div className="flex flex-wrap gap-2">
             {canShortlist && (
-              <Button type="button" variant="primary" size="sm" onClick={onShortlist} disabled={isStatusUpdating}>
+              <Button type="button" variant="primary" size="sm" onClick={onShortlist} disabled={isStatusUpdating || isJobClosed} title={isJobClosed ? 'Job posting is finalized and closed' : undefined}>
                 {isStatusUpdating ? 'Updating...' : 'Shortlist'}
               </Button>
             )}
             {canReject && (
-              <Button type="button" variant="outline" size="sm" onClick={onReject} disabled={isStatusUpdating}>
+              <Button type="button" variant="outline" size="sm" onClick={onReject} disabled={isStatusUpdating || isJobClosed} title={isJobClosed ? 'Job posting is finalized and closed' : undefined}>
                 {isStatusUpdating ? 'Updating...' : 'Reject'}
               </Button>
             )}
-            {!canShortlist && !canReject && !isShortlisted && (
+            {isJobClosed && (
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                Job posting is finalized & closed. Candidate status actions are locked.
+              </p>
+            )}
+            {!canShortlist && !canReject && !isShortlisted && !isJobClosed && (
               <p className="text-body-sm leading-relaxed text-secondary-600">
                 No status actions are available for this application right now.
               </p>

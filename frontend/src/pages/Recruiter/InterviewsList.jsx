@@ -9,7 +9,6 @@ import {
   Sparkles,
   Video,
   UserCheck,
-  Sparkles,
   Edit,
   ExternalLink,
 } from 'lucide-react';
@@ -41,13 +40,18 @@ const formatRelativeDay = (scheduledTime) => {
   if (!scheduledTime) return '';
   const now = new Date();
   const date = new Date(scheduledTime);
-  const diffMs = date - now;
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const diffMs = targetMidnight - todayMidnight;
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
+  if (diffDays === -1) return 'Yesterday';
   if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
-  if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+  if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
   return '';
 };
 

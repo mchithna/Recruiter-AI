@@ -574,6 +574,7 @@ public class RecruiterController : ControllerBase
             Id = a.Id,
             JobId = a.JobId,
             JobTitle = a.Job?.Title ?? "",
+            JobStatus = a.Job?.Status ?? "",
             CandidateName = a.Candidate != null ? $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim() : "",
             AppliedAt = a.AppliedAt,
             Status = a.Status ?? "",

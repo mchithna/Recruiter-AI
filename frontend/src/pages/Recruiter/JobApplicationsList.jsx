@@ -48,7 +48,8 @@ export function JobApplicationsList() {
     () => {
       let apps = [...applications].sort((a, b) => b.aiMatchScore - a.aiMatchScore);
       if (job?.status === 'Closed') {
-        apps = apps.filter(app => app.status === 'Shortlisted');
+        const nonShortlistedStatuses = ['Applied', 'Under Review', 'In Review'];
+        apps = apps.filter(app => !nonShortlistedStatuses.includes(app.status));
       }
       return apps;
     },
@@ -179,7 +180,8 @@ export function JobApplicationsList() {
             variant="ai"
             leftIcon={<Sparkles size={16} />}
             onClick={() => runAiAction('compare')}
-            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0 || job?.status === 'Closed'}
+            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
           >
             {aiPanel.loading === 'compare' ? 'Comparing...' : 'Compare Candidates'}
           </Button>
@@ -188,7 +190,8 @@ export function JobApplicationsList() {
             variant="outline"
             leftIcon={<RefreshCw size={16} />}
             onClick={() => runAiAction('screening')}
-            disabled={Boolean(aiPanel.loading) || applications.length === 0}
+            disabled={Boolean(aiPanel.loading) || applications.length === 0 || job?.status === 'Closed'}
+            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
           >
             {aiPanel.loading === 'screening' ? 'Checking...' : 'Screening Assistance'}
           </Button>
@@ -373,6 +376,8 @@ export function JobApplicationsList() {
                             variant="ghost" 
                             className="h-8 text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900"
                             onClick={(e) => handleStatusChange(e, application.id, 'Applied')}
+                            disabled={job?.status === 'Closed'}
+                            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                           >
                             Revoke
                           </Button>
@@ -382,6 +387,8 @@ export function JobApplicationsList() {
                             variant="outline" 
                             className="h-8 border-success-200 text-success-700 hover:bg-success-50 hover:text-success-800 dark:border-success-900/50 dark:text-success-400 dark:hover:bg-success-900/30"
                             onClick={(e) => handleStatusChange(e, application.id, 'Shortlisted')}
+                            disabled={job?.status === 'Closed'}
+                            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                           >
                             <Check size={14} className="mr-1" /> Shortlist
                           </Button>
@@ -391,6 +398,8 @@ export function JobApplicationsList() {
                           variant="ghost" 
                           className="h-8 text-danger-600 hover:bg-danger-50 hover:text-danger-700 dark:text-danger-400 dark:hover:bg-danger-900/30"
                           onClick={(e) => handleStatusChange(e, application.id, 'Rejected')}
+                          disabled={job?.status === 'Closed'}
+                          title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                         >
                           <X size={14} className="mr-1" /> Reject
                         </Button>

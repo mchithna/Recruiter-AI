@@ -38,9 +38,6 @@ export default function MessagesList() {
         if (!isActive) return;
 
         setConversations(convos);
-        if (!searchParams.get('applicationId') && convos.length > 0) {
-          setSearchParams({ applicationId: convos[0].applicationId }, { replace: true });
-        }
       } catch (error) {
         console.error('Failed to load conversations:', error);
       } finally {
@@ -195,57 +192,63 @@ export default function MessagesList() {
                   const isSelected = conversation.applicationId === selectedAppId;
 
                   return (
-                    <Button
+                    <button
                       key={conversation.applicationId}
                       type="button"
-                      variant="ghost"
                       onClick={() => setSearchParams({ applicationId: conversation.applicationId })}
                       className={[
-                        'group h-auto w-full justify-start rounded-none border-b px-4 py-3 text-left transition-all duration-base',
+                        'group w-full text-left flex items-start gap-3 border-b px-4 py-3.5 transition-all duration-base',
                         isSelected
-                          ? 'border-primary-100 bg-primary-50/80 dark:border-primary-500/20 dark:bg-primary-500/10'
+                          ? 'border-primary-100 bg-primary-50/90 border-l-4 border-l-primary-600 dark:border-primary-500/20 dark:bg-primary-500/15'
+                          : conversation.unread
+                          ? 'border-l-4 border-l-primary-500 bg-primary-50/50 dark:bg-primary-500/10 border-secondary-100 dark:border-white/5'
                           : 'border-secondary-100 hover:bg-white/70 dark:border-white/5 dark:hover:bg-white/5',
                       ].join(' ')}
                     >
-                      <span className="flex min-w-0 items-start gap-3">
-                        <span className="relative shrink-0">
-                          <Avatar name={conversation.candidateName} size="md" />
-                          {conversation.unread && (
-                            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-primary-500 dark:border-secondary-900" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="mb-1 flex items-baseline justify-between gap-2">
-                            <span
-                              className={[
-                                'truncate text-body-sm font-semibold',
-                                conversation.unread
-                                  ? 'text-primary-700 dark:text-primary-300'
-                                  : 'text-secondary-900 dark:text-white',
-                              ].join(' ')}
-                            >
-                              {conversation.candidateName}
-                            </span>
-                            <span className="shrink-0 text-caption text-secondary-400">
+                      <span className="relative shrink-0 mt-0.5">
+                        <Avatar name={conversation.candidateName} size="md" />
+                        {conversation.unread && (
+                          <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-primary-500 shadow-sm shadow-primary-500/50 animate-pulse dark:border-secondary-900" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1 flex flex-col items-start text-left">
+                        <span className="mb-1 flex w-full items-center justify-between gap-2 text-left">
+                          <span
+                            className={[
+                              'truncate text-body-sm font-semibold text-left',
+                              conversation.unread
+                                ? 'text-primary-700 dark:text-primary-300 font-bold'
+                                : 'text-secondary-900 dark:text-white',
+                            ].join(' ')}
+                          >
+                            {conversation.candidateName}
+                          </span>
+                          <span className="flex items-center gap-1.5 shrink-0 text-left">
+                            {conversation.unread && (
+                              <span className="rounded-full bg-primary-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase text-primary-600 dark:bg-primary-400/20 dark:text-primary-300">
+                                Unread
+                              </span>
+                            )}
+                            <span className="text-caption text-secondary-400 text-left">
                               {formatMessageTime(conversation.sentAt)}
                             </span>
                           </span>
-                          <span className="mb-1 block line-clamp-1 text-caption text-secondary-500 dark:text-secondary-400">
-                            {conversation.jobTitle}
-                          </span>
-                          <span
-                            className={[
-                              'block line-clamp-2 text-body-sm leading-relaxed',
-                              conversation.unread
-                                ? 'font-semibold text-secondary-800 dark:text-secondary-200'
-                                : 'text-secondary-500 dark:text-secondary-400',
-                            ].join(' ')}
-                          >
-                            {conversation.body}
-                          </span>
+                        </span>
+                        <span className="mb-1 block w-full text-left line-clamp-1 text-caption text-secondary-500 dark:text-secondary-400">
+                          {conversation.jobTitle}
+                        </span>
+                        <span
+                          className={[
+                            'block w-full text-left line-clamp-2 text-body-sm leading-relaxed',
+                            conversation.unread
+                              ? 'font-semibold text-secondary-900 dark:text-secondary-100'
+                              : 'text-secondary-500 dark:text-secondary-400',
+                          ].join(' ')}
+                        >
+                          {conversation.body || 'No messages yet'}
                         </span>
                       </span>
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
@@ -300,13 +303,13 @@ export default function MessagesList() {
                         <Avatar name={message.sender} size="sm" className="shrink-0" />
                         <div
                           className={[
-                          'max-w-[68%] rounded-2xl px-3.5 py-2.5 shadow-sm transition-all',
+                            'max-w-[72%] rounded-2xl px-4 py-3 shadow-sm transition-all',
                             isRecruiter
-                              ? 'rounded-tr-md bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-500/20'
+                              ? 'rounded-tr-md bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-primary-500/20'
                               : 'rounded-tl-md border border-secondary-100 bg-white text-secondary-800 dark:border-white/10 dark:bg-white/5 dark:text-white',
                           ].join(' ')}
                         >
-                          <p className="text-body-sm leading-relaxed">{message.body}</p>
+                          <p className="text-body-sm leading-relaxed whitespace-pre-wrap">{message.body}</p>
                           <p
                             className={[
                               'mt-2 text-right text-caption',
@@ -329,20 +332,29 @@ export default function MessagesList() {
               >
                 {sendError && <p className="text-body-sm font-semibold text-danger-500">{sendError}</p>}
                 <div className="flex items-end gap-3">
-                  <Input
+                  <textarea
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
-                    placeholder={`Message ${selectedApplication.candidateName}...`}
-                    className="recruiter-compose-input flex-1"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        if (draftMessage.trim() && !isSending) {
+                          handleSendMessage(event);
+                        }
+                      }
+                    }}
+                    rows={2}
+                    placeholder={`Message ${selectedApplication.candidateName}... (Press Enter to send, Shift+Enter for new line)`}
+                    className="flex-1 min-h-[72px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
                   />
                   <Button
                     type="submit"
-                    variant={draftMessage.trim() ? 'glass' : 'outline'}
+                    variant={draftMessage.trim() ? 'primary' : 'outline'}
                     size="md"
                     leftIcon={<Send size={16} strokeWidth={1.75} />}
                     disabled={!draftMessage.trim() || isSending}
                     isLoading={isSending}
-                    className="min-w-24 shrink-0 rounded-xl px-5"
+                    className="min-w-24 shrink-0 rounded-xl px-5 h-12"
                   >
                     Send
                   </Button>
