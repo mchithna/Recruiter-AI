@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { supabase } from './supabaseClient';
-import { requireEnv } from './lib/env';
+import { getEnv } from './lib/env';
+
+const apiBaseUrl = getEnv('VITE_API_BASE_URL', '/api');
 
 const api = axios.create({
-  baseURL: requireEnv('VITE_API_BASE_URL'),
+  baseURL: apiBaseUrl,
 });
 
 api.interceptors.request.use(async (config) => {
