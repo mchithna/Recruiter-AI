@@ -199,7 +199,7 @@ export function Interviews() {
                       navigate(`/hiring-manager/interviews/${interview.id}/live-copilot`);
                     }
                   },
-                  variant: isCompleted ? 'secondary' : 'ai',
+                  variant: 'ai',
                 }}
               />
             );
