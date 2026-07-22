@@ -102,7 +102,7 @@ public class CandidateAiController : ControllerBase
             cancellationToken: cancellationToken);
 
         var allowed = jobs.ToDictionary(j => j.Id);
-        if (result == null) return AiUnavailable();
+        result ??= BuildJobRecommendations(profile, jobs);
         result.Recommendations = result.Recommendations
             .Where(r => allowed.ContainsKey(r.JobId))
             .Select(r => EnrichRecommendation(r, allowed[r.JobId], profile))
@@ -110,7 +110,7 @@ public class CandidateAiController : ControllerBase
             .ToList();
         if (result.Recommendations.Count == 0)
         {
-            return AiUnavailable();
+            result = BuildJobRecommendations(profile, jobs);
         }
         if (result.Recommendations.Count == 0) return BadRequest(new { message = DashboardAiMessages.MissingData });
         return CandidateResponse(result);
@@ -124,13 +124,30 @@ public class CandidateAiController : ControllerBase
         var job = await GetActiveJob(jobId, cancellationToken);
         if (profile == null || job == null || !HasCandidateData(profile)) return NotFound(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Analyze skill gaps for this selected job. Do not promise employment outcomes.
+            Return a JSON object with this exact structure:
+            {
+              "availableRequiredSkills": ["skill 1", "skill 2"],
+              "missingRequiredSkills": ["missing skill 1"],
+              "preferredSkills": ["preferred skill 1"],
+              "suggestedLearningAreas": ["learning area 1"],
+              "practicalRecommendations": ["recommendation 1"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<CandidateSkillGapDto>(
             SafetySystemInstruction,
-            BuildPrompt("Analyze skill gaps for this selected job. Do not promise employment outcomes.", new { candidate = BuildCandidateSnapshot(profile), job = BuildJobSnapshot(job) }),
+            BuildPrompt(prompt, new { candidate = BuildCandidateSnapshot(profile), job = BuildJobSnapshot(job) }),
             maxOutputTokens: 1600,
             cancellationToken: cancellationToken);
 
-        if (result == null) return AiUnavailable();
+        result ??= BuildSkillGap(profile, job);
+        if (result.AvailableRequiredSkills.Count == 0 && result.MissingRequiredSkills.Count == 0 && result.SuggestedLearningAreas.Count == 0)
+        {
+            result = BuildSkillGap(profile, job);
+        }
+
         result.JobId = job.Id;
         result.JobTitle = job.Title;
         return CandidateResponse(result);
@@ -147,9 +164,21 @@ public class CandidateAiController : ControllerBase
         var job = await GetActiveJob(request.JobId, cancellationToken);
         if (profile == null || job == null || !HasCandidateData(profile)) return NotFound(new { message = DashboardAiMessages.MissingData });
 
+        var prompt = """
+            Generate application tips, profile-summary suggestions, a cover-letter draft, and interview prep. Candidate must review and edit before use.
+            Return a JSON object with this exact structure:
+            {
+              "applicationTips": ["tip 1", "tip 2"],
+              "profileSummarySuggestions": ["suggestion 1"],
+              "coverLetterDraft": "Dear Hiring Manager,\n\nI am writing to express my interest...",
+              "interviewPreparationGuidance": ["guidance 1"],
+              "reviewChecklist": ["checklist item 1"]
+            }
+            """;
+
         var result = await _gemini.GenerateJsonAsync<CandidateApplicationAssistanceDto>(
             SafetySystemInstruction,
-            BuildPrompt("Generate application tips, profile-summary suggestions, a cover-letter draft, and interview prep. Candidate must review and edit before use.", new
+            BuildPrompt(prompt, new
             {
                 candidate = BuildCandidateSnapshot(profile),
                 job = BuildJobSnapshot(job),
@@ -158,7 +187,12 @@ public class CandidateAiController : ControllerBase
             maxOutputTokens: 2200,
             cancellationToken: cancellationToken);
 
-        if (result == null) return AiUnavailable();
+        result ??= BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        if (result.ApplicationTips.Count == 0 && string.IsNullOrWhiteSpace(result.CoverLetterDraft))
+        {
+            result = BuildApplicationAssistance(profile, job, validation.SanitizedMessage);
+        }
+
         return CandidateResponse(result);
     }
 
