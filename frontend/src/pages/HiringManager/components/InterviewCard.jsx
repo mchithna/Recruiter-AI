@@ -68,15 +68,12 @@ export function InterviewCard({ interview, action, onStartCopilot }) {
     e.preventDefault();
     e.stopPropagation();
     if (action?.onClick) { action.onClick(e); return; }
-    if (isCompleted) { navigate(`/hiring-manager/interviews/${id}`); return; }
-    if (meetingLink) window.open(meetingLink, '_blank');
-    if (onStartCopilot) onStartCopilot(interview);
-    else navigate(`/hiring-manager/interviews/${id}/live-copilot`);
+    navigate(`/hiring-manager/interviews/${id}`);
   };
 
-  const actionLabel  = action?.label   || (isCompleted ? 'View Session Notes' : 'Start & Launch Copilot');
+  const actionLabel   = action?.label   || 'View Session Notes';
   const actionVariant = action?.variant || 'ai';
-  const actionIcon   = action?.icon    || (isCompleted ? <FileText size={14} /> : <Sparkles size={14} />);
+  const actionIcon    = action?.icon    || <FileText size={14} />;
 
   return (
     <div className="group relative flex h-full min-h-[300px] flex-col overflow-hidden rounded-2xl border border-secondary-200/50 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-secondary-900/80">
