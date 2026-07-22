@@ -199,7 +199,7 @@ public class RecruiterAiController : ControllerBase
         var result = await _gemini.GenerateJsonAsync<JobDescriptionResultDto>(
             SafetySystemInstruction,
             BuildJobDescriptionPrompt(request),
-            maxOutputTokens: 750,
+            maxOutputTokens: 2000,
             cancellationToken: cancellationToken);
 
         if (HasJobDescriptionDraft(result))
@@ -729,22 +729,33 @@ public class RecruiterAiController : ControllerBase
     {
         var data = new
         {
-            title = Truncate(FirstText(request.JobTitle), 90),
+            title = Truncate(FirstText(request.JobTitle), 120),
             employmentType = Truncate(FirstText(request.EmploymentType), 40),
             workMode = Truncate(FirstText(request.WorkMode), 40),
             location = Truncate(FirstText(request.Location), 80),
             department = Truncate(FirstText(request.Department), 60),
-            responsibilities = Truncate(FirstText(request.Responsibilities, request.ExistingDescription), 700),
-            requiredSkills = Truncate(FirstText(request.RequiredSkills), 400),
-            preferredSkills = Truncate(FirstText(request.PreferredSkills), 300),
-            experience = Truncate(FirstText(request.Experience), 180),
-            education = Truncate(FirstText(request.Education), 180),
-            existingRequirements = Truncate(FirstText(request.ExistingRequirements), 500)
+            responsibilities = Truncate(FirstText(request.Responsibilities, request.ExistingDescription), 1000),
+            requiredSkills = Truncate(FirstText(request.RequiredSkills), 500),
+            preferredSkills = Truncate(FirstText(request.PreferredSkills), 400),
+            experience = Truncate(FirstText(request.Experience), 250),
+            education = Truncate(FirstText(request.Education), 250),
+            existingRequirements = Truncate(FirstText(request.ExistingRequirements), 800)
         };
 
         return JsonSerializer.Serialize(new
         {
-            task = "Create a concise, role-specific job post draft from the supplied title and fields. Do not use a generic template. If only title is present, infer common responsibilities and requirements for that role. Return JSON only with exactly these fields: title (string), description (string), requirements (string with bullet lines separated by newline), reviewNotes (array of short strings). Description: 2 short paragraphs, under 120 words. Requirements: 5 bullets, under 90 words total. reviewNotes: max 2 short items.",
+            task = """
+                You are an executive HR copywriter and recruiter.
+                Generate a fresh, highly professional, compelling, and role-specific job posting for the specified job title and inputs.
+                Rewrite and enhance any provided rough notes into polished recruitment content.
+                Return JSON only with this exact structure:
+                {
+                  "title": "Job Title",
+                  "description": "First paragraph introducing the role, department mission, and impact...\n\nSecond paragraph outlining key responsibilities, team dynamics, and daily operations...",
+                  "requirements": "• Requirement bullet 1\n• Requirement bullet 2\n• Requirement bullet 3\n• Requirement bullet 4\n• Requirement bullet 5",
+                  "reviewNotes": ["Recommendation 1 for the recruiter", "Recommendation 2"]
+                }
+                """,
             authorizedData = data
         });
     }
@@ -806,9 +817,9 @@ public class RecruiterAiController : ControllerBase
     private static JobDescriptionResultDto NormalizeJobDescriptionDraft(JobDescriptionResultDto result, JobDescriptionRequestDto request)
     {
         result.Title = FirstText(result.Title, request.JobTitle, "New Role");
-        result.Description = FirstText(result.Description, request.ExistingDescription, BuildFallbackDescription(request));
-        result.Requirements = FirstText(result.Requirements, request.ExistingRequirements, BuildFallbackRequirements(request));
-        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
+        result.Description = FirstText(result.Description, BuildFallbackDescription(request));
+        result.Requirements = FirstText(result.Requirements, BuildFallbackRequirements(request));
+        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the AI-generated draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
         return result;
     }
 
@@ -833,50 +844,39 @@ public class RecruiterAiController : ControllerBase
         var location = FirstText(request.Location, "the assigned location");
         var employmentType = FirstText(request.EmploymentType, "full-time");
         var workMode = FirstText(request.WorkMode, "onsite or hybrid");
-        var responsibilities = FirstText(request.Responsibilities, request.ExistingDescription);
         var profile = GetRoleProfile(title);
 
-        var lines = new List<string>
-        {
-            $"We are hiring {ArticleFor(title)} {title} to {profile.Outcome}.",
-            $"This is a {employmentType} role based in {location} with a {workMode} work arrangement."
-        };
+        var paragraph1 = $"We are seeking a detail-oriented, highly organized {title} to join our team in a {workMode.ToLower()} capacity in {location}. In this {employmentType.ToLower()} position, you will play a crucial role in managing key operational processes, maintaining high standards of quality, and supporting organizational success.";
+        var paragraph2 = $"The ideal candidate brings strong analytical and communication skills, thrives in a collaborative environment, and is dedicated to achieving excellence in {profile.Outcome}.";
 
-        if (!string.IsNullOrWhiteSpace(responsibilities))
-        {
-            lines.Add($"Key responsibilities include {TrimSentence(responsibilities)}");
-        }
-        else
-        {
-            lines.Add($"Key responsibilities include {string.Join(", ", profile.Responsibilities.Take(4))}.");
-        }
-
-        lines.Add("Review and adjust this draft for company context, seniority, compensation, and compliance before publishing.");
-        return string.Join(Environment.NewLine + Environment.NewLine, lines);
+        return $"{paragraph1}\n\n{paragraph2}";
     }
 
     private static string BuildFallbackRequirements(JobDescriptionRequestDto request)
     {
-        var requirements = new List<string>();
         var profile = GetRoleProfile(FirstText(request.JobTitle));
-
-        AddRequirement(requirements, request.RequiredSkills, "Required skills");
-        AddRequirement(requirements, request.PreferredSkills, "Preferred skills");
-        AddRequirement(requirements, request.Experience, "Experience");
-        AddRequirement(requirements, request.Education, "Education");
-        AddRequirement(requirements, request.ExistingRequirements, "Additional requirements");
-
-        if (requirements.Count == 0)
-        {
-            requirements.AddRange(profile.Requirements);
-        }
-
-        return string.Join(Environment.NewLine, requirements.Select(requirement => $"- {requirement}"));
+        var bullets = profile.Requirements.Select(req => $"• {req}").ToList();
+        return string.Join(Environment.NewLine, bullets);
     }
 
     private static RoleProfile GetRoleProfile(string? title)
     {
         var normalized = (title ?? string.Empty).ToLowerInvariant();
+
+        if (ContainsAny(normalized, "data entry", "clerk", "admin", "office", "assistant"))
+        {
+            return new RoleProfile(
+                "data integrity, administrative efficiency, and reliable records management",
+                ["accurately inputting and updating records", "performing regular data quality audits", "managing digital files and documentation", "collaborating across departments", "ensuring strict data confidentiality"],
+                [
+                    "Proven experience in data entry, administrative support, or record management.",
+                    "Exceptional typing speed, high level of accuracy, and strong attention to detail.",
+                    "Proficiency in Microsoft Office Suite (Excel, Word) and database management software.",
+                    "Strong organizational skills with the ability to manage competing priorities.",
+                    "Excellent commitment to data confidentiality and operational integrity."
+                ],
+                ["Data Entry", "MS Excel", "Database Management", "Administrative Support", "Attention to Detail", "Records Management", "Data Integrity"]);
+        }
 
         if (ContainsAny(normalized, "sales", "account executive", "business development"))
         {

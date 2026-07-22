@@ -8,10 +8,13 @@ import {
   CardTitle,
   EmptyState,
   Input,
+  Modal,
   Skeleton,
 } from '../../components/ui';
 import { recruiterApi } from './services/recruiterApi';
 import { formatMessageTime } from './utils/messageFormatting';
+
+const MESSAGE_REFRESH_INTERVAL_MS = 3000;
 
 export default function MessagesList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,14 +28,17 @@ export default function MessagesList() {
   const [sendError, setSendError] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     let isActive = true;
+    let isRefreshing = false;
 
-    async function loadConversations() {
-      setLoadingList(true);
-
+    async function loadConversations({ showLoading = false } = {}) {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      if (showLoading) setLoadingList(true);
       try {
         const convos = await recruiterApi.getConversations();
         if (!isActive) return;
@@ -41,16 +47,19 @@ export default function MessagesList() {
       } catch (error) {
         console.error('Failed to load conversations:', error);
       } finally {
-        if (isActive) setLoadingList(false);
+        isRefreshing = false;
+        if (isActive && showLoading) setLoadingList(false);
       }
     }
 
-    loadConversations();
+    loadConversations({ showLoading: true });
+    const refreshId = window.setInterval(loadConversations, MESSAGE_REFRESH_INTERVAL_MS);
 
     return () => {
       isActive = false;
+      window.clearInterval(refreshId);
     };
-  }, [searchParams, setSearchParams]);
+  }, []);
 
   useEffect(() => {
     if (!selectedAppId) {
@@ -60,10 +69,12 @@ export default function MessagesList() {
     }
 
     let isActive = true;
+    let isRefreshing = false;
 
-    async function loadThread() {
-      setLoadingThread(true);
-
+    async function loadThread({ showLoading = false, resetDraft = false } = {}) {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      if (showLoading) setLoadingThread(true);
       try {
         const [app, threadMessages] = await Promise.all([
           recruiterApi.getApplication(selectedAppId),
@@ -81,19 +92,22 @@ export default function MessagesList() {
         );
         setSelectedApplication(app);
         setMessages(threadMessages || []);
-        setDraftMessage('');
-        setSendError('');
+        if (resetDraft) setDraftMessage('');
+        if (resetDraft) setSendError('');
       } catch (error) {
         console.error('Failed to load thread:', error);
       } finally {
-        if (isActive) setLoadingThread(false);
+        isRefreshing = false;
+        if (isActive && showLoading) setLoadingThread(false);
       }
     }
 
-    loadThread();
+    loadThread({ showLoading: true, resetDraft: true });
+    const refreshId = window.setInterval(loadThread, MESSAGE_REFRESH_INTERVAL_MS);
 
     return () => {
       isActive = false;
+      window.clearInterval(refreshId);
     };
   }, [selectedAppId]);
 
@@ -101,12 +115,18 @@ export default function MessagesList() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (event) => {
-    event.preventDefault();
+  const handlePromptSend = (event) => {
+    if (event) event.preventDefault();
+    const trimmed = draftMessage.trim();
+    if (!trimmed || isSending) return;
+    setShowConfirmModal(true);
+  };
+
+  const confirmAndSendMessage = async () => {
+    setShowConfirmModal(false);
 
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
-    if (!window.confirm('Confirm that you reviewed and want to send this message?')) return;
 
     setIsSending(true);
     setSendError('');
@@ -328,7 +348,7 @@ export default function MessagesList() {
 
               <form
                 className="flex shrink-0 flex-col gap-2 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
-                onSubmit={handleSendMessage}
+                onSubmit={handlePromptSend}
               >
                 {sendError && <p className="text-body-sm font-semibold text-danger-500">{sendError}</p>}
                 <div className="flex items-end gap-3">
@@ -339,7 +359,7 @@ export default function MessagesList() {
                       if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault();
                         if (draftMessage.trim() && !isSending) {
-                          handleSendMessage(event);
+                          handlePromptSend(event);
                         }
                       }
                     }}
@@ -376,6 +396,60 @@ export default function MessagesList() {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Confirm Message Delivery"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowConfirmModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              leftIcon={<Send size={16} />}
+              onClick={confirmAndSendMessage}
+              isLoading={isSending}
+            >
+              Send Message
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-1">
+          <div className="flex items-center gap-3.5 rounded-xl border border-primary-500/20 bg-primary-50/60 p-3.5 dark:border-primary-500/30 dark:bg-primary-500/10">
+            <Avatar name={selectedApplication?.candidateName || 'Candidate'} size="md" className="shrink-0" />
+            <div>
+              <h4 className="text-body-sm font-semibold text-secondary-900 dark:text-white">
+                {selectedApplication?.candidateName || 'Candidate'}
+              </h4>
+              <p className="text-caption text-secondary-500 dark:text-secondary-400">
+                Position: {selectedApplication?.jobTitle || 'Application'}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-secondary-200 bg-secondary-50/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <p className="text-caption font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400 mb-1.5">
+              Message Preview
+            </p>
+            <p className="text-body-sm text-secondary-800 dark:text-secondary-200 whitespace-pre-wrap max-h-36 overflow-y-auto">
+              {draftMessage}
+            </p>
+          </div>
+
+          <p className="text-body-sm text-secondary-600 dark:text-secondary-300">
+            Are you sure you have reviewed this message and want to send it to the candidate?
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -234,19 +234,33 @@ public class CandidateAiController : ControllerBase
              return BadRequest(new { message = "No text found in the PDF." });
         }
 
-        var result = await _gemini.GenerateJsonAsync<List<string>>(
+        var prompt = """
+            Extract a comprehensive, flat list of professional and technical skills from this resume text.
+            Return a JSON object with this exact structure:
+            {
+              "skills": ["React", "JavaScript", "C#", "SQL", "Communication"]
+            }
+            """;
+
+        var aiResult = await _gemini.GenerateJsonAsync<ResumeExtractedSkillsDto>(
             SafetySystemInstruction,
-            BuildPrompt("Extract a comprehensive, flat list of professional skills from this resume text. Return only the skill names as strings.", resumeText),
+            BuildPrompt(prompt, resumeText),
             maxOutputTokens: 1000,
             cancellationToken: cancellationToken);
 
-        if (result == null || result.Count == 0)
+        var extractedRawSkills = aiResult?.Skills ?? new List<string>();
+
+        // Fallback: If AI returned no skills, use keyword extraction on resume text
+        if (extractedRawSkills.Count == 0 && !string.IsNullOrWhiteSpace(resumeText))
         {
-            return BadRequest(new { message = "AI could not extract any skills from this document." });
+            extractedRawSkills = ExtractSkillKeywords(resumeText);
         }
 
-        var normalizedExtractedSkills = NormalizeList(result);
-        if (normalizedExtractedSkills.Count == 0) return BadRequest(new { message = "No valid skills extracted." });
+        var normalizedExtractedSkills = NormalizeList(extractedRawSkills);
+        if (normalizedExtractedSkills.Count == 0)
+        {
+            return BadRequest(new { message = "No readable skills found in this document. Please verify the resume contains text." });
+        }
 
         // Get existing skills from master list to avoid duplicates
         var existingMasterSkills = await _context.Skills

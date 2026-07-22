@@ -26,6 +26,7 @@ import {
   CardTitle,
   DateTimeInput,
   Input,
+  Modal,
   ProgressBar,
   Select,
   Skeleton,
@@ -638,17 +639,26 @@ export function ApplicationDetail() {
     }
   };
 
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+
   const handleDraftMessageChange = (event) => {
     setDraftMessage(event.target.value);
   };
 
-  const handleSendMessage = async (event) => {
-    event.preventDefault();
-    if (!window.confirm('Confirm that you reviewed and want to send this message?')) return;
+  const handlePromptSendMessage = (event) => {
+    if (event) event.preventDefault();
+    const trimmedMessage = draftMessage.trim();
+    if (!trimmedMessage || isSendingMessage) return;
+    setShowSendMessageModal(true);
+  };
 
+  const confirmSendMessage = async () => {
+    setShowSendMessageModal(false);
     const trimmedMessage = draftMessage.trim();
     if (!trimmedMessage) return;
 
+    setIsSendingMessage(true);
     try {
       const sentMessage = await recruiterApi.sendApplicationMessage(applicationId, { body: trimmedMessage });
       setMessages((currentMessages) => [...currentMessages, sentMessage]);
@@ -658,6 +668,8 @@ export function ApplicationDetail() {
         title: error?.response?.data?.message || 'Unable to send message.',
         variant: 'danger',
       });
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -937,10 +949,63 @@ export function ApplicationDetail() {
             messages={messages}
             draftMessage={draftMessage}
             onDraftChange={handleDraftMessageChange}
-            onSendMessage={handleSendMessage}
+            onSendMessage={handlePromptSendMessage}
           />
         </div>
       </div>
+
+      <Modal
+        isOpen={showSendMessageModal}
+        onClose={() => setShowSendMessageModal(false)}
+        title="Confirm Message Delivery"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSendMessageModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              leftIcon={<Send size={16} />}
+              onClick={confirmSendMessage}
+              isLoading={isSendingMessage}
+            >
+              Send Message
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-1">
+          <div className="flex items-center gap-3.5 rounded-xl border border-primary-500/20 bg-primary-50/60 p-3.5 dark:border-primary-500/30 dark:bg-primary-500/10">
+            <div>
+              <h4 className="text-body-sm font-semibold text-secondary-900 dark:text-white">
+                Candidate: {application.candidateName}
+              </h4>
+              <p className="text-caption text-secondary-500 dark:text-secondary-400">
+                Application #{applicationId} — {application.jobTitle}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-secondary-200 bg-secondary-50/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <p className="text-caption font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400 mb-1.5">
+              Message Preview
+            </p>
+            <p className="text-body-sm text-secondary-800 dark:text-secondary-200 whitespace-pre-wrap max-h-36 overflow-y-auto">
+              {draftMessage}
+            </p>
+          </div>
+
+          <p className="text-body-sm text-secondary-600 dark:text-secondary-300">
+            Confirm that you have reviewed this message and want to deliver it to the candidate.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }
