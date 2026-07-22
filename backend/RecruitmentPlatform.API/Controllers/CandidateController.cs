@@ -513,6 +513,36 @@ public class CandidateController : ControllerBase
         return app == null ? NotFound(new { message = "Application not found." }) : Ok(app);
     }
 
+    [HttpGet("interviews")]
+    public async Task<IActionResult> GetInterviews(CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var interviews = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department).ThenInclude(d => d.Company)
+            .Include(i => i.Interviewer)
+            .Where(i => i.Application.CandidateId == userId)
+            .OrderBy(i => i.ScheduledTime)
+            .Select(i => new CandidateInterviewDto
+            {
+                Id = i.Id,
+                ApplicationId = i.ApplicationId,
+                JobTitle = i.Application.Job.Title,
+                CompanyName = i.Application.Job.Department.Company.Name,
+                DepartmentName = i.Application.Job.Department.Name,
+                InterviewerName = (i.Interviewer.FirstName + " " + i.Interviewer.LastName).Trim(),
+                InterviewType = i.InterviewType ?? "",
+                ScheduledTime = i.ScheduledTime,
+                DurationMinutes = i.DurationMinutes,
+                MeetingLink = i.MeetingLink,
+                Status = i.Status ?? "",
+                Notes = i.Notes
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(interviews);
+    }
+
     [HttpGet("applications/{applicationId:int}/status-history")]
     public async Task<IActionResult> GetStatusHistory(int applicationId, CancellationToken cancellationToken)
     {
@@ -791,6 +821,22 @@ public class CandidateApplicationDto
     public DateTime AppliedAt { get; set; }
     public string Status { get; set; } = "";
     public decimal? AiMatchScore { get; set; }
+}
+
+public class CandidateInterviewDto
+{
+    public int Id { get; set; }
+    public int ApplicationId { get; set; }
+    public string JobTitle { get; set; } = "";
+    public string? CompanyName { get; set; }
+    public string? DepartmentName { get; set; }
+    public string InterviewerName { get; set; } = "";
+    public string InterviewType { get; set; } = "";
+    public DateTime ScheduledTime { get; set; }
+    public int DurationMinutes { get; set; }
+    public string? MeetingLink { get; set; }
+    public string Status { get; set; } = "";
+    public string? Notes { get; set; }
 }
 
 public class CandidateMessageCreateDto

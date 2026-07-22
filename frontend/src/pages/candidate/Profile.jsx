@@ -5,7 +5,8 @@ import {
   Textarea, 
   Spinner,
   ProgressBar,
-  Modal
+  Modal,
+  useConfirmDialog
 } from '../../components/ui';
 import { Sparkles, Plus, Trash2, Edit2, X, MapPin, Briefcase, GraduationCap, RefreshCw, AlertCircle, CheckCircle2, FileText, Lightbulb } from 'lucide-react';
 import { 
@@ -38,6 +39,7 @@ export default function Profile() {
   const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
 
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -89,7 +91,14 @@ export default function Profile() {
 
   const handleRemoveSkill = async (skill) => {
     if (skill.extractedByAi) {
-      if (!window.confirm('This skill was extracted from your resume by AI. Are you sure you want to remove it?')) return;
+      const confirmed = await confirm({
+        title: 'Remove AI extracted skill?',
+        description: 'This skill was extracted from your resume by AI. Removing it may affect profile matching until you add it again.',
+        confirmLabel: 'Remove Skill',
+        variant: 'warning',
+        details: skill.name,
+      });
+      if (!confirmed) return;
     }
     try {
       await deleteProfileSkill(skill.id);
@@ -146,7 +155,13 @@ export default function Profile() {
   };
 
   const handleDeleteExperience = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this experience?')) return;
+    const confirmed = await confirm({
+      title: 'Delete experience?',
+      description: 'This work experience will be removed from your candidate profile.',
+      confirmLabel: 'Delete Experience',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await deleteProfileExperience(id);
       await loadProfile();
@@ -185,7 +200,13 @@ export default function Profile() {
   };
 
   const handleDeleteEducation = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this education?')) return;
+    const confirmed = await confirm({
+      title: 'Delete education?',
+      description: 'This education record will be removed from your candidate profile.',
+      confirmLabel: 'Delete Education',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await deleteProfileEducation(id);
       await loadProfile();
@@ -193,15 +214,6 @@ export default function Profile() {
     } catch (err) {
       toast({ title: 'Failed to delete education', variant: 'danger' });
     }
-  };
-
-  const handleAddSkill = async () => {
-    const name = window.prompt("Enter skill name:");
-    if (!name) return;
-    const newSkill = { id: Date.now().toString(), name, proficiencyLevel: 'Intermediate', extractedByAi: false };
-    const updatedSkills = [...profile.skills, newSkill];
-    setProfile(prev => ({ ...prev, skills: updatedSkills }));
-    await updateMyProfile({ skills: updatedSkills });
   };
 
   if (loading) {
@@ -477,6 +489,8 @@ export default function Profile() {
           </div>
         </form>
       </Modal>
+
+      {confirmDialog}
 
     </div>
   );

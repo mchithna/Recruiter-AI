@@ -9,6 +9,7 @@ import {
   FileSearch,
   MessageSquareText,
   RotateCw,
+  Send,
   Sparkles,
   Target,
   UserCheck,
@@ -30,6 +31,7 @@ import {
   ProgressBar,
   Select,
   Skeleton,
+  useConfirmDialog,
 } from '../../components/ui';
 import CalendarConnectButton from './components/CalendarConnectButton';
 import CandidateProfileView from './components/CandidateProfileView';
@@ -493,6 +495,7 @@ export function ApplicationDetail() {
   const navigate = useNavigate();
   const { applicationId } = useParams();
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [application, setApplication] = useState(null);
   const [screeningResult, setScreeningResult] = useState(null);
   const [interviews, setInterviews] = useState([]);
@@ -587,7 +590,14 @@ export function ApplicationDetail() {
   };
 
   const handleShortlist = async () => {
-    if (!window.confirm('Confirm that you want to mark this application as shortlisted?')) return;
+    const confirmed = await confirm({
+      title: 'Shortlist application?',
+      description: 'This candidate will be marked as shortlisted and the interview scheduler will open.',
+      confirmLabel: 'Shortlist',
+      variant: 'primary',
+      details: `${application.candidateName} - ${application.jobTitle}`,
+    });
+    if (!confirmed) return;
     const updated = await updateApplicationStatus('Shortlisted');
     if (updated) {
       setIsSchedulingOpen(true);
@@ -595,7 +605,14 @@ export function ApplicationDetail() {
   };
 
   const handleReject = async () => {
-    if (!window.confirm('Confirm that you want to mark this application as rejected?')) return;
+    const confirmed = await confirm({
+      title: 'Reject application?',
+      description: 'This candidate will be marked as rejected for this job application.',
+      confirmLabel: 'Reject',
+      variant: 'danger',
+      details: `${application.candidateName} - ${application.jobTitle}`,
+    });
+    if (!confirmed) return;
     const updated = await updateApplicationStatus('Rejected');
     if (updated) {
       setIsSchedulingOpen(false);
@@ -608,7 +625,14 @@ export function ApplicationDetail() {
 
   const handleSubmitInterview = async (event) => {
     event.preventDefault();
-    if (!window.confirm('Confirm that you want to schedule this interview?')) return;
+    const confirmed = await confirm({
+      title: 'Schedule interview?',
+      description: 'The interview details will be saved and shown in the candidate meetings area.',
+      confirmLabel: 'Schedule Interview',
+      variant: 'primary',
+      details: `${application.candidateName} - ${interviewForm.interviewType}`,
+    });
+    if (!confirmed) return;
 
     setIsSubmittingInterview(true);
     try {
@@ -1006,6 +1030,7 @@ export function ApplicationDetail() {
           </p>
         </div>
       </Modal>
+      {confirmDialog}
     </div>
   );
 }

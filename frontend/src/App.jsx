@@ -45,6 +45,7 @@ import Jobs from './pages/candidate/JobSearch';
 import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
+import CandidateMeetings from './pages/candidate/Meetings';
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -114,6 +115,7 @@ function App() {
                 <Route path="/candidate/jobs/:jobId" element={<JobDetail />} />
                 <Route path="/candidate/applications" element={<Applications />} />
                 <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationDetail />} />
+                <Route path="/candidate/meetings" element={<CandidateMeetings />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
