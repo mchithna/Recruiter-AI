@@ -140,29 +140,7 @@ export default function LiveInterviewCopilot() {
     return () => clearInterval(id);
   }, [session?.startedAt, session?.status]);
 
-  /* ── auto-load session on mount ── */
-  useEffect(() => {
-    if (!interviewId) return;
-    let isMounted = true;
-    const loadSession = async () => {
-      try {
-        const d = await liveInterviewApi.start({
-          interviewId: Number(interviewId),
-          difficulty,
-          questionMode: mode,
-          consentRecorded: consent,
-        });
-        if (isMounted && d) {
-          setSession(d);
-          setQuestion(d.questions?.at(-1) || null);
-        }
-      } catch {
-        // User can manually start if interview session isn't initialized
-      }
-    };
-    loadSession();
-    return () => { isMounted = false; };
-  }, [interviewId]);
+
 
   /* ── speech ── */
   const startSpeech = useCallback(() => {
