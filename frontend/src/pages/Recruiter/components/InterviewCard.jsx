@@ -71,14 +71,14 @@ export function InterviewCard({ interview, action, onStartCopilot }) {
   };
 
   const actionLabel   = action?.label   || (isCompleted ? 'View Copilot Notes'        : 'Start Interview & Live Copilot');
-  const actionVariant = action?.variant || (isCompleted ? 'secondary'                 : 'ai');
+  const actionVariant = action?.variant || 'ai';
   const actionIcon    = action?.icon    || (isCompleted ? <FileText size={14} />       : <Sparkles size={14} />);
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-secondary-200/50 bg-white shadow-sm transition-all duration-200 hover:shadow-md dark:border-white/10 dark:bg-secondary-900/80">
 
       {/* Coloured top stripe */}
-      <div className={`h-1 w-full bg-gradient-to-r ${isCompleted ? 'from-success-400 via-emerald-400 to-teal-400' : 'from-primary-500 via-ai-500 to-indigo-500'}`} />
+      <div className="h-1 w-full bg-gradient-to-r from-primary-500 via-ai-500 to-indigo-500" />
 
       {/* ── Header ── */}
       <div className="relative px-5 pb-3 pt-4">

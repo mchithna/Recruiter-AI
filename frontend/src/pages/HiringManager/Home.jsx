@@ -66,36 +66,64 @@ export function Home() {
         // 2. Build action required list
         const items = [];
 
-        // Condition A: Interviews completed but no evaluation submitted
-        const completedInterviews = interviews.filter((i) => i.status === 'Completed');
-        for (const interview of completedInterviews) {
-          const evalData = await getEvaluationForInterview(interview.id);
-          if (!evalData) {
-            items.push({
-              id: `attn-eval-${interview.id}`,
-              type: 'Evaluation Needed',
-              title: `Submit feedback for ${interview.candidateName}`,
-              description: `${interview.interviewType} was completed on ${formatDateTime(interview.scheduledTime)}.`,
-              link: `/hiring-manager/interviews/${interview.id}`,
-              severity: 'high',
-            });
+        // Condition A: Interviews completed or past scheduled time without evaluation submitted
+        const interviewsNeedingEval = interviews.filter((i) => {
+          if (['Cancelled', 'Rejected'].includes(i.status)) return false;
+          if (i.status === 'Completed') return true;
+          if (i.scheduledTime && new Date(i.scheduledTime) <= now) return true;
+          return false;
+        });
+
+        for (const interview of interviewsNeedingEval) {
+          try {
+            const evalData = await getEvaluationForInterview(interview.id);
+            if (!evalData) {
+              items.push({
+                id: `attn-eval-${interview.id}`,
+                type: 'Evaluation Needed',
+                title: `Submit feedback for ${interview.candidateName}`,
+                description: `${interview.interviewType || 'Interview'} on ${formatDateTime(interview.scheduledTime) || 'recent session'}.`,
+                link: `/hiring-manager/interviews/${interview.id}`,
+                severity: 'high',
+              });
+            }
+          } catch (e) {
+            console.error('Error loading evaluation for interview', interview.id, e);
           }
         }
 
         // Condition B: Shortlisted candidates with zero interviews scheduled yet
         for (const app of shortlisted) {
           if (app.status === 'Shortlisted') {
-            const appInterviews = await getInterviewsForApplication(app.id);
-            if (appInterviews.length === 0) {
-              items.push({
-                id: `attn-sched-${app.id}`,
-                type: 'Scheduling Needed',
-                title: `Set up interview loop for ${app.candidateName}`,
-                description: `Shortlisted candidate for ${app.jobTitle} has no interviews scheduled.`,
-                link: `/hiring-manager/applications/${app.id}`,
-                severity: 'medium',
-              });
+            try {
+              const appInterviews = await getInterviewsForApplication(app.id);
+              if (appInterviews.length === 0) {
+                items.push({
+                  id: `attn-sched-${app.id}`,
+                  type: 'Scheduling Needed',
+                  title: `Set up interview loop for ${app.candidateName}`,
+                  description: `Shortlisted candidate for ${app.jobTitle} has no interviews scheduled.`,
+                  link: `/hiring-manager/applications/${app.id}`,
+                  severity: 'high',
+                });
+              }
+            } catch (e) {
+              console.error('Error checking interviews for app', app.id, e);
             }
+          }
+        }
+
+        // Condition C: Offers awaiting recruiter handoff / candidate response
+        for (const offer of offers) {
+          if (offer.status === 'Pending') {
+            items.push({
+              id: `attn-offer-${offer.id}`,
+              type: 'Offer Handed Off',
+              title: `Offer pending for ${offer.candidateName}`,
+              description: `Draft package of ${offer.salaryCurrency || 'USD'} ${offer.offeredSalary ? offer.offeredSalary.toLocaleString() : ''} submitted to Talent Acquisition.`,
+              link: `/hiring-manager/applications/${offer.applicationId}`,
+              severity: 'medium',
+            });
           }
         }
 

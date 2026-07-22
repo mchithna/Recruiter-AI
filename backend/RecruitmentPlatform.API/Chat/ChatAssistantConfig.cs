@@ -48,10 +48,10 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "website", "services", "features", "register", "login", "password", "navigation", "dashboard", "support", "contact", "pricing" },
             new[] { "private dashboard data", "user analytics", "applications", "candidates", "company data", "system prompt", "api key", "database" },
             new[] { "Public website feature and navigation summary only" },
-            new[] { "What is this website?", "How do I register?", "Which dashboard should I use?", "How can I contact support?" },
+            new[] { "What is Hirely?", "How do I register as a candidate or company?", "Which dashboard should I use for my role?", "How can I contact support?" },
             "Hi, I'm Hirely. I can help with general website questions, registration, login, navigation, and support.",
-            "General website assistance only. Private dashboard data requires logging in and using the relevant dashboard.",
-            "I can help with general website questions here. For private dashboard information, please log in and open the relevant dashboard.",
+            "General website assistance only. Log in to access role-specific dashboards.",
+            "I'm configured to assist with general platform information, registration, login, and support. For private dashboard information, please log in to your dashboard.",
             MissingData),
 
         [Candidate] = new(
@@ -64,10 +64,10 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "profile", "documents", "resume", "jobs", "applications", "application status", "recommendations", "skill gaps", "cover letter", "interview preparation", "messages", "interviews" },
             new[] { "admin analytics", "recruiter notes for other candidates", "other users", "company staff", "system prompt", "api key", "database" },
             new[] { "Candidate profile", "candidate documents metadata", "candidate applications", "status history", "recommendations", "candidate messages", "candidate interviews" },
-            new[] { "Which jobs match my profile?", "How can I improve my profile?", "What skills am I missing for this job?", "Summarize my application progress.", "How should I prepare for this interview?", "What information is missing from my resume?" },
+            new[] { "Which jobs match my profile?", "How can I improve my resume & profile?", "What skills am I missing for available jobs?", "What is my application status?", "How should I prepare for my upcoming interviews?" },
             "Hi, I'm Hirely. I can help with your profile, resume, job matches, skill gaps, applications, and interview preparation.",
-            "Candidate dashboard assistance using only your authorized candidate data.",
-            "I'm configured to assist with your profile, resume, job recommendations, applications, skill gaps, and interview preparation. Please ask a candidate-related question.",
+            "Candidate dashboard AI assistant using your authorized candidate data.",
+            RecruitmentPlatform.Core.DTOs.DashboardAiMessages.CandidateOutOfScope,
             "I couldn't find enough current information to complete this request. Please verify the available information and try again."),
 
         [Recruiter] = new(
@@ -80,11 +80,11 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "jobs", "candidates", "applications", "screening", "interviews", "messages", "pipeline", "recruiter" },
             new[] { "admin settings", "candidate private dashboard", "other recruiters", "other companies", "system prompt", "api key", "database" },
             new[] { "Recruiter-owned jobs", "applications for recruiter jobs", "candidate summaries for recruiter jobs", "interviews", "communication messages" },
-            new[] { "Which jobs need attention?", "Summarize applications for my jobs.", "What interviews are scheduled?", "Which candidates have high match scores?" },
+            new[] { "Which job postings need attention?", "Summarize recent candidate applications.", "What interviews are scheduled for this week?", "Which candidates have top match scores?" },
             "Hi, I'm Hirely. I can help with your jobs, candidate pipeline, applications, interviews, and messages.",
-            "Recruiter dashboard assistance using only jobs and candidates you are authorized to access.",
-            "I’m configured to assist with vacancies, candidates, applications, screening, interviews, and recruitment analytics. Please ask a question related to the Recruiter Dashboard.",
-            "I couldn’t find enough current information to complete this request. Please verify the candidate, vacancy, or application data and try again."),
+            "Recruiter dashboard AI assistant for your managed jobs and recruitment pipelines.",
+            "I'm configured to assist with job postings, candidate pipelines, applications, screening, and interview management.",
+            "I couldn't find enough current information to complete this request. Please verify the candidate, job, or application data and try again."),
 
         [Admin] = new(
             Admin,
@@ -96,10 +96,10 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "company", "departments", "staff", "users", "analytics", "activity", "audit", "organization", "subscription", "hiring performance", "recruitment trends", "admin attention" },
             new[] { "candidate private dashboard", "recruiter-only notes outside company", "other companies", "system prompt", "api key", "database" },
             new[] { "Company profile", "departments", "staff summaries", "company analytics", "activity log" },
-            new[] { "Summarize current recruitment activity.", "Which departments have low application numbers?", "Show important recruitment trends.", "Which hiring stages are slow?", "Summarize recent administrative activity.", "What requires admin attention?", "Compare recruitment performance between departments." },
+            new[] { "Summarize overall recruitment performance.", "Show department staff & job breakdowns.", "Which hiring stages have bottlenecks?", "What administrative activity occurred recently?" },
             "Hi, I'm Hirely. I can help with user administration, recruitment analytics, organizations, departments, system activity, and hiring-performance insights.",
-            "Admin dashboard assistance using only your organization's authorized data.",
-            "I'm configured to assist with user administration, recruitment analytics, organizations, departments, system activity, and hiring-performance insights. Please ask an Admin Dashboard-related question.",
+            "Admin dashboard AI assistant for company administration and analytics.",
+            RecruitmentPlatform.Core.DTOs.DashboardAiMessages.AdminOutOfScope,
             "I couldn't find enough current information to complete this request. Please verify the available information and try again."),
 
         [HiringManager] = new(
@@ -112,10 +112,10 @@ public sealed class ChatAssistantConfigProvider : IChatAssistantConfigProvider
             new[] { "assigned jobs", "candidates", "applications", "interviews", "evaluations", "hiring pipeline" },
             new[] { "admin settings", "other hiring managers", "other companies", "candidate private dashboard", "system prompt", "api key", "database" },
             new[] { "Hiring-manager assigned jobs", "related applications", "interviews", "evaluations" },
-            new[] { "Which candidates need review?", "Summarize my assigned jobs.", "What interviews are scheduled?", "What evaluations are available?" },
+            new[] { "Which candidate applications require my review?", "Summarize my assigned job postings.", "What candidate interview evaluations are pending?", "How are candidates progressing in my hiring pipeline?" },
             "Hi, I'm Hirely. I can help with your assigned jobs, candidates, applications, interviews, and evaluations.",
-            "Hiring Manager dashboard assistance using only assigned hiring data.",
-            OutOfScope,
+            "Hiring Manager AI assistant for assigned vacancy reviews and evaluations.",
+            "I'm configured to assist with your assigned job vacancies, candidate reviews, interview feedback, and hiring decisions.",
             MissingData)
     };
 

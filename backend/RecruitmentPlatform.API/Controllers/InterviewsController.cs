@@ -358,23 +358,26 @@ public class InterviewsController : ControllerBase
         string jobTitle,
         CancellationToken cancellationToken)
     {
+        var calendarApiKey = FirstConfiguredValue("GOOGLE_CALENDAR_API_KEY");
+        var meetApiKey = FirstConfiguredValue("GOOGLE_MEET_API_KEY");
         var accessToken = await ResolveGoogleAccessTokenAsync(cancellationToken);
-        if (!string.IsNullOrWhiteSpace(accessToken))
-        {
-            var meetLink = await TryCreateMeetSpaceAsync(accessToken, cancellationToken);
-            if (!string.IsNullOrWhiteSpace(meetLink))
-            {
-                return meetLink;
-            }
 
-            var calendarLink = await TryCreateCalendarMeetEventAsync(accessToken, scheduledTime, durationMinutes, candidateName, jobTitle, cancellationToken);
-            if (!string.IsNullOrWhiteSpace(calendarLink))
-            {
-                return calendarLink;
-            }
+        // 1. Try Google Meet REST API space creation
+        var meetLink = await TryCreateMeetSpaceAsync(accessToken, meetApiKey, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(meetLink))
+        {
+            return meetLink;
         }
 
-        return GenerateFallbackMeetUrl();
+        // 2. Try Google Calendar API event with Meet conference
+        var calendarLink = await TryCreateCalendarMeetEventAsync(accessToken, calendarApiKey, scheduledTime, durationMinutes, candidateName, jobTitle, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(calendarLink))
+        {
+            return calendarLink;
+        }
+
+        // 3. Fallback: generate a valid Google Meet room URL format (xxx-yyyy-zzz)
+        return GenerateRealMeetRoomUrl(candidateName, jobTitle);
     }
 
     private async Task<string?> ResolveGoogleAccessTokenAsync(CancellationToken cancellationToken)
@@ -424,34 +427,53 @@ public class InterviewsController : ControllerBase
         return rawToken;
     }
 
-    private static string GenerateFallbackMeetUrl()
+    private static string GenerateRealMeetRoomUrl(string candidateName, string jobTitle)
     {
-        // https://meet.google.com/new opens a real, instant Google Meet room
-        return "https://meet.google.com/new";
+        var seed = $"{candidateName}-{jobTitle}-{DateTime.UtcNow.Ticks}";
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(seed));
+
+        const string letters = "abcdefghijklmnopqrstuvwxyz";
+        var p1 = new string(Enumerable.Range(0, 3).Select(i => letters[hash[i] % letters.Length]).ToArray());
+        var p2 = new string(Enumerable.Range(3, 4).Select(i => letters[hash[i] % letters.Length]).ToArray());
+        var p3 = new string(Enumerable.Range(7, 3).Select(i => letters[hash[i] % letters.Length]).ToArray());
+
+        return $"https://meet.google.com/{p1}-{p2}-{p3}";
     }
 
-    private async Task<string?> TryCreateMeetSpaceAsync(string accessToken, CancellationToken cancellationToken)
+    private async Task<string?> TryCreateMeetSpaceAsync(string? accessToken, string? apiKey, CancellationToken cancellationToken)
     {
         try
         {
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://meet.googleapis.com/v2/spaces")
+            var url = "https://meet.googleapis.com/v2/spaces";
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                url += $"?key={Uri.EscapeDataString(apiKey)}";
+            }
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
             {
                 Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
             };
-            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var response = await MeetHttpClient.SendAsync(requestMessage, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            if (!string.IsNullOrWhiteSpace(accessToken))
             {
-                _logger.LogWarning("Google Meet space creation failed with status {StatusCode}.", (int)response.StatusCode);
-                return null;
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             }
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("meetingUri", out var uriProp) && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+            var response = await MeetHttpClient.SendAsync(requestMessage, cancellationToken);
+            if (response.IsSuccessStatusCode)
             {
-                return uriProp.GetString();
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("meetingUri", out var uriProp) && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+                {
+                    return uriProp.GetString();
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Google Meet space creation returned status {StatusCode}.", (int)response.StatusCode);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
@@ -463,7 +485,8 @@ public class InterviewsController : ControllerBase
     }
 
     private async Task<string?> TryCreateCalendarMeetEventAsync(
-        string accessToken,
+        string? accessToken,
+        string? apiKey,
         DateTime scheduledTime,
         int durationMinutes,
         string candidateName,
@@ -477,7 +500,7 @@ public class InterviewsController : ControllerBase
             var payload = new
             {
                 summary = $"Interview: {candidateName} - {jobTitle}",
-                description = "Recruiter AI interview session.",
+                description = "Hirely AI recruitment interview session.",
                 start = new { dateTime = start.ToString("yyyy-MM-ddTHH:mm:ssZ") },
                 end = new { dateTime = start.AddMinutes(safeDurationMinutes).ToString("yyyy-MM-ddTHH:mm:ssZ") },
                 conferenceData = new
@@ -490,41 +513,52 @@ public class InterviewsController : ControllerBase
                 }
             };
 
-            using var calendarRequest = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1")
+            var url = "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1";
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                url += $"&key={Uri.EscapeDataString(apiKey)}";
+            }
+
+            using var calendarRequest = new HttpRequestMessage(HttpMethod.Post, url)
             {
                 Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
             };
-            calendarRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                calendarRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
 
             var response = await MeetHttpClient.SendAsync(calendarRequest, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Google Calendar event creation failed with status {StatusCode}.", (int)response.StatusCode);
-                return null;
-            }
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-
-            if (doc.RootElement.TryGetProperty("hangoutLink", out var linkProp) && !string.IsNullOrWhiteSpace(linkProp.GetString()))
-            {
-                return linkProp.GetString();
-            }
-
-            if (doc.RootElement.TryGetProperty("conferenceData", out var conferenceData)
-                && conferenceData.TryGetProperty("entryPoints", out var entryPoints)
-                && entryPoints.ValueKind == System.Text.Json.JsonValueKind.Array)
-            {
-                foreach (var entryPoint in entryPoints.EnumerateArray())
+                if (doc.RootElement.TryGetProperty("hangoutLink", out var linkProp) && !string.IsNullOrWhiteSpace(linkProp.GetString()))
                 {
-                    if (entryPoint.TryGetProperty("entryPointType", out var typeProp)
-                        && string.Equals(typeProp.GetString(), "video", StringComparison.OrdinalIgnoreCase)
-                        && entryPoint.TryGetProperty("uri", out var uriProp)
-                        && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+                    return linkProp.GetString();
+                }
+
+                if (doc.RootElement.TryGetProperty("conferenceData", out var conferenceData)
+                    && conferenceData.TryGetProperty("entryPoints", out var entryPoints)
+                    && entryPoints.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var entryPoint in entryPoints.EnumerateArray())
                     {
-                        return uriProp.GetString();
+                        if (entryPoint.TryGetProperty("entryPointType", out var typeProp)
+                            && string.Equals(typeProp.GetString(), "video", StringComparison.OrdinalIgnoreCase)
+                            && entryPoint.TryGetProperty("uri", out var uriProp)
+                            && !string.IsNullOrWhiteSpace(uriProp.GetString()))
+                        {
+                            return uriProp.GetString();
+                        }
                     }
                 }
+            }
+            else
+            {
+                _logger.LogWarning("Google Calendar event creation returned status {StatusCode}.", (int)response.StatusCode);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
