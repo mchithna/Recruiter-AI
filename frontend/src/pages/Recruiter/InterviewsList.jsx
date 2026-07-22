@@ -655,7 +655,7 @@ export default function InterviewsList() {
             type="url"
             value={interviewForm.meetingLink}
             onChange={handleFormChange('meetingLink')}
-            placeholder="https://meet.example.com/interview"
+            placeholder="Paste Google Meet link, or leave blank if Google Workspace OAuth is configured"
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t border-secondary-100 dark:border-secondary-800">
@@ -834,7 +834,7 @@ export default function InterviewsList() {
                   type="url"
                   value={editForm.meetingLink}
                   onChange={handleEditFormChange('meetingLink')}
-                  placeholder="https://meet.example.com/interview"
+                  placeholder="Paste Google Meet link, or leave blank to auto-generate with OAuth"
                 />
 
                 <div>

@@ -38,8 +38,12 @@ const formatDate = (value) => {
   }).format(new Date(value));
 };
 
-const isUpcoming = (meeting) =>
-  activeStatuses.has(meeting.status) && new Date(meeting.scheduledTime).getTime() >= Date.now();
+const isActiveMeeting = (meeting) => activeStatuses.has(meeting.status);
+
+const getMeetingTime = (meeting) => {
+  const value = new Date(meeting.scheduledTime).getTime();
+  return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+};
 
 function MeetingCard({ meeting, featured = false }) {
   const hasMeetingLink = Boolean(meeting.meetingLink);
@@ -47,21 +51,27 @@ function MeetingCard({ meeting, featured = false }) {
   return (
     <article
       className={[
-        'relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 shadow-glass backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-secondary-950/60 dark:shadow-glass-dark',
-        featured ? 'p-6 sm:p-7' : 'p-5',
+        'relative overflow-hidden rounded-3xl border border-secondary-200/80 bg-white/90 shadow-glass backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-glass-hover dark:border-white/10 dark:bg-secondary-950/70 dark:shadow-glass-dark',
+        featured ? 'p-5 sm:p-6' : 'p-5',
       ].join(' ')}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 via-ai-500 to-info-500" />
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary-500 via-ai-500 to-info-500" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-44 w-44 rounded-full bg-primary-500/10 blur-3xl dark:bg-primary-400/10" />
+      <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1fr)_170px]">
         <div className="min-w-0 flex-1">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge variant="ai" size="sm" icon={<CalendarClock size={12} />}>
-              {meeting.interviewType || 'Interview'}
-            </Badge>
-            <StatusBadge status={meeting.status?.toLowerCase().replace(/ /g, '_')} />
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="ai" size="sm" icon={<CalendarClock size={12} />}>
+                {meeting.interviewType || 'Interview'}
+              </Badge>
+              <StatusBadge status={meeting.status?.toLowerCase().replace(/ /g, '_')} />
+            </div>
+            <span className="rounded-full border border-secondary-200 bg-secondary-50 px-3 py-1 text-caption font-semibold text-secondary-500 dark:border-white/10 dark:bg-white/5 dark:text-secondary-300">
+              {formatDate(meeting.scheduledTime)}
+            </span>
           </div>
 
-          <h3 className={featured ? 'text-h2 text-secondary-900 dark:text-white' : 'text-h3 text-secondary-900 dark:text-white'}>
+          <h3 className="text-h3 leading-tight text-secondary-900 dark:text-white">
             {meeting.jobTitle}
           </h3>
           <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
@@ -69,7 +79,7 @@ function MeetingCard({ meeting, featured = false }) {
             {meeting.departmentName ? ` · ${meeting.departmentName}` : ''}
           </p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             <Detail icon={Clock} label="When" value={formatDateTime(meeting.scheduledTime)} />
             <Detail icon={Video} label="Duration" value={`${meeting.durationMinutes || 0} minutes`} />
             <Detail icon={UserRound} label="Interviewer" value={meeting.interviewerName || 'Hiring team'} />
@@ -88,13 +98,13 @@ function MeetingCard({ meeting, featured = false }) {
           )}
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:w-48 lg:flex-col">
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:flex-col xl:pt-8">
           {hasMeetingLink ? (
             <a
               href={meeting.meetingLink}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-button bg-primary-600 px-4 text-body-lg font-semibold text-white transition-colors hover:bg-primary-700 focus-ring"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-button bg-primary-600 px-4 text-body-lg font-semibold text-white shadow-glow-primary transition-colors hover:bg-primary-700 focus-ring"
             >
               <ExternalLink size={16} />
               Join Meeting
@@ -103,7 +113,7 @@ function MeetingCard({ meeting, featured = false }) {
             <button
               type="button"
               disabled
-              className="inline-flex h-10 w-full cursor-not-allowed items-center justify-center gap-2 rounded-button border border-secondary-300 px-4 text-body-lg font-semibold text-secondary-400 opacity-60"
+              className="inline-flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-button border border-secondary-300 px-4 text-body-lg font-semibold text-secondary-400 opacity-60 dark:border-white/10"
             >
               <ExternalLink size={16} />
               Join Meeting
@@ -111,7 +121,7 @@ function MeetingCard({ meeting, featured = false }) {
           )}
           <Link
             to={`/candidate/applications/${meeting.applicationId}`}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-button border border-secondary-300 px-4 text-body-lg font-semibold text-secondary-700 transition-colors hover:border-secondary-400 hover:bg-secondary-50 focus-ring dark:border-white/15 dark:text-secondary-100 dark:hover:bg-white/10"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-button border border-secondary-300 bg-white/50 px-4 text-body-lg font-semibold text-secondary-700 transition-colors hover:border-secondary-400 hover:bg-secondary-50 focus-ring dark:border-white/15 dark:bg-white/[0.03] dark:text-secondary-100 dark:hover:bg-white/10"
           >
             <MessageSquare size={16} />
             Application
@@ -124,15 +134,15 @@ function MeetingCard({ meeting, featured = false }) {
 
 function Detail({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-secondary-100 bg-white/70 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-300">
+    <div className="flex min-h-[76px] items-start gap-3 rounded-2xl border border-secondary-100 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-300">
         <Icon size={16} />
       </span>
       <span className="min-w-0">
         <span className="block text-caption font-semibold uppercase tracking-wide text-secondary-400">
           {label}
         </span>
-        <span className="mt-0.5 block break-words text-body-sm font-semibold text-secondary-800 dark:text-secondary-100">
+        <span className="mt-1 block break-words text-body-sm font-semibold leading-snug text-secondary-800 dark:text-secondary-100">
           {value}
         </span>
       </span>
@@ -171,17 +181,25 @@ export default function CandidateMeetings() {
     };
   }, []);
 
-  const { upcoming, past, nextMeeting } = useMemo(() => {
-    const ordered = [...meetings].sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
-    const upcomingMeetings = ordered.filter(isUpcoming);
-    const pastMeetings = ordered
-      .filter((meeting) => !isUpcoming(meeting))
-      .sort((a, b) => new Date(b.scheduledTime) - new Date(a.scheduledTime));
+  const { active, other, nextMeeting } = useMemo(() => {
+    const now = Date.now();
+    const activeMeetings = meetings
+      .filter(isActiveMeeting)
+      .sort((a, b) => {
+        const aTime = getMeetingTime(a);
+        const bTime = getMeetingTime(b);
+        const aDistance = aTime >= now ? aTime - now : Number.MAX_SAFE_INTEGER + (now - aTime);
+        const bDistance = bTime >= now ? bTime - now : Number.MAX_SAFE_INTEGER + (now - bTime);
+        return aDistance - bDistance;
+      });
+    const otherMeetings = meetings
+      .filter((meeting) => !isActiveMeeting(meeting))
+      .sort((a, b) => getMeetingTime(b) - getMeetingTime(a));
 
     return {
-      upcoming: upcomingMeetings,
-      past: pastMeetings,
-      nextMeeting: upcomingMeetings[0] || null,
+      active: activeMeetings,
+      other: otherMeetings,
+      nextMeeting: activeMeetings[0] || null,
     };
   }, [meetings]);
 
@@ -214,8 +232,8 @@ export default function CandidateMeetings() {
           <div className="flex items-center gap-3 rounded-2xl border border-secondary-100 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
             <CalendarClock size={20} className="text-primary-600 dark:text-primary-300" />
             <div>
-              <p className="text-caption font-semibold uppercase tracking-wide text-secondary-400">Upcoming</p>
-              <p className="text-h3 text-secondary-900 dark:text-white">{upcoming.length}</p>
+              <p className="text-caption font-semibold uppercase tracking-wide text-secondary-400">Scheduled</p>
+              <p className="text-h3 text-secondary-900 dark:text-white">{active.length}</p>
             </div>
           </div>
         </div>
@@ -246,22 +264,22 @@ export default function CandidateMeetings() {
         />
       )}
 
-      {upcoming.length > 1 && (
+      {active.length > 1 && (
         <section className="space-y-3">
-          <h2 className="text-h3 text-secondary-900 dark:text-white">Upcoming</h2>
+          <h2 className="text-h3 text-secondary-900 dark:text-white">Scheduled Meetings</h2>
           <div className="grid gap-4 lg:grid-cols-2">
-            {upcoming.slice(1).map((meeting) => (
+            {active.slice(1).map((meeting) => (
               <MeetingCard key={meeting.id} meeting={meeting} />
             ))}
           </div>
         </section>
       )}
 
-      {past.length > 0 && (
+      {other.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-h3 text-secondary-900 dark:text-white">Past & Other Meetings</h2>
           <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/75 shadow-glass backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
-            {past.map((meeting) => (
+            {other.map((meeting) => (
               <Link
                 key={meeting.id}
                 to={`/candidate/applications/${meeting.applicationId}`}
