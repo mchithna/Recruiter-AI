@@ -1,0 +1,10 @@
+.gcloudignore
+.git
+.gitignore
+
+#!include:.gitignore
+
+# The root .gitignore excludes package manifests globally, but the Docker
+# frontend build needs these files in the Cloud Build source archive.
+!frontend/package.json
+!frontend/package-lock.json
