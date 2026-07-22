@@ -1,16 +1,28 @@
 using System.Text;
 using DotNetEnv;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using RecruitmentPlatform.Core.Factories;
+using RecruitmentPlatform.API.Chat;
+using RecruitmentPlatform.API.Authentication;
+
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
 using RecruitmentPlatform.Infrastructure.Repositories;
 using RecruitmentPlatform.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// Keep authentication logs free of tokens and sensitive claims by default.
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = false;
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = false;
 
 var dotenvPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
 if (File.Exists(dotenvPath))
@@ -35,34 +47,84 @@ if (string.IsNullOrWhiteSpace(supabaseJwtSecret))
     throw new InvalidOperationException("JWT secret 'JwtSettings:SupabaseJwtSecret' is empty. Configure it in .env, user secrets, or environment variables.");
 }
 
+var supabaseUrl = builder.Configuration["JwtSettings:SupabaseUrl"]
+    ?? throw new InvalidOperationException("Supabase URL 'JwtSettings:SupabaseUrl' was not found in .env");
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".keys")));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IApplicationStatusService, ApplicationStatusService>();
 builder.Services.AddScoped<EmailNotificationService>();
 builder.Services.AddScoped<SmsNotificationService>();
-builder.Services.AddScoped<NotificationFactory>(serviceProvider =>
-    new NotificationFactory(
-        serviceProvider.GetRequiredService<EmailNotificationService>(),
-        serviceProvider.GetRequiredService<SmsNotificationService>()));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogger, AuditLogger>();
+builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
+builder.Services.AddSingleton<IChatAssistantConfigProvider, ChatAssistantConfigProvider>();
+builder.Services.AddScoped<IChatContextResolver, ChatContextResolver>();
+builder.Services.AddScoped<IChatPermissionValidator, ChatPermissionValidator>();
+builder.Services.AddScoped<IChatInputValidator, ChatInputValidator>();
+builder.Services.AddScoped<IChatScopeClassifier, ChatScopeClassifier>();
+builder.Services.AddScoped<IChatDataRetrievalService, ChatDataRetrievalService>();
+builder.Services.AddScoped<IChatPromptBuilder, ChatPromptBuilder>();
+builder.Services.AddSingleton<IHomeChatResponseFormatter, HomeChatResponseFormatter>();
+builder.Services.AddSingleton<IChatRateLimiter, InMemoryChatRateLimiter>();
 
+builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+});
+var aiProvider = builder.Configuration["AI_PROVIDER"];
+if (aiProvider == "OpenAI")
+{
+    builder.Services.AddHttpClient<IAiStructuredService, OpenAiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+else
+{
+    builder.Services.AddHttpClient<IAiStructuredService, GeminiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+
+builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+});
+builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseJwtSecret));
+        
+        // Use OIDC Discovery to fetch the JWKS automatically from Supabase
+        options.Authority = supabaseUrl;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseJwtSecret)),
-            ValidateIssuer = false,
+            ValidateIssuer = true,
+            ValidIssuer = supabaseUrl, // "iss" claim matching
             ValidateAudience = false,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            // Fallback: If a token uses HS256, use our symmetric key. 
+            // If it uses ES256, .NET automatically uses the downloaded JWKS.
+            IssuerSigningKeys = new[] { signingKey },
+            ValidAlgorithms = new[] { "ES256", "HS256" }
         };
     });
+
+builder.Services.AddTransient<IClaimsTransformation, SupabaseClaimsTransformation>();
 
 builder.Services.AddAuthorization();
 
@@ -111,7 +173,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -126,5 +191,29 @@ app.MapGet("/api/health", () => Results.Ok(new
     .WithTags("Health");
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.Migrate();
+
+        if (!db.Roles.Any())
+        {
+            db.Roles.AddRange(
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Admin", Description = "Platform Administrator" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Recruiter", Description = "Company Recruiter" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "Candidate", Description = "Job Seeker" },
+                new RecruitmentPlatform.Core.Entities.Role { Name = "HiringManager", Description = "Hiring Manager" }
+            );
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database initialization skipped: {ex.GetType().Name}. Database-backed endpoints may fail until the connection is restored.");
+    }
+}
 
 app.Run();

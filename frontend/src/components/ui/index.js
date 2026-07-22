@@ -6,6 +6,7 @@
  */
 
 export { Button } from './Button';
+export { NeuralAnimation } from './NeuralAnimation';
 export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Select } from './Select';
@@ -32,8 +33,11 @@ export { Skeleton } from './Skeleton';
 // ── Overlays, navigation & feedback ─────────────────────────────────────────
 export { Spinner } from './Spinner';
 export { Modal } from './Modal';
+export { ConfirmDialog } from './ConfirmDialog';
+export { useConfirmDialog } from './useConfirmDialog';
 export { ToastContainer } from './Toast';
 export { Tooltip } from './Tooltip';
 export { DropdownMenu, DropdownMenuItem } from './DropdownMenu';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { Pagination } from './Pagination';
+export { ThemeToggle } from './ThemeToggle';
