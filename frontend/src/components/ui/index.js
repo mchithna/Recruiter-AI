@@ -33,6 +33,8 @@ export { Skeleton } from './Skeleton';
 // ── Overlays, navigation & feedback ─────────────────────────────────────────
 export { Spinner } from './Spinner';
 export { Modal } from './Modal';
+export { ConfirmDialog } from './ConfirmDialog';
+export { useConfirmDialog } from './useConfirmDialog';
 export { ToastContainer } from './Toast';
 export { Tooltip } from './Tooltip';
 export { DropdownMenu, DropdownMenuItem } from './DropdownMenu';

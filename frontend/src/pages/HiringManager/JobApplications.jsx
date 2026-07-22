@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '../../components/ui';
 import StatusBadge from './components/StatusBadge';
-import { getJobApplications, getInterviewsForApplication } from './services/hiringManagerApi';
+import { getJobApplications } from './services/hiringManagerApi';
 
 const formatScheduledTime = (scheduledTime) => {
   if (!scheduledTime) return 'Not scheduled';
@@ -41,25 +41,9 @@ export function JobApplications() {
       try {
         setIsLoading(true);
         const apps = await getJobApplications(jobId);
-        
-        // Fetch interviews for each application to extract scheduledTime if it exists
-        const appsWithInterviews = await Promise.all(
-          apps.map(async (app) => {
-            const interviews = await getInterviewsForApplication(app.id);
-            // Select active or first available interview
-            const activeInterview = interviews.find(
-              (int) => int.status === 'Scheduled' || int.status === 'Confirmed' || int.status === 'Rescheduled'
-            ) || interviews[0];
-
-            return {
-              ...app,
-              scheduledTime: activeInterview ? activeInterview.scheduledTime : null,
-            };
-          })
-        );
 
         if (isActive) {
-          setApplications(appsWithInterviews);
+          setApplications(apps);
           setIsLoading(false);
         }
       } catch (error) {

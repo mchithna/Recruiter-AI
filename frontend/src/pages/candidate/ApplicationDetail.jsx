@@ -148,14 +148,23 @@ export default function CandidateApplicationDetail() {
               )}
             </div>
             
-            <form onSubmit={handleSendMessage} className="border-t border-secondary-100 bg-white/50 p-4 dark:border-secondary-800 dark:bg-secondary-950/50 flex gap-3 items-center">
-              <Input 
+            <form onSubmit={handleSendMessage} className="border-t border-secondary-100 bg-white/50 p-4 dark:border-secondary-800 dark:bg-secondary-950/50 flex gap-3 items-end">
+              <textarea 
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-white dark:bg-secondary-900"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (newMessage.trim() && !sending) {
+                      handleSendMessage(e);
+                    }
+                  }
+                }}
+                rows={2}
+                placeholder="Type a message... (Press Enter to send, Shift+Enter for new line)"
+                className="flex-1 min-h-[64px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
               />
-              <Button type="submit" disabled={!newMessage.trim() || sending} size="icon" className="shrink-0 rounded-full h-10 w-10">
+              <Button type="submit" disabled={!newMessage.trim() || sending} size="md" className="shrink-0 rounded-xl h-11 px-4">
                 {sending ? <Spinner size="sm" /> : <Send size={16} />}
               </Button>
             </form>

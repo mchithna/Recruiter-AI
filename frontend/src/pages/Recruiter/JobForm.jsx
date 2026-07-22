@@ -249,7 +249,7 @@ export function JobForm() {
           <div>
             <CardTitle>Job not found</CardTitle>
             <CardDescription>
-              This job is not available in the current mock dataset.
+              This job is not available from the backend right now.
             </CardDescription>
           </div>
         </CardHeader>

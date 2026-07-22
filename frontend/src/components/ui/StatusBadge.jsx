@@ -55,7 +55,7 @@ export function StatusBadge({ status, type = 'application', size = 'md' }) {
     return (
       <span
         className={[
-          'inline-flex items-center rounded-full font-semibold leading-none',
+          'inline-flex items-center rounded-full font-semibold leading-none whitespace-nowrap',
           size === 'sm' ? 'text-caption px-2 py-0.5' : 'text-body-sm px-2.5 py-1',
           SOLID_CLASSES[token] ?? SOLID_CLASSES.secondary,
         ].join(' ')}

@@ -194,7 +194,7 @@ const ChatBot = () => {
             aria-label="Open Hirely assistant"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUiState('chat'); }}
           >
-            <div className="w-[150px] h-[250px] sm:w-[180px] sm:h-[300px] mb-2 relative flex justify-center items-end">
+            <div className="w-[110px] h-[185px] sm:w-[130px] sm:h-[220px] mb-1.5 relative flex justify-center items-end">
               <video
                 src="/assets/chatbot-media/Gif_clean.webm"
                 autoPlay
@@ -205,8 +205,8 @@ const ChatBot = () => {
                 className="max-w-full max-h-full object-contain pointer-events-none"
               />
             </div>
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-6 py-3 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-sm tracking-wide">Ask Hirely</span>
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-2 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
             </div>
           </motion.div>
         )}
@@ -223,15 +223,15 @@ const ChatBot = () => {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             style={{ transformOrigin: 'bottom right' }}
             onClick={() => setUiState('chat')}
-            className="flex items-center gap-3 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
+            className="flex items-center gap-1.5 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
             aria-label="Open Hirely assistant"
           >
-            <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-sm tracking-wide">Ask Hirely</span>
+            <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
+              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-[11px] tracking-wide">Ask Hirely</span>
             </span>
-            <span className="relative w-[70px] h-[70px] sm:w-[76px] sm:h-[76px] rounded-full shadow-xl flex items-center justify-center overflow-hidden">
+            <span className="relative w-[38px] h-[38px] sm:w-[44px] sm:h-[44px] rounded-full shadow-md flex items-center justify-center overflow-hidden">
               <span className="absolute w-[150%] h-[150%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_30%,#818cf8_60%,#4f46e5_85%,#312e81_100%)] animate-[spin_2s_linear_infinite]" />
-              <span className="relative w-[62px] h-[62px] sm:w-[68px] sm:h-[68px] rounded-full border-[3px] border-white bg-indigo-50 overflow-hidden z-10">
+              <span className="relative w-[34px] h-[34px] sm:w-[40px] sm:h-[40px] rounded-full border-[2px] border-white bg-indigo-50 overflow-hidden z-10">
                 <img src="/assets/chatbot-media/Avatar02.jpeg" alt="" className="w-full h-full object-cover object-center" />
               </span>
             </span>

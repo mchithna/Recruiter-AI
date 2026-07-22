@@ -10,7 +10,7 @@ namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/evaluations")]
-[Authorize(Roles = "HiringManager,Recruiter")]
+[Authorize(Roles = "Recruiter")]
 public class EvaluationsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -27,7 +27,6 @@ public class EvaluationsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var evaluation = await _context.Evaluations
             .AsNoTracking()
@@ -37,11 +36,6 @@ public class EvaluationsController : ControllerBase
         if (evaluation == null)
         {
             return NotFound(new { message = "Evaluation not found." });
-        }
-
-        if (!isRecruiter && evaluation.Interview.InterviewerId != userId)
-        {
-            return Forbid();
         }
 
         return Ok(new EvaluationDto
@@ -63,7 +57,6 @@ public class EvaluationsController : ControllerBase
     {
         var companyId = GetCompanyId();
         var userId = GetUserId();
-        var isRecruiter = User.IsInRole("Recruiter");
 
         var interview = await _context.Interviews
             .Include(i => i.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department)
@@ -72,11 +65,6 @@ public class EvaluationsController : ControllerBase
         if (interview == null)
         {
             return NotFound(new { message = "Interview not found." });
-        }
-
-        if (!isRecruiter && interview.InterviewerId != userId)
-        {
-            return Forbid();
         }
 
         var existingEvaluation = await _context.Evaluations
