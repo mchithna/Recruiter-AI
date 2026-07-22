@@ -27,13 +27,13 @@ public class RecruiterAiController : ControllerBase
         """;
 
     private readonly ApplicationDbContext _context;
-    private readonly IGeminiStructuredService _gemini;
+    private readonly IAiStructuredService _gemini;
     private readonly IChatInputValidator _inputValidator;
     private readonly IChatRateLimiter _rateLimiter;
 
     public RecruiterAiController(
         ApplicationDbContext context,
-        IGeminiStructuredService gemini,
+        IAiStructuredService gemini,
         IChatInputValidator inputValidator,
         IChatRateLimiter rateLimiter)
     {
@@ -207,7 +207,8 @@ public class RecruiterAiController : ControllerBase
             return ToAiResponse(NormalizeJobDescriptionDraft(result!, request), RecruiterAiMessages.JobDescriptionGenerationFailed);
         }
 
-        return ToAiResponse<JobDescriptionResultDto>(null, RecruiterAiMessages.JobDescriptionGenerationFailed);
+        var fallback = GenerateJobDescriptionLocally(request);
+        return Ok(new RecruiterAiResponse<JobDescriptionResultDto> { Result = fallback });
     }
 
     [HttpPost("extract-job-skills")]
@@ -228,10 +229,13 @@ public class RecruiterAiController : ControllerBase
             if (result?.ExtractedSkills.Count > 0 == true)
             {
                 result.ExtractedSkills = NormalizeSkillList(result.ExtractedSkills);
-                return ToAiResponse(result);
+                return ToAiResponse(result, "AI could not extract skills right now. Please try again.");
             }
 
-            return ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
+            var fallback = ExtractJobSkillsLocally(request);
+            return fallback.ExtractedSkills.Count > 0
+                ? Ok(new RecruiterAiResponse<JobSkillsExtractionResultDto> { Result = fallback })
+                : ToAiResponse(result, "AI could not extract skills right now. Please add skills manually.");
         }
         catch (Exception)
         {
@@ -787,22 +791,24 @@ public class RecruiterAiController : ControllerBase
 
         return new JobSkillsExtractionResultDto
         {
-            ExtractedSkills = NormalizeSkillList(skills).Take(10).ToList()
+            ExtractedSkills = NormalizeSkillList(skills).Take(18).ToList()
         };
     }
 
     private static bool HasJobDescriptionDraft(JobDescriptionResultDto? result)
     {
         return result != null
-            && !string.IsNullOrWhiteSpace(result.Description)
-            && !string.IsNullOrWhiteSpace(result.Requirements);
+            && (!string.IsNullOrWhiteSpace(result.Title)
+                || !string.IsNullOrWhiteSpace(result.Description)
+                || !string.IsNullOrWhiteSpace(result.Requirements));
     }
 
     private static JobDescriptionResultDto NormalizeJobDescriptionDraft(JobDescriptionResultDto result, JobDescriptionRequestDto request)
     {
         result.Title = FirstText(result.Title, request.JobTitle, "New Role");
-        result.Title = FirstText(result.Title, request.JobTitle);
-        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes);
+        result.Description = FirstText(result.Description, request.ExistingDescription, BuildFallbackDescription(request));
+        result.Requirements = FirstText(result.Requirements, request.ExistingRequirements, BuildFallbackRequirements(request));
+        result.ReviewNotes = NormalizeSkillList(result.ReviewNotes).DefaultIfEmpty("Review the draft for role-specific responsibilities, seniority, and compliance before publishing.").ToList();
         return result;
     }
 

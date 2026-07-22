@@ -180,6 +180,27 @@ public class RecruiterController : ControllerBase
         });
     }
 
+    [HttpPut("jobs/{jobId:int}/status")]
+    public async Task<IActionResult> UpdateJobStatus(int jobId, [FromBody] RecruiterUpdateStatusDto request, CancellationToken cancellationToken)
+    {
+        if (!TryGetCompanyId(out var companyId)) return MissingRecruiterCompany();
+
+        var job = await _context.Jobs
+            .Include(j => j.Department)
+            .FirstOrDefaultAsync(j => j.Id == jobId && j.Department.CompanyId == companyId, cancellationToken);
+
+        if (job == null) return NotFound(new { message = "Job not found." });
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            job.Status = request.Status;
+            job.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        
+        return NoContent();
+    }
+
     [HttpPut("jobs/{jobId:int}")]
     public async Task<IActionResult> UpdateJob(int jobId, [FromBody] SaveRecruiterJobDto request, CancellationToken cancellationToken)
     {
@@ -531,7 +552,18 @@ public class RecruiterController : ControllerBase
         CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
         AppliedAt = a.AppliedAt,
         Status = a.Status,
-        AiMatchScore = a.AiMatchScore
+        JobStatus = a.Job.Status,
+        AiMatchScore = a.AiMatchScore,
+        ScreeningResult = a.AiScreeningResult == null ? null : new RecruiterAiScreeningDto
+        {
+            OverallScore = a.AiScreeningResult.OverallScore,
+            SkillsMatchScore = a.AiScreeningResult.SkillsMatchScore,
+            ExperienceMatchScore = a.AiScreeningResult.ExperienceMatchScore,
+            EducationMatchScore = a.AiScreeningResult.EducationMatchScore,
+            ScreeningSummary = a.AiScreeningResult.ScreeningSummary,
+            AiRank = a.AiScreeningResult.AiRank,
+            ProcessedAt = a.AiScreeningResult.ProcessedAt
+        }
     };
 
     private static RecruiterApplicationDetailDto ToApplicationDetailDto(Application a)
@@ -542,6 +574,7 @@ public class RecruiterController : ControllerBase
             Id = a.Id,
             JobId = a.JobId,
             JobTitle = a.Job?.Title ?? "",
+            JobStatus = a.Job?.Status ?? "",
             CandidateName = a.Candidate != null ? $"{a.Candidate.FirstName} {a.Candidate.LastName}".Trim() : "",
             AppliedAt = a.AppliedAt,
             Status = a.Status ?? "",
@@ -650,6 +683,11 @@ public class RecruiterJobDto
     public List<string> Skills { get; set; } = new();
 }
 
+public class RecruiterUpdateStatusDto
+{
+    public string Status { get; set; } = "";
+}
+
 public class RecruiterApplicationListDto
 {
     public int Id { get; set; }
@@ -658,14 +696,15 @@ public class RecruiterApplicationListDto
     public string CandidateName { get; set; } = "";
     public DateTime AppliedAt { get; set; }
     public string Status { get; set; } = "";
+    public string JobStatus { get; set; } = "";
     public decimal? AiMatchScore { get; set; }
+    public RecruiterAiScreeningDto? ScreeningResult { get; set; }
 }
 
 public class RecruiterApplicationDetailDto : RecruiterApplicationListDto
 {
     public string? CoverLetterText { get; set; }
     public RecruiterCandidateProfileDto? CandidateProfile { get; set; }
-    public RecruiterAiScreeningDto? ScreeningResult { get; set; }
     public List<RecruiterInterviewDto> Interviews { get; set; } = new();
     public List<RecruiterMessageDto> Messages { get; set; } = new();
 }

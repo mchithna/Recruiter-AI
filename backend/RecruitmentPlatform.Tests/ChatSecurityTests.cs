@@ -134,7 +134,7 @@ public class ChatSecurityTests
 
         Assert.Equal("fallback ok", response);
         Assert.Contains("gemini-test", handler.RequestedModels);
-        Assert.Contains("gemini-3.1-flash-lite", handler.RequestedModels);
+        Assert.Contains("gemini-3.5-flash", handler.RequestedModels);
     }
 
 

@@ -6,7 +6,7 @@ using RecruitmentPlatform.Core.Interfaces;
 
 namespace RecruitmentPlatform.Infrastructure.Services;
 
-public class GeminiStructuredService : IGeminiStructuredService
+public class GeminiStructuredService : IAiStructuredService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -188,7 +188,6 @@ public class GeminiStructuredService : IGeminiStructuredService
         var modelId = Uri.EscapeDataString(model);
         return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
-
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
         statusCode is System.Net.HttpStatusCode.NotFound 
                    or System.Net.HttpStatusCode.BadRequest

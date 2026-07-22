@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/interviews")]
-[Authorize(Roles = "Recruiter")]
+[Authorize(Roles = "Recruiter,HiringManager")]
 public class InterviewsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -35,9 +36,10 @@ public class InterviewsController : ControllerBase
             .Include(i => i.Interviewer)
             .Where(i => i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
+            .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
 
-        return Ok(interviews.Select(ToInterviewDto).ToList());
+        return Ok(interviews);
     }
 
     [HttpGet("{id:int}")]
@@ -73,9 +75,10 @@ public class InterviewsController : ControllerBase
             .Include(i => i.Interviewer)
             .Where(i => i.ApplicationId == applicationId && i.Application.Job.Department.CompanyId == companyId)
             .OrderBy(i => i.ScheduledTime)
+            .Select(ToInterviewDtoExpr)
             .ToListAsync(cancellationToken);
 
-        return Ok(interviews.Select(ToInterviewDto).ToList());
+        return Ok(interviews);
     }
 
     [HttpPost]
@@ -201,6 +204,74 @@ public class InterviewsController : ControllerBase
         });
     }
 
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Recruiter")]
+    public async Task<IActionResult> UpdateInterview(int id, [FromBody] UpdateInterviewRequest request, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interview = await _context.Interviews
+            .Include(i => i.Application)
+            .ThenInclude(a => a.Job)
+            .ThenInclude(j => j.Department)
+            .FirstOrDefaultAsync(i => i.Id == id && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        if (request.InterviewerId > 0)
+        {
+            var interviewer = await _context.Users
+                .Include(u => u.Role)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == request.InterviewerId && u.CompanyId == companyId && u.IsActive, cancellationToken);
+
+            if (interviewer == null || !string.Equals(interviewer.Role?.Name, "HiringManager", StringComparison.Ordinal))
+            {
+                return BadRequest(new { message = "Interviewer must be an active Hiring Manager in your company." });
+            }
+
+            interview.InterviewerId = request.InterviewerId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.InterviewType))
+        {
+            interview.InterviewType = Clamp(request.InterviewType, 50, "Interview type is required.");
+        }
+
+        if (request.ScheduledTime != default)
+        {
+            interview.ScheduledTime = request.ScheduledTime;
+        }
+
+        if (request.DurationMinutes > 0)
+        {
+            interview.DurationMinutes = request.DurationMinutes;
+        }
+
+        if (request.MeetingLink != null)
+        {
+            interview.MeetingLink = ClampOptional(request.MeetingLink, 500);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            interview.Status = request.Status;
+        }
+
+        if (request.Notes != null)
+        {
+            interview.Notes = ClampOptional(request.Notes, 4000);
+        }
+
+        interview.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Interview updated successfully." });
+    }
+
     private int GetCompanyId()
     {
         var value = User.FindFirst("company_id")?.Value;
@@ -215,28 +286,45 @@ public class InterviewsController : ControllerBase
         throw new UnauthorizedAccessException("User ID claim is missing or invalid.");
     }
 
-    private static InterviewDto ToInterviewDto(Interview interview)
+    private static Expression<Func<Interview, InterviewDto>> ToInterviewDtoExpr => interview => new InterviewDto
     {
-        return new InterviewDto
-        {
-            Id = interview.Id,
-            ApplicationId = interview.ApplicationId,
-            CandidateName = interview.Application?.Candidate != null
-                ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
-                : "Unknown Candidate",
-            JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
-            InterviewType = interview.InterviewType ?? "",
-            ScheduledTime = interview.ScheduledTime,
-            DurationMinutes = interview.DurationMinutes,
-            MeetingLink = interview.MeetingLink,
-            Status = interview.Status ?? "",
-            Notes = interview.Notes,
-            InterviewerId = interview.InterviewerId,
-            InterviewerName = interview.Interviewer != null
-                ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
-                : "Unknown Interviewer"
-        };
-    }
+        Id = interview.Id,
+        ApplicationId = interview.ApplicationId,
+        CandidateName = interview.Application != null && interview.Application.Candidate != null
+            ? (interview.Application.Candidate.FirstName + " " + interview.Application.Candidate.LastName).Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application != null && interview.Application.Job != null ? interview.Application.Job.Title : "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
+        ScheduledTime = interview.ScheduledTime,
+        DurationMinutes = interview.DurationMinutes,
+        MeetingLink = interview.MeetingLink,
+        Status = interview.Status ?? "",
+        Notes = interview.Notes,
+        InterviewerId = interview.InterviewerId,
+        InterviewerName = interview.Interviewer != null
+            ? (interview.Interviewer.FirstName + " " + interview.Interviewer.LastName).Trim()
+            : "Unknown Interviewer"
+    };
+
+    private static InterviewDto ToInterviewDto(Interview interview) => new InterviewDto
+    {
+        Id = interview.Id,
+        ApplicationId = interview.ApplicationId,
+        CandidateName = interview.Application?.Candidate != null
+            ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
+            : "Unknown Candidate",
+        JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
+        InterviewType = interview.InterviewType ?? "",
+        ScheduledTime = interview.ScheduledTime,
+        DurationMinutes = interview.DurationMinutes,
+        MeetingLink = interview.MeetingLink,
+        Status = interview.Status ?? "",
+        Notes = interview.Notes,
+        InterviewerId = interview.InterviewerId,
+        InterviewerName = interview.Interviewer != null
+            ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
+            : "Unknown Interviewer"
+    };
 
     private static string Clamp(string? value, int maxLength, string requiredMessage)
     {
@@ -270,6 +358,17 @@ public class CreateInterviewRequest
 
 public class UpdateInterviewStatusRequest
 {
+    public string? Status { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class UpdateInterviewRequest
+{
+    public int InterviewerId { get; set; }
+    public string? InterviewType { get; set; }
+    public DateTime ScheduledTime { get; set; }
+    public int DurationMinutes { get; set; }
+    public string? MeetingLink { get; set; }
     public string? Status { get; set; }
     public string? Notes { get; set; }
 }

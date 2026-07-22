@@ -188,7 +188,6 @@ public class GeminiChatService : IAiChatService
         var modelId = Uri.EscapeDataString(model);
         return $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/google/models/{modelId}:generateContent";
     }
-
     private static bool IsModelUnavailable(System.Net.HttpStatusCode statusCode) =>
         statusCode is System.Net.HttpStatusCode.NotFound 
                    or System.Net.HttpStatusCode.BadRequest

@@ -7,8 +7,8 @@
    - `ConnectionStrings__DefaultConnection`
    - `JwtSettings__SupabaseJwtSecret`
    - `JwtSettings__SupabaseUrl`
-   - `GEMINI_API_KEY` or `GEMINI_API_KEYS`
-   - `GEMINI_MODELS`
+   - `OPENAI_API_KEY` or `GEMINI_API_KEY` / `GEMINI_API_KEYS`
+   - `OPENAI_MODEL` or `GEMINI_MODELS`
 3. Start the API:
 
 ```powershell
@@ -17,15 +17,24 @@ dotnet run --launch-profile http
 
 The API loads `.env` automatically in development and also accepts user secrets or standard environment variables.
 
-Keep real Gemini keys, Vertex access tokens, and service credentials in local `.env`, user secrets, or deployment secrets only. Do not commit real secrets, paste them into frontend files, or log them. The backend can use either Gemini API key mode or Vertex AI mode for all AI features.
+Keep real OpenAI keys, Gemini keys, Vertex access tokens, and service credentials in local `.env`, user secrets, or deployment secrets only. Do not commit real secrets, paste them into frontend files, or log them. The backend can use either OpenAI mode or Gemini API key / Vertex AI mode for AI features.
+
+OpenAI mode:
+
+```env
+AI_PROVIDER="OpenAI"
+OPENAI_API_KEY=your-real-key
+OPENAI_MODEL="gpt-4o-mini"
+```
 
 Gemini API key mode:
 
 ```env
+AI_PROVIDER="Gemini"
 GEMINI_PROVIDER=api-key
 GEMINI_API_KEY=your-real-key
-GEMINI_MODELS=gemini-3.1-flash-lite,gemini-2.5-flash-lite,gemini-2.0-flash-lite,gemini-2.0-flash,gemini-2.5-flash,gemini-3.5-flash
-GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_MODELS=gemini-3.5-flash,gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
 Use `GEMINI_API_KEYS` instead of `GEMINI_API_KEY` when you have multiple AI Studio keys. Separate keys with commas. The backend tries every configured key/model pair before returning an AI unavailable response.
@@ -86,6 +95,10 @@ Use the same keys as the `.env` file:
 - `ConnectionStrings__DefaultConnection`
 - `JwtSettings__SupabaseJwtSecret`
 - `JwtSettings__SupabaseUrl`
+- `GEMINI_API_KEY`
+- `AI_PROVIDER`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
 - `GEMINI_API_KEY`
 - `GEMINI_API_KEYS`
 - `GEMINI_MODELS`

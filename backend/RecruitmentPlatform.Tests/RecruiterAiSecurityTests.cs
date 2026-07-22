@@ -73,7 +73,7 @@ public class RecruiterAiSecurityTests
         Assert.NotNull(result);
         Assert.Equal(77, result!.OverallMatchScore);
         Assert.Contains("gemini-test", handler.RequestedModels);
-        Assert.Contains("gemini-3.1-flash-lite", handler.RequestedModels);
+        Assert.Contains("gemini-3.5-flash", handler.RequestedModels);
     }
 
     [Fact]

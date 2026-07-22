@@ -4,19 +4,26 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 internal static class GeminiConfiguration
 {
-    public const string DefaultModel = "gemini-3.1-flash-lite";
+    public const string DefaultModel = "gemini-3.5-flash";
 
     private static readonly string[] ModelFallbacks =
     [
+        "gemini-3.5-flash",
         "gemini-3.1-flash-lite",
         "gemini-2.5-flash-lite",
         "gemini-2.0-flash-lite",
         "gemini-2.0-flash",
         "gemini-2.5-flash",
-        "gemini-3.5-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-002"
+        "gemini-1.5-flash"
     ];
+
+    public static string GetApiKey(IConfiguration configuration)
+    {
+        return FirstConfigured(
+            configuration["GEMINI_API_KEY"],
+            configuration["GeminiSettings:ApiKey"],
+            configuration["RecruiterGeminiSettings:ApiKey"]);
+    }
 
     public static string[] GetApiKeys(IConfiguration configuration)
     {
@@ -68,7 +75,6 @@ internal static class GeminiConfiguration
             ? normalized["models/".Length..]
             : normalized;
     }
-
     public static bool UseVertexAi(IConfiguration configuration)
     {
         var provider = FirstConfigured(

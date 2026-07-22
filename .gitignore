@@ -112,3 +112,8 @@ context.md
 
 # Ignore markdown documentation
 docs/
+
+# Node dependencies
+node_modules/
+package-lock.json
+package.json

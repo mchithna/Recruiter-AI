@@ -25,10 +25,10 @@ public class AdminAiController : ControllerBase
         """;
 
     private readonly ApplicationDbContext _context;
-    private readonly IGeminiStructuredService _gemini;
+    private readonly IAiStructuredService _gemini;
     private readonly IChatRateLimiter _rateLimiter;
 
-    public AdminAiController(ApplicationDbContext context, IGeminiStructuredService gemini, IChatRateLimiter rateLimiter)
+    public AdminAiController(ApplicationDbContext context, IAiStructuredService gemini, IChatRateLimiter rateLimiter)
     {
         _context = context;
         _gemini = gemini;
