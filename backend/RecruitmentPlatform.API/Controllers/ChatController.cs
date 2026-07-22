@@ -147,20 +147,9 @@ public class ChatController : ControllerBase
             return BadRequest(new { message = validation.ErrorMessage });
         }
 
-        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
-        {
-            return Ok(BuildTransientResponse(resolved, _homeResponseFormatter.Format(validation.SanitizedMessage), "answer"));
-        }
-
         if (!_permissionValidator.IsAllowed(resolved))
         {
-            return Ok(BuildTransientResponse(resolved, BuildDashboardHelpResponse(resolved.Config), "answer"));
-        }
-
-        var scope = _scopeClassifier.Classify(resolved, validation.SanitizedMessage);
-        if (!scope.IsAllowed)
-        {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, scope.Response!, "out_of_scope", cancellationToken);
+            return Ok(BuildTransientResponse(resolved, $"I'm configured to assist with the {resolved.Config.DashboardPlaceholder}. Please log in to your account to access dashboard AI features.", "answer"));
         }
 
         ChatDataSnapshot snapshot;
@@ -170,15 +159,13 @@ public class ChatController : ControllerBase
         }
         catch
         {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
+            snapshot = new ChatDataSnapshot(false, "{}");
         }
 
-        if (!snapshot.HasData)
-        {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
-        }
+        var session = resolved.Config.ContextKey == ChatAssistantConfigProvider.Home
+            ? null
+            : await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
 
-        var session = await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
         var history = session?.ChatMessages.OrderBy(m => m.SentAt).ToList() ?? new List<ChatMessage>();
         
         var prompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, history);
