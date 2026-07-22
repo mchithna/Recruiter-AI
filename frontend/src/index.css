@@ -1,12 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
+  html {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* Lock viewport entirely */
+    overscroll-behavior: none;
+    scroll-behavior: smooth;
+  }
+
+  @layer utilities {
+  .font-brand {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+body {
     @apply bg-secondary-50 text-secondary-900 font-sans;
+    @apply dark:bg-secondary-950 dark:text-secondary-100;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* Lock viewport entirely */
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    /* #root becomes the ONLY scroll container */
+    overflow-x: hidden;
   }
 }
 
@@ -18,6 +51,440 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Glass effects */
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  }
+
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  }
+
+  .glass-header-fixed {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(28px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8) brightness(1.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .dark .glass-header-fixed {
+    background: rgba(2, 6, 23, 0.55);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Global Background Mesh Animation */
+  @keyframes aurora {
+    0% { background-position: 50% 50%, 50% 50%; }
+    50% { background-position: 100% 50%, 0% 50%; }
+    100% { background-position: 50% 50%, 50% 50%; }
+  }
+  
+  .mesh-bg {
+    background-color: #f8fafc; /* slate-50 for light mode */
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+    background-size: 200% 200%;
+    animation: aurora 20s ease infinite;
+    transition: background-color 0.5s ease, background-image 0.5s ease;
+  }
+
+  .dark .mesh-bg {
+    background-color: #020617; /* slate-950 for dark mode */
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.4) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.4) 0px, transparent 50%);
+  }
+
+  /* Liquid Glass Buttons */
+  .glass-btn {
+    position: relative;
+    /* Blue and purple gradient mixture for light theme */
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(139, 92, 246, 0.85));
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* Added inset shadow to enhance the liquid glass effect */
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25), inset 0 2px 10px rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .dark .glass-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .dark .glass-btn::before {
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+    z-index: -1;
+  }
+
+  .glass-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35), inset 0 2px 10px rgba(255, 255, 255, 0.4);
+  }
+
+  .dark .glass-btn:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.25);
+  }
+
+  .glass-btn:hover::before {
+    opacity: 1;
+  }
+
+  /* Floating elements animation */
+  @keyframes float-up {
+    0% { transform: translateY(100vh) rotate(0deg) scale(0.8); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.8; }
+    100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute;
+    z-index: 0;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(8px);
+    border-radius: 20%;
+    animation: float-up 25s linear infinite;
+    transition: background-color 0.5s ease, border-color 0.5s ease;
+  }
+
+  .dark .particle {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* V4 Heavy Glass for Cards */
+  .glass-card-heavy {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(32px) saturate(1.2);
+    -webkit-backdrop-filter: blur(32px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  }
+  
+  .glass-card-heavy:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 16px 40px rgba(99, 102, 241, 0.15);
+  }
+
+  .dark .glass-card-heavy {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .glass-card-heavy:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 32px 80px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Overrides for text legibility on dark glass */
+  .dark .glass-card-heavy .text-secondary-900,
+  .dark .glass-card-heavy .text-secondary-600,
+  .dark .glass-card-heavy .text-secondary-500,
+  .dark .glass-card-heavy .text-secondary-700 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  .dark .glass-card-heavy .bg-secondary-50 {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Gradient text utility */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-vivid {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 40%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Section fade-in animation */
+  .section-fade {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .section-fade.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Recruiter dashboard scoped polish */
+  .dark .recruiter-shell .bg-surface {
+    background: rgba(15, 23, 42, 0.72) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(24px) saturate(1.25);
+    -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  }
+
+  .dark .recruiter-shell .bg-white {
+    background: rgba(15, 23, 42, 0.72) !important;
+  }
+
+  .dark .recruiter-shell .bg-secondary-50,
+  .dark .recruiter-shell .bg-secondary-100 {
+    background: rgba(255, 255, 255, 0.07) !important;
+  }
+
+  .dark .recruiter-shell .border-secondary-100,
+  .dark .recruiter-shell .border-secondary-200,
+  .dark .recruiter-shell .border-secondary-300 {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .dark .recruiter-shell .text-secondary-900,
+  .dark .recruiter-shell .text-secondary-800,
+  .dark .recruiter-shell .text-secondary-700 {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  .dark .recruiter-shell .text-secondary-600,
+  .dark .recruiter-shell .text-secondary-500 {
+    color: rgba(203, 213, 225, 0.86) !important;
+  }
+
+  /* ── Form controls: inputs, textareas, selects ──────────────── */
+  .dark .recruiter-shell input,
+  .dark .recruiter-shell textarea,
+  .dark .recruiter-shell select {
+    background: rgba(15, 23, 42, 0.6) !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 0.75rem;
+  }
+
+  .dark .recruiter-shell input:focus,
+  .dark .recruiter-shell textarea:focus,
+  .dark .recruiter-shell select:focus {
+    border-color: rgba(99, 102, 241, 0.6) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  .dark .recruiter-shell input:hover,
+  .dark .recruiter-shell textarea:hover,
+  .dark .recruiter-shell select:hover {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .dark .recruiter-shell input::placeholder,
+  .dark .recruiter-shell textarea::placeholder {
+    color: rgba(148, 163, 184, 0.7) !important;
+  }
+
+  /* ── Native select <option> elements (browser dropdown) ─────── */
+  .dark .recruiter-shell select option {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    padding: 8px 12px;
+  }
+
+  .dark .recruiter-shell select option:checked,
+  .dark .recruiter-shell select option:hover {
+    background: #334155 !important;
+  }
+
+  /* ── AI Screening Card overrides ────────────────────────────── */
+  .dark .recruiter-shell .border-ai-100 {
+    border-color: rgba(139, 92, 246, 0.25) !important;
+  }
+
+  .dark .recruiter-shell .bg-ai-50\/40,
+  .dark .recruiter-shell .bg-ai-50\/50 {
+    background: rgba(139, 92, 246, 0.08) !important;
+  }
+
+  .dark .recruiter-shell .text-ai-700 {
+    color: rgba(196, 167, 255, 0.9) !important;
+  }
+
+  .dark .recruiter-shell .rounded-card.bg-white {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Button outline overrides ───────────────────────────────── */
+  .dark .recruiter-shell button[class*="variant-outline"],
+  .dark .recruiter-shell [class*="border-secondary"] button {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  /* ── Progress bar track in dark mode ────────────────────────── */
+  .dark .recruiter-shell .bg-secondary-200 {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Divide colors ──────────────────────────────────────────── */
+  .dark .recruiter-shell .divide-secondary-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Card footer border ─────────────────────────────────────── */
+  .dark .recruiter-shell .border-t.border-secondary-100 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* ── Chevron / icon overrides ───────────────────────────────── */
+  .dark .recruiter-shell .text-secondary-400 {
+    color: rgba(148, 163, 184, 0.7) !important;
+  }
+
+  /* Staggered card entrance */
+  @keyframes card-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-card-enter {
+    animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  /* Shimmer loading effect for cards */
+  @keyframes shimmer-sweep {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 2s ease-in-out infinite;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Chat bubble subtle glow */
+  .dark .recruiter-shell .bg-gradient-to-br.from-primary-500 {
+    box-shadow: 0 4px 24px rgba(99, 102, 241, 0.25);
+  }
+
+  .recruiter-shell .recruiter-compact-input > div,
+  .recruiter-shell .recruiter-compose-input > div {
+    width: 100%;
+  }
+
+  .recruiter-shell .recruiter-compact-input input {
+    height: 44px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .recruiter-shell .recruiter-compose-input input {
+    min-height: 44px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  .recruiter-shell button {
+    letter-spacing: 0;
+  }
+
+  .recruiter-shell button:disabled {
+    opacity: 0.55;
+    box-shadow: none !important;
+  }
+
+  .recruiter-shell select {
+    min-height: 44px;
+    border-radius: 12px !important;
+    padding-left: 14px !important;
+    padding-right: 40px !important;
+    line-height: 1.35 !important;
+  }
+
+  /* Smooth scrollbar styling */
+  .recruiter-shell ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
+  }
+
+  .dark .recruiter-shell ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .recruiter-shell ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .recruiter-shell ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -27,4 +494,31 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+@keyframes sidebar-orb {
+  0%   { transform: rotate(0deg)   scale(1);    opacity: 0.7; }
+  33%  { transform: rotate(120deg) scale(1.12); opacity: 0.9; }
+  66%  { transform: rotate(240deg) scale(0.92); opacity: 0.6; }
+  100% { transform: rotate(360deg) scale(1);    opacity: 0.7; }
+}
+
+@keyframes shimmer-slide {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Dark mode sidebar overrides */
+.dark aside {
+  background: linear-gradient(160deg, rgba(10,12,30,0.75) 0%, rgba(20,15,50,0.65) 50%, rgba(10,12,30,0.72) 100%) !important;
+  border-right-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 4px 0 40px rgba(0,0,0,0.4), inset -1px 0 0 rgba(255,255,255,0.06) !important;
+}
+.dark header {
+  background: linear-gradient(105deg, rgba(8,10,28,0.82) 0%, rgba(20,10,50,0.72) 40%, rgba(8,10,28,0.8) 100%) !important;
+  border-bottom-color: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.06) inset !important;
+}
+.dark header .text-secondary-900 {
+  color: #f1f5f9 !important;
 }

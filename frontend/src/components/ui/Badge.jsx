@@ -44,7 +44,7 @@ export function Badge({
   return (
     <span
       className={[
-        'inline-flex items-center rounded-full font-semibold leading-none',
+        'inline-flex items-center rounded-full font-semibold leading-none whitespace-nowrap',
         SIZE_CLASSES[size],
         LIGHT_CLASSES[variant],
         className,

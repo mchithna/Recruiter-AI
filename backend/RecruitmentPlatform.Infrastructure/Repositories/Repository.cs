@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -21,9 +22,59 @@ public class Repository<T> : IRepository<T>
         return await DbSet.FindAsync(keyValues);
     }
 
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = DbSet;
+        
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+        
+        return await query.FirstOrDefaultAsync(predicate);
+    }
+
     public async Task<IEnumerable<T>> GetAllAsync()
     {
         return await DbSet.ToListAsync();
+    }
+
+    public IQueryable<T> Query()
+    {
+        return DbSet.AsQueryable();
+    }
+
+    public async Task<IEnumerable<T>> FindAsync(System.Linq.Expressions.Expression<Func<T, bool>> predicate)
+    {
+        return await DbSet.Where(predicate).ToListAsync();
+    }
+
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        Expression<Func<T, bool>> predicate,
+        int page,
+        int pageSize,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = DbSet;
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        query = query.Where(predicate);
+
+        int totalCount = await query.CountAsync();
+
+        if (orderBy != null)
+        {
+            query = orderBy(query);
+        }
+
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        return (items, totalCount);
     }
 
     public async Task AddAsync(T entity)

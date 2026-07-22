@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 
 /** Base classes shared across ALL variants. */
 const BASE =
-  'inline-flex items-center justify-center gap-2 font-semibold select-none ' +
+  'inline-flex items-center justify-center gap-2 font-semibold select-none text-center align-middle whitespace-nowrap ' +
   'rounded-button border border-transparent ' +
   'transition-colors duration-base ' +
   'focus-ring ' +
@@ -24,6 +24,7 @@ const VARIANT_CLASSES = {
     'bg-transparent text-secondary-600 hover:bg-secondary-100 active:bg-secondary-200',
   ai:
     'bg-ai-600 text-white hover:bg-ai-700 active:bg-ai-800 shadow-row-hover',
+  glass: 'glass-btn',
 };
 
 const SIZE_CLASSES = {
@@ -75,13 +76,13 @@ export function Button({
       {isLoading ? (
         <>
           <Spinner size="md" />
-          <span>{children}</span>
+          <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
         </>
       ) : (
         <>
-          {leftIcon && <span className="shrink-0 leading-none">{leftIcon}</span>}
-          <span>{children}</span>
-          {rightIcon && <span className="shrink-0 leading-none">{rightIcon}</span>}
+          {leftIcon && <span className="shrink-0 flex items-center justify-center leading-none">{leftIcon}</span>}
+          <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
+          {rightIcon && <span className="shrink-0 flex items-center justify-center leading-none">{rightIcon}</span>}
         </>
       )}
     </button>
@@ -89,7 +90,7 @@ export function Button({
 }
 
 Button.propTypes = {
-  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'danger', 'ghost', 'ai']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'danger', 'ghost', 'ai', 'glass']),
   size: PropTypes.oneOf(['sm', 'md', 'lg']),
   isLoading: PropTypes.bool,
   disabled: PropTypes.bool,

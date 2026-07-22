@@ -36,6 +36,11 @@ packages/
 !**/.env.example
 appsettings.Development.json
 secrets.json
+*service-account*.json
+*vertex-ai-key.json
+alert-parsec-503008-d0-ebd93a2f5943.json
+.keys/
+**/.keys/
 
 # OS files
 .DS_Store
@@ -108,3 +113,13 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+context.md
+
+# Ignore markdown documentation
+docs/
+
+# Node dependencies
+node_modules/
+package-lock.json
+package.json

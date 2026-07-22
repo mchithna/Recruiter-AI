@@ -305,6 +305,73 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                     b.ToTable("calendar_integrations", (string)null);
                 });
 
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.CandidateAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerSummary")
+                        .HasColumnType("text")
+                        .HasColumnName("answer_summary");
+
+                    b.Property<int?>("ClarityScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("clarity_score");
+
+                    b.Property<string>("Confidence")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("confidence");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int?>("DepthScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("depth_score");
+
+                    b.Property<string>("InterviewerNotes")
+                        .HasColumnType("text")
+                        .HasColumnName("interviewer_notes");
+
+                    b.Property<string>("PotentialConcern")
+                        .HasColumnType("text")
+                        .HasColumnName("potential_concern");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("question_id");
+
+                    b.Property<int?>("RelevanceScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("relevance_score");
+
+                    b.Property<string>("SuggestedAction")
+                        .HasColumnType("text")
+                        .HasColumnName("suggested_action");
+
+                    b.Property<string>("SuggestedFollowUpQuestion")
+                        .HasColumnType("text")
+                        .HasColumnName("suggested_follow_up_question");
+
+                    b.Property<string>("Transcript")
+                        .HasColumnType("text")
+                        .HasColumnName("transcript");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("candidate_answers", (string)null);
+                });
+
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.CandidateDocument", b =>
                 {
                     b.Property<int>("Id")
@@ -904,6 +971,204 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                     b.ToTable("interviews", (string)null);
                 });
 
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewAiInsight", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("InsightType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("insight_type");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("interview_ai_insights", (string)null);
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AskedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("asked_at");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Difficulty")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("difficulty");
+
+                    b.Property<string>("ExpectedPointsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("expected_points_json");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("question_text");
+
+                    b.Property<string>("QuestionType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("question_type");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Skill")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("skill");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Generated")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("interview_questions", (string)null);
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("application_id");
+
+                    b.Property<int>("CandidateId")
+                        .HasColumnType("integer")
+                        .HasColumnName("candidate_id");
+
+                    b.Property<bool>("ConsentRecorded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("consent_recorded");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Intermediate")
+                        .HasColumnName("difficulty");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<int>("InterviewId")
+                        .HasColumnType("integer")
+                        .HasColumnName("interview_id");
+
+                    b.Property<int>("JobId")
+                        .HasColumnType("integer")
+                        .HasColumnName("job_id");
+
+                    b.Property<string>("QuestionMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Adaptive")
+                        .HasColumnName("question_mode");
+
+                    b.Property<DateTime>("StartedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("StartedByRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("started_by_role");
+
+                    b.Property<int>("StartedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("started_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Live")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("InterviewId");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("StartedByUserId");
+
+                    b.HasIndex("InterviewId", "Status");
+
+                    b.ToTable("interview_sessions", (string)null);
+                });
+
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.Job", b =>
                 {
                     b.Property<int>("Id")
@@ -1267,6 +1532,28 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Recruiter"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "HiringManager"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Candidate"
+                        });
                 });
 
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.RolePermission", b =>
@@ -1360,12 +1647,6 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("password_hash");
-
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
@@ -1379,6 +1660,10 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("integer")
                         .HasColumnName("role_id");
+
+                    b.Property<Guid>("SupabaseUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supabase_user_id");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -1396,6 +1681,9 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("SupabaseUserId")
+                        .IsUnique();
 
                     b.ToTable("users", (string)null);
                 });
@@ -1543,6 +1831,17 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.CandidateAnswer", b =>
+                {
+                    b.HasOne("RecruitmentPlatform.Core.Entities.InterviewQuestion", "Question")
+                        .WithMany("CandidateAnswers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.CandidateDocument", b =>
@@ -1711,6 +2010,71 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
                     b.Navigation("Application");
 
                     b.Navigation("Interviewer");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewAiInsight", b =>
+                {
+                    b.HasOne("RecruitmentPlatform.Core.Entities.InterviewSession", "Session")
+                        .WithMany("AiInsights")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewQuestion", b =>
+                {
+                    b.HasOne("RecruitmentPlatform.Core.Entities.InterviewSession", "Session")
+                        .WithMany("Questions")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewSession", b =>
+                {
+                    b.HasOne("RecruitmentPlatform.Core.Entities.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentPlatform.Core.Entities.User", "Candidate")
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentPlatform.Core.Entities.Interview", "Interview")
+                        .WithMany()
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentPlatform.Core.Entities.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RecruitmentPlatform.Core.Entities.User", "StartedByUser")
+                        .WithMany()
+                        .HasForeignKey("StartedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Interview");
+
+                    b.Navigation("Job");
+
+                    b.Navigation("StartedByUser");
                 });
 
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.Job", b =>
@@ -1951,6 +2315,18 @@ namespace RecruitmentPlatform.Infrastructure.Migrations
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.Interview", b =>
                 {
                     b.Navigation("Evaluation");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewQuestion", b =>
+                {
+                    b.Navigation("CandidateAnswers");
+                });
+
+            modelBuilder.Entity("RecruitmentPlatform.Core.Entities.InterviewSession", b =>
+                {
+                    b.Navigation("AiInsights");
+
+                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("RecruitmentPlatform.Core.Entities.Job", b =>
