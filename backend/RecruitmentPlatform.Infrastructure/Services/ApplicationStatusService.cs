@@ -7,8 +7,8 @@ public sealed class ApplicationStatusService : IApplicationStatusService
 {
     private static readonly Dictionary<string, string[]> AllowedTransitions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Applied"] = ["Under Review", "Shortlisted", "Rejected", "Withdrawn"],
-        ["Under Review"] = ["Shortlisted", "Rejected", "Withdrawn"],
+        ["Applied"] = ["Under Review", "Shortlisted", "Offer Extended", "Rejected", "Withdrawn"],
+        ["Under Review"] = ["Shortlisted", "Offer Extended", "Rejected", "Withdrawn"],
         ["Shortlisted"] = ["Interview Scheduled", "Offer Extended", "Rejected", "Withdrawn"],
         ["Interview Scheduled"] = ["Offer Extended", "Rejected", "Withdrawn"],
         ["Offer Extended"] = ["Hired", "Rejected", "Withdrawn"],

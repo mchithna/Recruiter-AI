@@ -347,6 +347,7 @@ public class HiringManagerController : ControllerBase
         var offer = await _context.Offers
             .AsNoTracking()
             .Include(o => o.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department)
+            .Include(o => o.Application).ThenInclude(a => a.Interviews)
             .FirstOrDefaultAsync(o => o.ApplicationId == applicationId && o.Application.Job.Department.CompanyId == companyId, cancellationToken);
 
         if (offer == null)
@@ -354,7 +355,11 @@ public class HiringManagerController : ControllerBase
             return NotFound(new { message = "Offer not found." });
         }
 
-        if (offer.Application.Job.HiringManagerId != userId)
+        var isAuthorized = offer.Application.Job.HiringManagerId == userId ||
+            offer.Application.Interviews.Any(i => i.InterviewerId == userId) ||
+            offer.Application.Job.HiringManagerId == null;
+
+        if (!isAuthorized)
         {
             return Forbid();
         }
@@ -382,7 +387,10 @@ public class HiringManagerController : ControllerBase
 
         var offers = await _context.Offers
             .AsNoTracking()
-            .Where(o => o.Application.Job.Department.CompanyId == companyId && o.Application.Job.HiringManagerId == userId)
+            .Where(o => o.Application.Job.Department.CompanyId == companyId &&
+                        (o.Application.Job.HiringManagerId == userId ||
+                         o.Application.Interviews.Any(i => i.InterviewerId == userId) ||
+                         o.Application.Job.HiringManagerId == null))
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => new OfferListDto
             {
@@ -416,8 +424,7 @@ public class HiringManagerController : ControllerBase
             return NotFound(new { message = "Application not found." });
         }
 
-        var canCreateOffer = application.Job.HiringManagerId == userId ||
-            application.Interviews.Any(i => i.InterviewerId == userId);
+        var canCreateOffer = application.Job.Department.CompanyId == companyId;
 
         if (!canCreateOffer)
         {

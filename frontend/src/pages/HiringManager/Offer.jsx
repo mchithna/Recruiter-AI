@@ -33,7 +33,11 @@ const currencyOptions = [
   { value: 'AUD', label: 'AUD (A$)' },
 ];
 
-const toDateOnly = (dateTimeValue) => dateTimeValue?.slice(0, 10) || null;
+const toDateOnly = (dateTimeValue) => {
+  if (!dateTimeValue) return null;
+  const d = new Date(dateTimeValue);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+};
 
 const getOfferSubmitError = (error) => {
   const data = error?.response?.data;
