@@ -57,8 +57,9 @@ const Unauthorized = () => (
 const PublicChatBotMount = () => {
   const location = useLocation();
   const path = location.pathname || '/';
+  const chatbotPages = ['/', '/features', '/pricing', '/about', '/contact'];
 
-  return path === '/' ? <ChatBot variant="home" /> : null;
+  return chatbotPages.includes(path) ? <ChatBot variant="home" /> : null;
 };
 
 function App() {

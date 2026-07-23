@@ -185,10 +185,10 @@ const ChatBot = ({ variant = 'default' }) => {
     ? 'w-[125px] h-[210px] sm:w-[150px] sm:h-[250px]'
     : 'w-[110px] h-[185px] sm:w-[130px] sm:h-[220px]';
   const launcherOuterSize = isDashboardVariant
-    ? 'w-[48px] h-[48px] sm:w-[56px] sm:h-[56px]'
+    ? 'w-[58px] h-[58px] sm:w-[66px] sm:h-[66px]'
     : 'w-[38px] h-[38px] sm:w-[44px] sm:h-[44px]';
   const launcherInnerSize = isDashboardVariant
-    ? 'w-[43px] h-[43px] sm:w-[51px] sm:h-[51px]'
+    ? 'w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]'
     : 'w-[34px] h-[34px] sm:w-[40px] sm:h-[40px]';
   const showLauncherLabel = !isDashboardVariant;
 

@@ -144,7 +144,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isCollapsed ? 'md:justify-center md:px-2' : '',
                   isActive
@@ -152,6 +152,15 @@ export default function DashboardLayout() {
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
+                {isActive && (
+                  <span
+                    className={[
+                      'absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18),0_0_12px_rgba(52,211,153,0.65)]',
+                      isCollapsed ? 'md:left-2 md:top-2' : '',
+                    ].join(' ')}
+                    aria-hidden="true"
+                  />
+                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
@@ -209,17 +218,17 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
             <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               <Button
                 type="button"
                 variant="glass"
                 size="sm"
-                className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
+                className="h-8 w-8 rounded-xl px-0 shadow-sm [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
                 leftIcon={
                   theme === 'dark'
-                    ? <Sun size={13} strokeWidth={2} />
-                    : <Moon size={13} strokeWidth={2} />
+                    ? <Sun size={14} strokeWidth={2} />
+                    : <Moon size={14} strokeWidth={2} />
                 }
                 onClick={toggleTheme}
               >
@@ -230,8 +239,8 @@ export default function DashboardLayout() {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
-              leftIcon={<LogOut size={13} strokeWidth={2} />}
+              className="h-8 w-8 rounded-xl bg-white/55 px-0 shadow-sm hover:bg-white/80 dark:bg-white/10 dark:hover:bg-white/15 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
+              leftIcon={<LogOut size={14} strokeWidth={2} />}
               onClick={handleSignOut}
             >
               <span className="hidden sm:inline">Sign Out</span>
@@ -239,7 +248,7 @@ export default function DashboardLayout() {
             <Tooltip content="Open profile">
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/55 p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400 dark:bg-white/10"
                 onClick={() => navigate(profilePath)}
                 aria-label="Open profile"
               >
