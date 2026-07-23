@@ -42,6 +42,7 @@ const navItemsByRole = {
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
     { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
+    { name: 'Notifications', path: '/admin/notifications', icon: Bell },
   ],
   Candidate: [
     { name: 'Home', path: '/candidate/home', icon: Home },
@@ -211,7 +212,7 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+        <header className="relative z-20 flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2.5">
               <button

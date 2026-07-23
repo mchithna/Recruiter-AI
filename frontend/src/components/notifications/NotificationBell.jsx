@@ -49,11 +49,10 @@ export default function NotificationBell() {
 
   const role = profile?.role || 'Guest';
 
-  // Do not render bell for Admin users
-  if (role === 'Admin') return null;
-
   const getRoleNotificationPath = () => {
     switch (role) {
+      case 'Admin':
+        return '/admin/notifications';
       case 'Recruiter':
         return '/recruiter/notifications';
       case 'HiringManager':
@@ -153,7 +152,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-secondary-200 bg-white/95 p-4 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-900/95 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-secondary-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-secondary-900 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between border-b border-secondary-100 pb-3 dark:border-white/10">
             <div className="flex items-center gap-2">
               <h3 className="text-body font-bold text-secondary-900 dark:text-white">Notifications</h3>

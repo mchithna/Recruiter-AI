@@ -104,4 +104,28 @@ public class NotificationsController : ControllerBase
 
         return Ok(new { success = true });
     }
+
+    [HttpPost("test")]
+    public async Task<IActionResult> CreateTestNotification([FromQuery] string? title = null, [FromQuery] string? body = null)
+    {
+        var userId = GetAppUserId();
+        var notifTitle = string.IsNullOrWhiteSpace(title) ? "🔔 Test Notification" : title.Trim();
+        var notifBody = string.IsNullOrWhiteSpace(body) ? "This is a test notification generated to verify system dispatch." : body.Trim();
+
+        var notification = new RecruitmentPlatform.Core.Entities.Notification
+        {
+            RecipientId = userId,
+            Type = "TestNotification",
+            Title = notifTitle,
+            Body = notifBody,
+            Channel = "InApp",
+            IsRead = false,
+            SentAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.Notifications.AddAsync(notification);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new { success = true, notification });
+    }
 }

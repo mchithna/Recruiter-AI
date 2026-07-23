@@ -127,6 +127,7 @@ function App() {
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
                 <Route path="/admin/analytics" element={<Analytics />} />
                 <Route path="/admin/activity" element={<ActivityLog />} />
+                <Route path="/admin/notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
 
