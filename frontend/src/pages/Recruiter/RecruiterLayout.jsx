@@ -43,9 +43,11 @@ export default function RecruiterLayout() {
             className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-multiply dark:opacity-40 dark:mix-blend-screen"
           />
           <div className="relative">
-            <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-ai-600 text-h4 text-white shadow-glow-primary">
-              H
-            </div>
+            <img
+              src="/logo.png"
+              alt="Hirely Logo"
+              className="h-11 w-11 object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]"
+            />
             <h2 className="mt-4 text-h2 text-secondary-900 dark:text-white">Hirely</h2>
             <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
               Recruiter command center

@@ -81,7 +81,9 @@ export function Button({
       ) : (
         <>
           {leftIcon && <span className="shrink-0 flex items-center justify-center leading-none">{leftIcon}</span>}
-          <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
+          {children != null && children !== false && children !== '' && (
+            <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
+          )}
           {rightIcon && <span className="shrink-0 flex items-center justify-center leading-none">{rightIcon}</span>}
         </>
       )}
