@@ -17,6 +17,7 @@ export function Input({
   error,
   helperText,
   leftIcon,
+  rightIcon,
   type = 'text',
   id: idProp,
   className = '',
@@ -55,6 +56,7 @@ export function Input({
             'transition-colors duration-base',
             'focus-ring',
             leftIcon ? 'pl-9' : '',
+            rightIcon ? 'pr-12' : '',
             hasError
               ? 'border-danger-400 focus-visible:ring-danger-500'
               : 'border-secondary-300 hover:border-secondary-400',
@@ -66,6 +68,11 @@ export function Input({
             .join(' ')}
           {...rest}
         />
+        {rightIcon && (
+          <span className="absolute right-3 leading-none">
+            {rightIcon}
+          </span>
+        )}
       </div>
 
       {/* Helper / Error text */}
@@ -86,6 +93,7 @@ Input.propTypes = {
   error: PropTypes.string,
   helperText: PropTypes.string,
   leftIcon: PropTypes.node,
+  rightIcon: PropTypes.node,
   type: PropTypes.string,
   id: PropTypes.string,
   className: PropTypes.string,
