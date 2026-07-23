@@ -347,10 +347,10 @@ const OrgChartBuilder = () => {
                 size="md"
                 isLoading={activating}
                 onClick={handleInstantActivate}
-                leftIcon={<Sparkles size={16} className="text-amber-500" />}
+                leftIcon={<Sparkles size={16} className="text-amber-500 shrink-0" />}
                 className="w-full justify-center text-xs font-semibold text-secondary-500 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-white"
               >
-                Instant Activate (Test Sandbox)
+                Instant Activate (Sandbox Test)
               </Button>
             </div>
           </div>

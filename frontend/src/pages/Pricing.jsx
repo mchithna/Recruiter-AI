@@ -141,7 +141,14 @@ export default function Pricing() {
                     {cta}
                   </Button>
 
-                  {name === 'Professional' && <PayPalCheckoutButton />}
+                  {name === 'Professional' && (
+                    <div className="mt-4 pt-3 border-t border-secondary-100 dark:border-secondary-800/80">
+                      <p className="mb-2 text-center text-xs font-semibold text-secondary-500 dark:text-secondary-400">
+                        Or pay via PayPal Sandbox
+                      </p>
+                      <PayPalCheckoutButton />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
