@@ -31,21 +31,21 @@ import liveInterviewApi from '../lib/liveInterviewApi';
 
 /* ── constants ── */
 const MODE_OPTIONS = [
-  { value: 'Balanced',   label: 'Balanced'   },
-  { value: 'Technical',  label: 'Technical'  },
+  { value: 'Balanced', label: 'Balanced' },
+  { value: 'Technical', label: 'Technical' },
   { value: 'Behavioral', label: 'Behavioral' },
-  { value: 'Adaptive',   label: 'Adaptive'   },
-  { value: 'Skill-gap',  label: 'Skill gap'  },
+  { value: 'Adaptive', label: 'Adaptive' },
+  { value: 'Skill-gap', label: 'Skill gap' },
 ];
 const DIFFICULTY_OPTIONS = [
-  { value: 'Beginner',     label: 'Beginner'     },
+  { value: 'Beginner', label: 'Beginner' },
   { value: 'Intermediate', label: 'Intermediate' },
-  { value: 'Advanced',     label: 'Advanced'     },
+  { value: 'Advanced', label: 'Advanced' },
 ];
 const STATUS_BADGE = {
-  Asked:    'border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-  Skipped:  'border-amber-500/30  bg-amber-50 text-amber-700 dark:bg-amber-500/10  dark:text-amber-400',
-  Saved:    'border-violet-500/30  bg-violet-50 text-violet-700 dark:bg-violet-500/10  dark:text-violet-400',
+  Asked: 'border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  Skipped: 'border-amber-500/30  bg-amber-50 text-amber-700 dark:bg-amber-500/10  dark:text-amber-400',
+  Saved: 'border-violet-500/30  bg-violet-50 text-violet-700 dark:bg-violet-500/10  dark:text-violet-400',
   Rejected: 'border-red-500/30    bg-red-50 text-red-700 dark:bg-red-500/10    dark:text-red-400',
 };
 
@@ -68,63 +68,63 @@ const appendText = (cur, next) => {
 
 const detectTopic = (txt) =>
   txt.toLowerCase().replace(/[^a-z0-9+#.\s-]/g, ' ').split(/\s+/)
-    .filter(w => w.length > 4 && !['about','because','there','their','would','could','should','candidate'].includes(w))
+    .filter(w => w.length > 4 && !['about', 'because', 'there', 'their', 'would', 'could', 'should', 'candidate'].includes(w))
     .slice(-4).join(' ');
 
 const scoreStyle = (v) => {
   if (v == null) return { ring: 'border-slate-300 dark:border-white/10', text: 'text-slate-400 dark:text-white/30', bar: '' };
-  if (v >= 75)   return { ring: 'border-emerald-500/80', text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' };
-  if (v >= 50)   return { ring: 'border-amber-500/80',   text: 'text-amber-600 dark:text-amber-400',   bar: 'bg-amber-500' };
-  return           { ring: 'border-red-500/80',     text: 'text-red-600 dark:text-red-400',     bar: 'bg-red-500' };
+  if (v >= 75) return { ring: 'border-emerald-500/80', text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' };
+  if (v >= 50) return { ring: 'border-amber-500/80', text: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' };
+  return { ring: 'border-red-500/80', text: 'text-red-600 dark:text-red-400', bar: 'bg-red-500' };
 };
 
 /* ════════════════════════════════════════ COMPONENT ═══════════════════════════ */
 export default function LiveInterviewCopilot() {
   const { interviewId } = useParams();
-  const navigate        = useNavigate();
-  const location        = useLocation();
-  const isHM            = location.pathname.startsWith('/hiring-manager');
-  const backPath        = isHM ? `/hiring-manager/interviews/${interviewId}` : '/recruiter/interviews';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isHM = location.pathname.startsWith('/hiring-manager');
+  const backPath = isHM ? `/hiring-manager/interviews/${interviewId}` : '/recruiter/interviews';
 
-  const videoRef       = useRef(null);
-  const recRef         = useRef(null);
-  const streamRef      = useRef(null);
-  const meetRef        = useRef(null);
-  const shouldListen   = useRef(false);
+  const videoRef = useRef(null);
+  const recRef = useRef(null);
+  const streamRef = useRef(null);
+  const meetRef = useRef(null);
+  const shouldListen = useRef(false);
 
-  const [mode,        setMode]        = useState('Adaptive');
-  const [difficulty,  setDifficulty]  = useState('Intermediate');
-  const [consent,     setConsent]     = useState(false);
-  const [session,     setSession]     = useState(null);
-  const [question,    setQuestion]    = useState(null);
-  const [notes,       setNotes]       = useState('');
-  const [interim,     setInterim]     = useState('');
-  const [topic,       setTopic]       = useState('');
-  const [insight,     setInsight]     = useState(null);
-  const [summary,     setSummary]     = useState(null);
-  const [elapsed,     setElapsed]     = useState('00:00');
-  const [loading,     setLoading]     = useState('');
-  const [error,       setError]       = useState('');
-  const [listening,   setListening]   = useState(false);
-  const [cameraOn,    setCameraOn]    = useState(false);
-  const [capMode,     setCapMode]     = useState('manual');
-  const [speechOk,    setSpeechOk]    = useState(Boolean(getSpeech()));
-  const [capStatus,   setCapStatus]   = useState('Camera and speech capture are off.');
-  const [activeTab,   setActiveTab]   = useState('Live Analysis');
+  const [mode, setMode] = useState('Adaptive');
+  const [difficulty, setDifficulty] = useState('Intermediate');
+  const [consent, setConsent] = useState(false);
+  const [session, setSession] = useState(null);
+  const [question, setQuestion] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [interim, setInterim] = useState('');
+  const [topic, setTopic] = useState('');
+  const [insight, setInsight] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [elapsed, setElapsed] = useState('00:00');
+  const [loading, setLoading] = useState('');
+  const [error, setError] = useState('');
+  const [listening, setListening] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [capMode, setCapMode] = useState('manual');
+  const [speechOk, setSpeechOk] = useState(Boolean(getSpeech()));
+  const [capStatus, setCapStatus] = useState('Camera and speech capture are off.');
+  const [activeTab, setActiveTab] = useState('Live Analysis');
 
-  const questions   = session?.questions || [];
-  const context     = session?.context;
-  const askedCount  = questions.filter(q => q.status === 'Asked').length;
-  const skippedCount= questions.filter(q => q.status === 'Skipped').length;
-  const expPoints   = useMemo(() => question?.expectedPoints || [], [question]);
-  const transcript  = [notes, interim].filter(Boolean).join('\n');
-  const concern     = insight?.potentialConcern || null;
-  const confidence  = insight?.confidence || (listening ? 'Listening…' : 'Waiting…');
+  const questions = session?.questions || [];
+  const context = session?.context;
+  const askedCount = questions.filter(q => q.status === 'Asked').length;
+  const skippedCount = questions.filter(q => q.status === 'Skipped').length;
+  const expPoints = useMemo(() => question?.expectedPoints || [], [question]);
+  const transcript = [notes, interim].filter(Boolean).join('\n');
+  const concern = insight?.potentialConcern || null;
+  const confidence = insight?.confidence || (listening ? 'Listening…' : 'Waiting…');
 
   /* ── stop capture ── */
   const stopCapture = useCallback(() => {
     shouldListen.current = false;
-    recRef.current?.stop?.();   recRef.current  = null;
+    recRef.current?.stop?.(); recRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setListening(false); setCameraOn(false); setCapMode('manual');
@@ -181,7 +181,7 @@ export default function LiveInterviewCopilot() {
       setInterim(int.trim());
     };
     r.onerror = () => setCapStatus('Speech paused. Keep typing or restart capture.');
-    r.onend   = () => { if (!shouldListen.current) return; try { r.start(); } catch {} };
+    r.onend = () => { if (!shouldListen.current) return; try { r.start(); } catch { } };
     recRef.current = r;
     try { r.start(); setSpeechOk(true); setListening(true); setCapStatus('Live — transcribing in real time.'); }
     catch { setCapStatus('Speech could not start.'); }
@@ -255,10 +255,15 @@ export default function LiveInterviewCopilot() {
     if (!transcript.trim()) { setError('Add answer notes or start live capture before analysis.'); return; }
     setLoading('answer'); setError('');
     try {
+      // Auto-mark question as Asked if it hasn't been actioned yet
+      if (!question.status || question.status === 'Generated') {
+        try { const u = await liveInterviewApi.markAsked(session.sessionId, question.questionId); setQuestion(u); } catch { }
+      }
       const ins = await liveInterviewApi.submitAnswer(session.sessionId, { questionId: question.questionId, interviewerNotes: notes, transcript });
       setInsight(ins);
       setTopic(question.skill || question.category || topic || detectTopic(transcript));
       setNotes(''); setInterim('');
+      await refresh();
     } catch (err) { setError(err?.response?.data?.message || 'Could not analyze the answer.'); }
     finally { setLoading(''); }
   };
@@ -387,7 +392,7 @@ export default function LiveInterviewCopilot() {
         </div>
       ) : (
         /* ── ACTIVE SESSION: 2-column grid (60/40) ── */
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_400px]">
 
           {/* ══════════ LEFT COLUMN: Video, Controls & Tabs ══════════ */}
           <div className="flex min-w-0 flex-col gap-3">
@@ -406,41 +411,30 @@ export default function LiveInterviewCopilot() {
                         <p className="text-[13px] text-slate-400 dark:text-white/15">Preview off</p>
                       </div>
                     )}
-                    {listening && (
-                      <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-black/80 px-2.5 py-1 text-[10px] font-bold text-emerald-400">
-                        <Radio size={9} className="animate-pulse" /> LIVE
-                      </span>
-                    )}
                   </div>
                   <div className="px-4 py-2.5 text-[11px] leading-snug text-slate-400 bg-slate-800 border-t border-slate-700 dark:bg-[#080a12] dark:text-white/20 dark:border-white/[0.05]">{capStatus}</div>
                 </div>
 
-                {/* 2. Capture Controls */}
+                {/* 2. Capture Controls — recruiter captures candidate's screen/audio */}
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm dark:border-white/[0.07] dark:bg-[#0c0d1a]">
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={listening ? stopCapture : startCapture}
+                    <button type="button" onClick={listening ? stopCapture : startMeetCapture}
                       className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-bold transition
                           ${listening
-                            ? 'border border-red-500/25 bg-red-500/12 text-red-600 dark:text-red-400 hover:bg-red-500/20'
-                            : 'text-white shadow-[0_0_14px_rgba(139,92,246,0.25)]'}`}
+                          ? 'border border-red-500/25 bg-red-500/12 text-red-600 dark:text-red-400 hover:bg-red-500/20'
+                          : 'text-white shadow-[0_0_14px_rgba(139,92,246,0.25)]'}`}
                       style={!listening ? { background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' } : undefined}>
-                      {listening ? <MicOff size={13} /> : <Mic size={13} />}
-                      {listening ? 'Stop Capture' : 'My Camera + Mic'}
+                      {listening ? <MicOff size={13} /> : <MonitorUp size={13} />}
+                      {listening ? 'Stop Capturing' : 'Screen Capture'}
                     </button>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-white/40">
-                      <span className={`flex items-center gap-1 ${listening ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
-                        <Radio size={10} className={listening ? 'animate-pulse' : ''} />
-                        {capMode === 'meeting' ? 'Meeting tab' : listening ? 'Mic active' : 'Manual'}
-                      </span>
-                      <span>·</span>
-                      <span>{speechOk ? 'Speech ready' : 'Speech unsupported'}</span>
-                    </div>
-                    <button type="button" onClick={startMeetCapture}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/50 dark:hover:bg-white/[0.07] dark:hover:text-white">
-                      <MonitorUp size={12} /> Capture Meeting Tab
-                    </button>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-white/40">
+                    <span className={`flex items-center gap-1 ${listening ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
+                      <Radio size={10} className={listening ? 'animate-pulse' : ''} />
+                      {capMode === 'meeting' ? 'Meeting tab' : listening ? 'Mic active' : 'Ready'}
+                    </span>
+                    <span>·</span>
+                    <span>{speechOk ? 'Speech ready' : 'Unsupported'}</span>
                   </div>
                 </div>
               </div>
@@ -460,36 +454,84 @@ export default function LiveInterviewCopilot() {
                 </div>
 
                 <div className="flex flex-col gap-3 p-4 flex-1 overflow-y-auto min-h-0">
-                  {/* Unified Mic/Listening Status */}
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 shrink-0 dark:border-white/[0.05] dark:bg-white/[0.02]">
-                    <span className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${listening ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-slate-300 dark:bg-white/20'}`} />
-                    <p className="text-[12px] font-medium text-slate-700 dark:text-white/70">
-                      {listening ? 'Mic live' : 'Mic off'} <span className="text-slate-300 dark:text-white/20 mx-1.5">·</span>
-                      <span className="text-violet-600 dark:text-violet-300 font-semibold">{confidence}</span>
-                    </p>
+
+                  {/* ── Mic / Candidate Confidence Hero ── */}
+                  <style>{`
+                    @keyframes bar-bounce { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1)} }
+                  `}</style>
+                  <div className={`relative overflow-hidden rounded-2xl shrink-0 p-4 transition-all
+                    ${listening
+                      ? 'border border-emerald-500/20 bg-emerald-50/60 opacity-70 dark:border-emerald-500/15 dark:bg-[#071912]/60'
+                      : 'border border-slate-200 bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02]'}`}>
+
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                      {/* Left: Mic status */}
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">MIC</p>
+                        <div className="flex items-center gap-2">
+                          <span className={`flex h-2.5 w-2.5 shrink-0 rounded-full transition-all ${listening ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse' : 'bg-slate-300 dark:bg-white/15'
+                            }`} />
+                          <p className={`text-[14px] font-bold ${listening ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-white/40'
+                            }`}>{listening ? 'Live' : 'Off'}</p>
+                        </div>
+                        {listening && (
+                          <div className="mt-1.5 flex items-end gap-[3px] h-5">
+                            {[0.6, 1, 0.5, 0.8, 0.4, 0.9, 0.55].map((h, i) => (
+                              <span key={i}
+                                className="w-[3px] rounded-full bg-emerald-500 origin-bottom"
+                                style={{
+                                  height: `${Math.round(h * 20)}px`,
+                                  animation: `bar-bounce ${0.6 + i * 0.1}s ease-in-out infinite`,
+                                  animationDelay: `${i * 0.08}s`,
+                                }} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+
+                      {/* Right: Candidate Confidence */}
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">CONFIDENCE</p>
+                        <p className={`text-[14px] font-bold ${typeof confidence === 'number'
+                          ? confidence >= 70 ? 'text-emerald-600 dark:text-emerald-400'
+                            : confidence >= 40 ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-red-600 dark:text-red-400'
+                          : 'text-slate-400 dark:text-white/30'
+                          }`}>
+                          {typeof confidence === 'number' ? `${confidence}%` : confidence}
+                        </p>
+                        {typeof confidence === 'number' && (
+                          <div className="mt-1 w-20 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${confidence >= 70 ? 'bg-emerald-500' : confidence >= 40 ? 'bg-amber-500' : 'bg-red-500'
+                              }`} style={{ width: `${confidence}%` }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
+                  {/* ── Question Generation (with Detected Topic just above) ── */}
+                  <div className="mt-auto shrink-0 flex flex-col gap-2">
+                    {/* Detected Topic — sits close to generate button */}
+                    <Textarea label="Detected topic / hint" rows={2} value={topic}
+                      onChange={e => setTopic(e.target.value)}
+                      placeholder="Auto-detected from speech, or type a topic…"
+                      className="text-[12px]" />
 
-
-                  <Textarea label="Detected topic / hint" rows={2} value={topic}
-                    onChange={e => setTopic(e.target.value)}
-                    placeholder="Auto-detected from speech, or type a topic…"
-                    className="text-[12px] shrink-0" />
-
-                  <div className="pt-1 mt-auto shrink-0">
-                    <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/20">Question Generation</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/20">Question Generation</p>
                     <button type="button" onClick={() => generate('Generate')} disabled={loading === 'Generate'}
                       className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white shadow-[0_0_16px_rgba(139,92,246,0.25)] transition hover:opacity-90 disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
                       <Sparkles size={14} />
                       {loading === 'Generate' ? 'Generating…' : 'Generate Next Question'}
                     </button>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
-                        { icon: <Gauge size={12} />,         label: 'Easier',    action: 'Make Easier'  },
-                        { icon: <Gauge size={12} />,         label: 'Harder',    action: 'Make Harder'  },
+                        { icon: <Gauge size={12} />, label: 'Easier', action: 'Make Easier' },
+                        { icon: <Gauge size={12} />, label: 'Harder', action: 'Make Harder' },
                         { icon: <MessageSquare size={12} />, label: 'Follow-up', action: 'Ask Follow-up' },
-                        { icon: <FileText size={12} />,      label: 'New Topic', action: 'Change Topic' },
+                        { icon: <FileText size={12} />, label: 'New Topic', action: 'Change Topic' },
                       ].map(({ icon, label, action }) => (
                         <button key={action} type="button" onClick={() => generate(action)}
                           disabled={loading === action}
@@ -509,7 +551,7 @@ export default function LiveInterviewCopilot() {
             <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#0c0d1a]">
               {/* Tabs Header */}
               <div className="flex border-b border-slate-200 bg-slate-50/60 dark:border-white/[0.05] dark:bg-transparent overflow-x-auto">
-                {['Live Analysis', 'Meeting details', 'Candidate details', `History (${questions.length})`].map((tLabel) => {
+                {['Live Analysis', 'Meeting details', 'Candidate skills', `History (${questions.length})`].map((tLabel) => {
                   const baseTab = tLabel.split(' (')[0];
                   const isActive = activeTab === baseTab;
                   return (
@@ -517,9 +559,8 @@ export default function LiveInterviewCopilot() {
                       key={tLabel}
                       type="button"
                       onClick={() => setActiveTab(baseTab)}
-                      className={`relative flex-1 shrink-0 px-4 py-3.5 text-[12px] font-bold transition-colors whitespace-nowrap ${
-                        isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-white/35 dark:hover:text-white/60'
-                      }`}
+                      className={`relative flex-1 shrink-0 px-4 py-3.5 text-[12px] font-bold transition-colors whitespace-nowrap ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-white/35 dark:hover:text-white/60'
+                        }`}
                     >
                       {tLabel}
                       {isActive && (
@@ -537,7 +578,7 @@ export default function LiveInterviewCopilot() {
                     {/* One-line horizontal card with centered profile & metrics on sides */}
                     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm dark:border-white/[0.07] dark:bg-[#0f1025]">
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        
+
                         {/* Left Side: Experience & Duration — stacked 2 lines */}
                         <div className="flex flex-col gap-2.5 shrink-0 order-2 sm:order-1 min-w-[80px]">
                           <div className="text-center sm:text-left">
@@ -608,7 +649,7 @@ export default function LiveInterviewCopilot() {
                   </div>
                 )}
 
-                {activeTab === 'Candidate details' && (
+                {activeTab === 'Candidate skills' && (
                   <div className="space-y-4 p-4">
                     {context?.candidateSkills?.length > 0 && (
                       <div>
@@ -644,28 +685,19 @@ export default function LiveInterviewCopilot() {
 
                 {(activeTab === 'Live Analysis' || activeTab === 'Transcript') && (
                   <div className="flex flex-col gap-4 p-4">
-                    {/* Top Bar inside Tab: Title + Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/[0.05]">
-                      <div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white">Live Candidate Answer & AI Evaluation</p>
-                        <p className="text-[11px] text-slate-500 dark:text-white/35">Speech auto-captured or type notes directly</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => { setNotes(''); setInterim(''); }}
-                          className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/40 dark:hover:bg-white/[0.07] dark:hover:text-white">
-                          Clear
-                        </button>
-                        <Btn onClick={analyze} disabled={!session || !question} loading={loading === 'answer'}
-                          className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(139,92,246,0.3)] hover:opacity-90"
-                          icon={<Sparkles size={13} />} label="Analyze Live Answer" />
-                      </div>
-                    </div>
 
                     {/* Main side-by-side Grid: Answer Textarea (Left) | Analysis Results (Right) */}
                     <div className="grid gap-4 md:grid-cols-2">
                       {/* Left: Candidate Answer Box */}
                       <div className="flex flex-col gap-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30">Candidate Response / Transcript</p>
+                        {/* Title row: label + Clear inline */}
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30">Candidate Response</p>
+                          <button type="button" onClick={() => { setNotes(''); setInterim(''); }}
+                            className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/35 dark:hover:bg-white/[0.07] dark:hover:text-white">
+                            Clear
+                          </button>
+                        </div>
                         {interim && (
                           <p className="animate-pulse rounded-lg border border-violet-500/20 bg-violet-50 px-3 py-2 text-[11px] italic text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/[0.08] dark:text-violet-300">{interim}</p>
                         )}
@@ -677,15 +709,21 @@ export default function LiveInterviewCopilot() {
 
                       {/* Right: AI Analysis Results */}
                       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400/80">AI Answer Evaluation</p>
-                        
+                        {/* Title row: label + Analyze inline */}
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400/80">AI Answer Evaluation</p>
+                          <Btn onClick={analyze} disabled={!session || !question} loading={loading === 'answer'}
+                            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_10px_rgba(139,92,246,0.25)] hover:opacity-90 text-[11px] py-1.5 px-2.5"
+                            icon={<Sparkles size={11} />} label="Analyze" />
+                        </div>
+
                         {insight ? (
                           <div className="space-y-3">
                             {/* Score rings */}
                             <div className="grid grid-cols-3 gap-2">
                               <Ring label="Relevant" value={insight.relevanceScore} />
-                              <Ring label="Depth"    value={insight.depthScore}     />
-                              <Ring label="Clarity"  value={insight.clarityScore}   />
+                              <Ring label="Depth" value={insight.depthScore} />
+                              <Ring label="Clarity" value={insight.clarityScore} />
                             </div>
 
                             {/* Potential Concern */}
@@ -715,8 +753,8 @@ export default function LiveInterviewCopilot() {
                             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
                               <Sparkles size={16} />
                             </div>
-                            <p className="text-[12px] font-medium text-slate-600 dark:text-white/50">No analysis generated yet</p>
-                            <p className="mt-1 max-w-[220px] text-[10px] text-slate-400 dark:text-white/25">Capture or type the answer on the left and click <span className="text-violet-600 dark:text-violet-300 font-semibold">Analyze Live Answer</span> above.</p>
+                            <p className="text-[12px] font-medium text-slate-600 dark:text-white/50">No analysis yet</p>
+                            <p className="mt-1 max-w-[200px] text-[10px] text-slate-400 dark:text-white/25">Type or capture the answer, then click <span className="text-violet-600 dark:text-violet-300 font-semibold">Analyze</span>.</p>
                           </div>
                         )}
                       </div>
@@ -758,7 +796,7 @@ export default function LiveInterviewCopilot() {
               <div className="relative flex-1 p-4">
                 <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10 blur-2xl dark:opacity-20"
                   style={{ background: 'radial-gradient(ellipse, #8b5cf6, transparent)' }} />
-                
+
                 <div className="mb-4 flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/15">
                     <Target size={13} className="text-violet-600 dark:text-violet-400" />
@@ -768,19 +806,19 @@ export default function LiveInterviewCopilot() {
                     <Sparkles size={9} /> AI GEN
                   </span>
                 </div>
-                
+
                 {question?.skill && (
                   <span className="mb-3 inline-block rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] text-slate-600 dark:border-white/[0.07] dark:bg-white/[0.03] dark:text-white/30">{question.skill}</span>
                 )}
-                
+
                 <p className="text-[15px] font-semibold leading-relaxed text-slate-900 dark:text-white">
                   {question?.question || 'Generate the first AI-adaptive question when you are ready.'}
                 </p>
-                
+
                 {question?.reason && (
                   <p className="mt-4 text-[12px] leading-relaxed text-slate-600 dark:text-white/35">💡 {question.reason}</p>
                 )}
-                
+
                 {expPoints.length > 0 && (
                   <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/[0.07] dark:bg-white/[0.02]">
                     <summary className="cursor-pointer text-[12px] font-bold text-slate-700 transition-colors hover:text-slate-900 dark:text-white/40 dark:hover:text-white">
@@ -797,16 +835,59 @@ export default function LiveInterviewCopilot() {
                   </details>
                 )}
               </div>
-              
-              {/* Action Buttons Row */}
+
+              {/* Action Buttons Row — mutually exclusive, shows active state */}
               <div className="flex flex-wrap gap-2 border-t border-slate-200 bg-slate-50 p-3 dark:border-white/[0.05] dark:bg-black/20">
-                <Btn onClick={() => updateQ('Asked')} disabled={!question} loading={loading === 'Asked'}
-                  className="flex-1 justify-center bg-violet-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.25)] hover:bg-violet-500"
-                  icon={<CheckCircle2 size={13} />} label="Mark Asked" />
-                
-                <Btn onClick={() => updateQ('Skipped')} disabled={!question} icon={<SkipForward size={13} />} label="Skip" />
-                <Btn onClick={() => updateQ('Saved')}   disabled={!question} icon={<Save size={13} />}        label="Save" />
-                <Btn onClick={() => updateQ('Rejected')} disabled={!question} icon={<ShieldAlert size={13} />} label="Report" />
+                {/* Mark Asked — primary, green when active */}
+                <button type="button"
+                  onClick={() => updateQ('Asked')}
+                  disabled={!question || loading === 'Asked' || (question?.status && question.status !== 'Generated')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-bold transition
+                    ${question?.status === 'Asked'
+                      ? 'border border-emerald-500/40 bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] cursor-default'
+                      : !question || loading === 'Asked' || (question?.status && question.status !== 'Generated')
+                        ? 'border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-white/20'
+                        : 'border border-violet-500/25 bg-violet-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.25)] hover:bg-violet-500'
+                    }`}>
+                  {loading === 'Asked'
+                    ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    : <CheckCircle2 size={13} />}
+                  {question?.status === 'Asked' ? 'Asked ✓' : 'Mark Asked'}
+                </button>
+
+                {/* Skip — amber when active */}
+                <button type="button"
+                  onClick={() => updateQ('Skipped')}
+                  disabled={!question || loading === 'Skipped' || (question?.status && question.status !== 'Generated')}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-bold transition
+                    ${question?.status === 'Skipped'
+                      ? 'border border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-400 cursor-default'
+                      : !question || loading === 'Skipped' || (question?.status && question.status !== 'Generated')
+                        ? 'border border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-white/15'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:border-amber-500/30 hover:bg-amber-50 hover:text-amber-700 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/40 dark:hover:bg-amber-500/[0.08] dark:hover:text-amber-400'
+                    }`}>
+                  {loading === 'Skipped'
+                    ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    : <SkipForward size={13} />}
+                  {question?.status === 'Skipped' ? 'Skipped' : 'Skip'}
+                </button>
+
+                {/* Report — red when active */}
+                <button type="button"
+                  onClick={() => updateQ('Rejected')}
+                  disabled={!question || loading === 'Rejected' || (question?.status && question.status !== 'Generated')}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-bold transition
+                    ${question?.status === 'Rejected'
+                      ? 'border border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-400 cursor-default'
+                      : !question || loading === 'Rejected' || (question?.status && question.status !== 'Generated')
+                        ? 'border border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-white/15'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:border-red-500/30 hover:bg-red-50 hover:text-red-700 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/40 dark:hover:bg-red-500/[0.08] dark:hover:text-red-400'
+                    }`}>
+                  {loading === 'Rejected'
+                    ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    : <ShieldAlert size={13} />}
+                  {question?.status === 'Rejected' ? 'Reported' : 'Report'}
+                </button>
               </div>
             </div>
 
@@ -831,8 +912,8 @@ export default function LiveInterviewCopilot() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { title: 'Strong Areas',         items: summary.strongAreas || [],                dot: 'bg-emerald-500' },
-              { title: 'Areas for Validation', items: summary.areasRequiringValidation || [],   dot: 'bg-amber-500'   },
+              { title: 'Strong Areas', items: summary.strongAreas || [], dot: 'bg-emerald-500' },
+              { title: 'Areas for Validation', items: summary.areasRequiringValidation || [], dot: 'bg-amber-500' },
             ].map(({ title, items, dot }) => (
               <div key={title} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/[0.05] dark:bg-white/[0.02]">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">{title}</p>
@@ -876,8 +957,8 @@ function Btn({ icon, label, onClick, disabled, loading: isLoading, className = '
 function Metric({ label, value, accent }) {
   const styles = {
     emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/[0.06] dark:text-emerald-400',
-    violet:  'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/15 dark:bg-violet-500/[0.05] dark:text-violet-300',
-    amber:   'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/[0.06] dark:text-amber-400',
+    violet: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/15 dark:bg-violet-500/[0.05] dark:text-violet-300',
+    amber: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/[0.06] dark:text-amber-400',
     neutral: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-white/30',
   };
   return (
