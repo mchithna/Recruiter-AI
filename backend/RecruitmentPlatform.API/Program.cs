@@ -62,7 +62,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IApplicationStatusService, ApplicationStatusService>();
+builder.Services.AddScoped<InAppNotificationService>();
 builder.Services.AddScoped<EmailNotificationService>();
+builder.Services.AddScoped<CompositeNotificationService>();
 builder.Services.AddScoped<SmsNotificationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();

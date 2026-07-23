@@ -4,20 +4,28 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 public class NotificationFactory : INotificationFactory
 {
-    private readonly EmailNotificationService _emailNotificationService;
+    private readonly InAppNotificationService _inAppService;
+    private readonly EmailNotificationService _emailService;
+    private readonly CompositeNotificationService _compositeService;
 
-    public NotificationFactory(EmailNotificationService emailNotificationService)
+    public NotificationFactory(
+        InAppNotificationService inAppService,
+        EmailNotificationService emailService,
+        CompositeNotificationService compositeService)
     {
-        _emailNotificationService = emailNotificationService;
+        _inAppService = inAppService;
+        _emailService = emailService;
+        _compositeService = compositeService;
     }
 
     public INotificationService Create(string channel)
     {
-        if (channel.Equals("Email", StringComparison.OrdinalIgnoreCase))
+        return channel.ToLowerInvariant() switch
         {
-            return _emailNotificationService;
-        }
-
-        throw new NotImplementedException($"The notification channel '{channel}' is not implemented yet.");
+            "inapp" => _inAppService,
+            "email" => _emailService,
+            "all" or "composite" => _compositeService,
+            _ => _inAppService // Default fallback
+        };
     }
 }

@@ -43,8 +43,11 @@ public class UnitOfWork : IUnitOfWork
 
 
     private IRepository<AuditLog>? _auditLogs;
+    private IRepository<Notification>? _notifications;
+
     public IRepository<UserInvitation> UserInvitations => _userInvitations ??= new Repository<UserInvitation>(_context);
     public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
+    public IRepository<Notification> Notifications => _notifications ??= new Repository<Notification>(_context);
 
     public Task<int> SaveChangesAsync()
     {
