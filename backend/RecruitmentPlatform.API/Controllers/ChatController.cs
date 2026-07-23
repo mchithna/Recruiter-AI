@@ -65,17 +65,17 @@ public class ChatController : ControllerBase
     [HttpGet("sessions")]
     public async Task<ActionResult<IEnumerable<ChatSessionDto>>> GetSessions([FromQuery] string? contextKey)
     {
-        var resolved = _contextResolver.Resolve(null, User, contextKey);
+        var resolved = await EnsureUserResolvedAsync(_contextResolver.Resolve(null, User, contextKey), HttpContext.RequestAborted);
         if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home && !resolved.IsAuthenticated)
         {
             return Ok(Array.Empty<ChatSessionDto>());
         }
 
-        if (!_permissionValidator.IsAllowed(resolved)) return Ok(Array.Empty<ChatSessionDto>());
+        if (resolved.UserId == null) return Ok(Array.Empty<ChatSessionDto>());
 
         var sessions = await _context.ChatSessions
             .AsNoTracking()
-            .Where(s => s.UserId == resolved.UserId!.Value && s.SessionContext == resolved.Config.ContextKey)
+            .Where(s => s.UserId == resolved.UserId.Value && s.SessionContext == resolved.Config.ContextKey)
             .OrderByDescending(s => s.StartedAt)
             .Select(s => new ChatSessionDto
             {
@@ -89,12 +89,12 @@ public class ChatController : ControllerBase
         return Ok(sessions);
     }
 
-    [Authorize]
+    [AllowAnonymous]
     [HttpGet("sessions/{id:int}")]
     public async Task<ActionResult<ChatSessionDto>> GetSession(int id, [FromQuery] string? contextKey)
     {
-        var resolved = _contextResolver.Resolve(null, User, contextKey);
-        if (!_permissionValidator.IsAllowed(resolved))
+        var resolved = await EnsureUserResolvedAsync(_contextResolver.Resolve(null, User, contextKey), HttpContext.RequestAborted);
+        if (resolved.UserId == null)
         {
             return Unauthorized(new { message = "You are not authorized to view this chat session." });
         }
@@ -134,7 +134,7 @@ public class ChatController : ControllerBase
     [HttpPost("message")]
     public async Task<ActionResult<ChatMessageResponseDto>> SendMessage([FromBody] ChatMessageRequestDto request, CancellationToken cancellationToken)
     {
-        var resolved = _contextResolver.Resolve(request.Path, User);
+        var resolved = await EnsureUserResolvedAsync(_contextResolver.Resolve(request.Path, User), cancellationToken);
         var rateKey = resolved.UserId?.ToString() ?? HttpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
         if (!_rateLimiter.IsAllowed($"{resolved.Config.ContextKey}:{rateKey}"))
         {
@@ -147,22 +147,6 @@ public class ChatController : ControllerBase
             return BadRequest(new { message = validation.ErrorMessage });
         }
 
-        if (resolved.Config.ContextKey == ChatAssistantConfigProvider.Home)
-        {
-            return Ok(BuildTransientResponse(resolved, _homeResponseFormatter.Format(validation.SanitizedMessage), "answer"));
-        }
-
-        if (!_permissionValidator.IsAllowed(resolved))
-        {
-            return Ok(BuildTransientResponse(resolved, BuildDashboardHelpResponse(resolved.Config), "answer"));
-        }
-
-        var scope = _scopeClassifier.Classify(resolved, validation.SanitizedMessage);
-        if (!scope.IsAllowed)
-        {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, scope.Response!, "out_of_scope", cancellationToken);
-        }
-
         ChatDataSnapshot snapshot;
         try
         {
@@ -170,15 +154,13 @@ public class ChatController : ControllerBase
         }
         catch
         {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
+            snapshot = new ChatDataSnapshot(false, "{}");
         }
 
-        if (!snapshot.HasData)
-        {
-            return await ReturnAssistantMessageAsync(resolved, request.SessionId, validation.SanitizedMessage, resolved.Config.MissingDataResponse, "missing_data", cancellationToken);
-        }
+        var session = resolved.Config.ContextKey == ChatAssistantConfigProvider.Home
+            ? null
+            : await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
 
-        var session = await GetOrCreateSessionAsync(resolved, request.SessionId, cancellationToken);
         var history = session?.ChatMessages.OrderBy(m => m.SentAt).ToList() ?? new List<ChatMessage>();
         
         var prompt = _promptBuilder.Build(resolved, validation.SanitizedMessage, snapshot, history);
@@ -322,5 +304,47 @@ public class ChatController : ControllerBase
     private static string BuildDashboardHelpResponse(ChatAssistantConfig config)
     {
         return $"I can help with {config.ScopeDescription.ToLowerInvariant()} Try questions like: {string.Join("; ", config.ExampleQuestions)}.";
+    }
+
+    private async Task<ChatResolvedContext> EnsureUserResolvedAsync(ChatResolvedContext resolved, CancellationToken cancellationToken)
+    {
+        if (resolved.UserId.HasValue && !string.IsNullOrWhiteSpace(resolved.Role))
+        {
+            return resolved;
+        }
+
+        var subValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        var emailValue = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+
+        if (string.IsNullOrWhiteSpace(subValue) && string.IsNullOrWhiteSpace(emailValue))
+        {
+            return resolved;
+        }
+
+        User? dbUser = null;
+        if (!string.IsNullOrWhiteSpace(subValue) && Guid.TryParse(subValue, out var supabaseGuid))
+        {
+            dbUser = await _context.Users.Include(u => u.Role).AsNoTracking().FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseGuid, cancellationToken);
+        }
+        if (dbUser == null && !string.IsNullOrWhiteSpace(emailValue))
+        {
+            dbUser = await _context.Users.Include(u => u.Role).AsNoTracking().FirstOrDefaultAsync(u => u.Email == emailValue, cancellationToken);
+        }
+
+        if (dbUser != null)
+        {
+            var roleName = dbUser.Role?.Name ?? resolved.Role;
+            var config = _contextResolver.Resolve(null, User, resolved.Config.ContextKey).Config;
+            return new ChatResolvedContext(
+                config,
+                dbUser.Id,
+                roleName,
+                dbUser.CompanyId ?? resolved.CompanyId,
+                dbUser.DepartmentId ?? resolved.DepartmentId,
+                true
+            );
+        }
+
+        return resolved;
     }
 }

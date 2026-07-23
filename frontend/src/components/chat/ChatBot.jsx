@@ -194,7 +194,7 @@ const ChatBot = () => {
             aria-label="Open Hirely assistant"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUiState('chat'); }}
           >
-            <div className="w-[150px] h-[250px] sm:w-[180px] sm:h-[300px] mb-2 relative flex justify-center items-end">
+            <div className="w-[110px] h-[185px] sm:w-[130px] sm:h-[220px] mb-1.5 relative flex justify-center items-end">
               <video
                 src="/assets/chatbot-media/Gif_clean.webm"
                 autoPlay
@@ -205,8 +205,8 @@ const ChatBot = () => {
                 className="max-w-full max-h-full object-contain pointer-events-none"
               />
             </div>
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-6 py-3 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-3 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-sm tracking-wide">Ask Hirely</span>
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-2 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
             </div>
           </motion.div>
         )}
@@ -223,15 +223,15 @@ const ChatBot = () => {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             style={{ transformOrigin: 'bottom right' }}
             onClick={() => setUiState('chat')}
-            className="flex items-center gap-3 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
+            className="flex items-center gap-1.5 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
             aria-label="Open Hirely assistant"
           >
-            <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-sm tracking-wide">Ask Hirely</span>
+            <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
+              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-[11px] tracking-wide">Ask Hirely</span>
             </span>
-            <span className="relative w-[70px] h-[70px] sm:w-[76px] sm:h-[76px] rounded-full shadow-xl flex items-center justify-center overflow-hidden">
+            <span className="relative w-[38px] h-[38px] sm:w-[44px] sm:h-[44px] rounded-full shadow-md flex items-center justify-center overflow-hidden">
               <span className="absolute w-[150%] h-[150%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_30%,#818cf8_60%,#4f46e5_85%,#312e81_100%)] animate-[spin_2s_linear_infinite]" />
-              <span className="relative w-[62px] h-[62px] sm:w-[68px] sm:h-[68px] rounded-full border-[3px] border-white bg-indigo-50 overflow-hidden z-10">
+              <span className="relative w-[34px] h-[34px] sm:w-[40px] sm:h-[40px] rounded-full border-[2px] border-white bg-indigo-50 overflow-hidden z-10">
                 <img src="/assets/chatbot-media/Avatar02.jpeg" alt="" className="w-full h-full object-cover object-center" />
               </span>
             </span>
@@ -258,66 +258,77 @@ const ChatBot = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-500/80 to-purple-600/80 dark:from-indigo-600/80 dark:to-purple-800/80 backdrop-blur-md rounded-t-[24px] sm:rounded-t-[28px] pt-20 pb-4 px-4 flex flex-col items-center relative z-20 border-b border-white/20 shadow-sm">
+            <div className="bg-gradient-to-br from-indigo-500/90 to-purple-600/90 dark:from-indigo-600/90 dark:to-purple-800/90 backdrop-blur-md rounded-t-[24px] sm:rounded-t-[28px] pt-20 pb-4 px-4 flex flex-col items-center relative z-20 border-b border-white/20 shadow-sm">
               <div className="absolute top-4 right-4 flex gap-1">
-                <button type="button" onClick={() => setShowHistory(!showHistory)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60" aria-label="Chat history">
-                  <History size={16} />
-                </button>
+                {contextMeta.contextKey !== 'home' && (
+                  <button type="button" onClick={() => setShowHistory(!showHistory)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60" aria-label="Chat history">
+                    <History size={16} />
+                  </button>
+                )}
                 <button type="button" onClick={() => setUiState('button')} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/60" aria-label="Close assistant">
                   <X size={16} />
                 </button>
               </div>
-              <h3 className="font-semibold text-lg text-white tracking-wide">{contextMeta.assistantName || 'Hirely'}</h3>
-              <p className="text-indigo-100 text-xs text-center max-w-[300px]">{contextMeta.scopeDescription}</p>
+              <h3 className="font-extrabold text-xl text-white tracking-wide flex items-center gap-1.5">
+                <Sparkles size={18} className="text-amber-300 fill-amber-300" />
+                Hi, I'm Hirely
+              </h3>
+              <p className="text-indigo-100 text-xs text-center max-w-[310px] mt-0.5 font-medium">{contextMeta.scopeDescription}</p>
             </div>
 
             <div className="flex-1 flex min-h-0 relative overflow-hidden bg-white/40 dark:bg-slate-900/40 rounded-b-[24px] sm:rounded-b-[28px]">
-              <div className={`absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-40 transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="p-5 h-full flex flex-col">
-                  <div className="flex justify-between items-center mb-4 pb-3 border-b border-indigo-50 dark:border-slate-700">
-                    <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">Chat History</h4>
-                    <button type="button" onClick={startNewChat} className="text-sm text-white font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-sm transition-colors">
-                      New Chat
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto space-y-2">
-                    {sessions.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-slate-400 text-center mt-8">No previous conversations for this page.</p>
-                    ) : (
-                      sessions.map(s => (
-                        <button key={s.id} type="button" onClick={() => loadSession(s.id)} className={`w-full text-left p-3.5 rounded-2xl cursor-pointer border transition-colors ${currentSessionId === s.id ? 'bg-indigo-50 border-indigo-100 shadow-sm dark:bg-indigo-500/10 dark:border-indigo-400/20' : 'bg-white border-gray-100 hover:bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'}`}>
-                          <div className="text-xs text-gray-400 mb-1">{fmtDate(s.startedAt)} · {fmt(s.startedAt)}</div>
-                          <div className="text-sm text-indigo-950 dark:text-indigo-100 truncate font-medium">{s.sessionContext || contextMeta.contextKey}</div>
-                        </button>
-                      ))
-                    )}
+              {contextMeta.contextKey !== 'home' && (
+                <div className={`absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-40 transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <div className="p-5 h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-indigo-50 dark:border-slate-700">
+                      <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">Chat History</h4>
+                      <button type="button" onClick={startNewChat} className="text-sm text-white font-medium px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-sm transition-colors">
+                        New Chat
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-2">
+                      {sessions.length === 0 ? (
+                        <p className="text-sm text-gray-500 dark:text-slate-400 text-center mt-8">No previous conversations for this page.</p>
+                      ) : (
+                        sessions.map(s => (
+                          <button key={s.id} type="button" onClick={() => loadSession(s.id)} className={`w-full text-left p-3.5 rounded-2xl cursor-pointer border transition-colors ${currentSessionId === s.id ? 'bg-indigo-50 border-indigo-100 shadow-sm dark:bg-indigo-500/10 dark:border-indigo-400/20' : 'bg-white border-gray-100 hover:bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700'}`}>
+                            <div className="text-xs text-gray-400 mb-1">{fmtDate(s.startedAt)} · {fmt(s.startedAt)}</div>
+                            <div className="text-sm text-indigo-950 dark:text-indigo-100 truncate font-medium">{s.sessionContext || contextMeta.contextKey}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex-1 flex min-h-0 flex-col h-full w-full">
                 <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5 custom-scrollbar">
                   {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-4 space-y-6">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-center gap-2 text-xl font-bold text-indigo-900 dark:text-indigo-100">
-                          {isContextLoading ? <Loader2 className="animate-spin text-indigo-500" size={24} /> : <Sparkles className="text-indigo-500" size={24} />}
-                          Hi, I'm Hirely
+                    <div className="flex flex-col items-center justify-center min-h-[300px] text-center px-4 space-y-6 my-auto">
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-center gap-2.5 text-2xl font-extrabold text-indigo-950 dark:text-white">
+                          {isContextLoading ? (
+                            <Loader2 className="animate-spin text-indigo-600 dark:text-indigo-400" size={26} />
+                          ) : (
+                            <Sparkles className="text-indigo-600 dark:text-indigo-400 fill-indigo-500/20" size={26} />
+                          )}
+                          <span>Hi, I'm Hirely</span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed max-w-[290px] mx-auto">
-                          {isContextLoading ? 'Loading the right assistant for this page...' : contextMeta.welcomeMessage}
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-[310px] mx-auto">
+                          {isContextLoading ? 'Loading the AI assistant for this page...' : contextMeta.welcomeMessage}
                         </p>
                       </div>
 
                       {!isContextLoading && (
-                        <div className="flex flex-col gap-2 w-full max-w-[300px]">
+                        <div className="flex flex-col gap-2 w-full max-w-[320px]">
                           {suggestions.map((sug) => (
                             <button
                               key={sug}
                               type="button"
                               onClick={() => handleSendMessage(sug)}
                               disabled={isLoading}
-                              className="px-5 py-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/60 dark:border-slate-700/60 rounded-2xl text-sm font-medium text-indigo-800 dark:text-indigo-200 shadow-sm hover:shadow-md hover:bg-white/70 dark:hover:bg-slate-700/70 hover:-translate-y-0.5 transition-all duration-300 text-left disabled:opacity-60 disabled:hover:translate-y-0"
+                              className="px-5 py-3 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-white/80 dark:border-slate-700/80 rounded-2xl text-sm font-semibold text-indigo-900 dark:text-indigo-100 shadow-sm hover:shadow-md hover:bg-white dark:hover:bg-slate-700 hover:-translate-y-0.5 transition-all duration-300 text-left disabled:opacity-60 disabled:hover:translate-y-0"
                             >
                               {sug}
                             </button>

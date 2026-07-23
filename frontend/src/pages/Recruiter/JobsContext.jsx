@@ -41,14 +41,21 @@ export function RecruiterJobsProvider({ children }) {
     );
   }, []);
 
+  const updateJobStatus = useCallback(async (jobId, status) => {
+    await recruiterApi.updateJobStatus(jobId, { status });
+    setJobs((currentJobs) =>
+      currentJobs.map((job) => (job.id === jobId ? { ...job, status } : job))
+    );
+  }, []);
+
   const getJobById = useCallback(
     (jobId) => jobs.find((job) => job.id === jobId) ?? null,
     [jobs]
   );
 
   const value = useMemo(
-    () => ({ jobs, isLoading, addJob, updateJob, getJobById }),
-    [addJob, getJobById, isLoading, jobs, updateJob]
+    () => ({ jobs, isLoading, addJob, updateJob, updateJobStatus, getJobById }),
+    [addJob, getJobById, isLoading, jobs, updateJob, updateJobStatus]
   );
 
   return (

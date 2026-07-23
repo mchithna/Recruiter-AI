@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 
 /** Base classes shared across ALL variants. */
 const BASE =
-  'inline-flex items-center justify-center gap-2 font-semibold select-none text-center align-middle ' +
+  'inline-flex items-center justify-center gap-2 font-semibold select-none text-center align-middle whitespace-nowrap ' +
   'rounded-button border border-transparent ' +
   'transition-colors duration-base ' +
   'focus-ring ' +
@@ -76,13 +76,13 @@ export function Button({
       {isLoading ? (
         <>
           <Spinner size="md" />
-          <span className="inline-flex min-w-0 items-center justify-center leading-none">{children}</span>
+          <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
         </>
       ) : (
         <>
-          {leftIcon && <span className="shrink-0 leading-none">{leftIcon}</span>}
-          <span className="inline-flex min-w-0 items-center justify-center leading-none">{children}</span>
-          {rightIcon && <span className="shrink-0 leading-none">{rightIcon}</span>}
+          {leftIcon && <span className="shrink-0 flex items-center justify-center leading-none">{leftIcon}</span>}
+          <span className="inline-flex min-w-0 items-center justify-center leading-none whitespace-nowrap">{children}</span>
+          {rightIcon && <span className="shrink-0 flex items-center justify-center leading-none">{rightIcon}</span>}
         </>
       )}
     </button>

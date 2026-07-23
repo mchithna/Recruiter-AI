@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Entities;
+using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
 
 namespace RecruitmentPlatform.API.Controllers;
@@ -13,10 +14,12 @@ namespace RecruitmentPlatform.API.Controllers;
 public class HiringManagerController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IApplicationStatusService _applicationStatusService;
 
-    public HiringManagerController(ApplicationDbContext context)
+    public HiringManagerController(ApplicationDbContext context, IApplicationStatusService applicationStatusService)
     {
         _context = context;
+        _applicationStatusService = applicationStatusService;
     }
 
     [HttpGet("jobs")]
@@ -48,11 +51,20 @@ public class HiringManagerController : ControllerBase
         var companyId = GetCompanyId();
         var userId = GetUserId();
 
+        var visibleStatuses = new[]
+        {
+            "Shortlisted",
+            "Interview Scheduled",
+            "Offer Extended",
+            "Hired",
+            "Rejected"
+        };
+
         var applications = await _context.Applications
             .AsNoTracking()
             .Where(a => a.JobId == jobId && a.Job.Department.CompanyId == companyId)
             .Where(a => a.Job.HiringManagerId == userId || a.Interviews.Any(i => i.InterviewerId == userId))
-            .Where(a => a.Status == "Shortlisted" || a.Status == "Interview Scheduled" || a.Status == "Offer Extended" || a.Status == "Hired" || a.Status == "Rejected")
+            .Where(a => visibleStatuses.Contains(a.Status) || a.Interviews.Any(i => i.InterviewerId == userId))
             .OrderByDescending(a => a.AppliedAt)
             .Select(a => new HiringManagerApplicationListDto
             {
@@ -62,7 +74,16 @@ public class HiringManagerController : ControllerBase
                 CandidateName = a.Candidate.FirstName + " " + a.Candidate.LastName,
                 AppliedAt = a.AppliedAt,
                 Status = a.Status,
-                AiMatchScore = a.AiMatchScore
+                AiMatchScore = a.AiMatchScore,
+                ScheduledTime = a.Interviews
+                    .Where(i => i.InterviewerId == userId && (i.Status == "Scheduled" || i.Status == "Confirmed" || i.Status == "Rescheduled"))
+                    .OrderBy(i => i.ScheduledTime)
+                    .Select(i => (DateTime?)i.ScheduledTime)
+                    .FirstOrDefault()
+                    ?? a.Interviews
+                        .OrderBy(i => i.ScheduledTime)
+                        .Select(i => (DateTime?)i.ScheduledTime)
+                        .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
@@ -108,6 +129,15 @@ public class HiringManagerController : ControllerBase
             AppliedAt = application.AppliedAt,
             Status = application.Status,
             AiMatchScore = application.AiMatchScore,
+            ScheduledTime = application.Interviews
+                .Where(i => i.InterviewerId == userId && (i.Status == "Scheduled" || i.Status == "Confirmed" || i.Status == "Rescheduled"))
+                .OrderBy(i => i.ScheduledTime)
+                .Select(i => (DateTime?)i.ScheduledTime)
+                .FirstOrDefault()
+                ?? application.Interviews
+                    .OrderBy(i => i.ScheduledTime)
+                    .Select(i => (DateTime?)i.ScheduledTime)
+                    .FirstOrDefault(),
             CoverLetterText = application.CoverLetterText,
             ResumeUrl = application.Document?.FileUrl,
             CandidateProfile = profile == null ? null : new HiringManagerCandidateProfileDto
@@ -155,6 +185,341 @@ public class HiringManagerController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpGet("interviews")]
+    public async Task<ActionResult<List<InterviewDto>>> GetInterviews(CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var interviews = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.Application.Job.Department.CompanyId == companyId &&
+                        (i.Application.Job.HiringManagerId == userId || i.InterviewerId == userId))
+            .OrderBy(i => i.ScheduledTime)
+            .ToListAsync(cancellationToken);
+
+        return Ok(interviews.Select(ToInterviewDto).ToList());
+    }
+
+    [HttpGet("interviews/{id:int}")]
+    public async Task<ActionResult<InterviewDto>> GetInterviewById(int id, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interview = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .FirstOrDefaultAsync(i => i.Id == id && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        return Ok(ToInterviewDto(interview));
+    }
+
+    [HttpGet("interviews/application/{applicationId:int}")]
+    public async Task<ActionResult<List<InterviewDto>>> GetInterviewsForApplication(int applicationId, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+
+        var interviews = await _context.Interviews
+            .AsNoTracking()
+            .Include(i => i.Application).ThenInclude(a => a.Candidate)
+            .Include(i => i.Application).ThenInclude(a => a.Job)
+            .Include(i => i.Interviewer)
+            .Where(i => i.ApplicationId == applicationId &&
+                        i.Application.Job.Department.CompanyId == companyId)
+            .OrderBy(i => i.ScheduledTime)
+            .ToListAsync(cancellationToken);
+
+        return Ok(interviews.Select(ToInterviewDto).ToList());
+    }
+
+    [HttpGet("evaluations/interview/{interviewId:int}")]
+    public async Task<ActionResult<EvaluationDto>> GetEvaluationForInterview(int interviewId, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var evaluation = await _context.Evaluations
+            .AsNoTracking()
+            .Include(e => e.Interview).ThenInclude(i => i.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department)
+            .FirstOrDefaultAsync(e => e.InterviewId == interviewId && e.Interview.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (evaluation == null)
+        {
+            return NotFound(new { message = "Evaluation not found." });
+        }
+
+        if (evaluation.Interview.InterviewerId != userId)
+        {
+            return Forbid();
+        }
+
+        return Ok(new EvaluationDto
+        {
+            Id = evaluation.Id,
+            InterviewId = evaluation.InterviewId,
+            EvaluatedBy = evaluation.EvaluatedBy,
+            OverallScore = evaluation.OverallScore,
+            FeedbackText = evaluation.FeedbackText,
+            StrengthsText = evaluation.StrengthsText,
+            ConcernsText = evaluation.ConcernsText,
+            HireRecommendation = evaluation.HireRecommendation,
+            SubmittedAt = evaluation.SubmittedAt
+        });
+    }
+
+    [HttpPost("evaluations")]
+    public async Task<ActionResult<EvaluationDto>> SubmitEvaluation([FromBody] SubmitEvaluationDto request, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var interview = await _context.Interviews
+            .Include(i => i.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department)
+            .FirstOrDefaultAsync(i => i.Id == request.InterviewId && i.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (interview == null)
+        {
+            return NotFound(new { message = "Interview not found." });
+        }
+
+        if (interview.InterviewerId != userId)
+        {
+            return Forbid();
+        }
+
+        var existingEvaluation = await _context.Evaluations
+            .AnyAsync(e => e.InterviewId == request.InterviewId, cancellationToken);
+
+        if (existingEvaluation)
+        {
+            return BadRequest(new { message = "An evaluation has already been submitted for this interview." });
+        }
+
+        var evaluation = new Evaluation
+        {
+            InterviewId = request.InterviewId,
+            EvaluatedBy = userId,
+            OverallScore = request.OverallScore,
+            FeedbackText = request.FeedbackText ?? "",
+            StrengthsText = request.StrengthsText,
+            ConcernsText = request.ConcernsText,
+            HireRecommendation = request.HireRecommendation,
+            SubmittedAt = DateTime.UtcNow
+        };
+
+        _context.Evaluations.Add(evaluation);
+
+        interview.Status = "Completed";
+        interview.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new EvaluationDto
+        {
+            Id = evaluation.Id,
+            InterviewId = evaluation.InterviewId,
+            EvaluatedBy = evaluation.EvaluatedBy,
+            OverallScore = evaluation.OverallScore,
+            FeedbackText = evaluation.FeedbackText,
+            StrengthsText = evaluation.StrengthsText,
+            ConcernsText = evaluation.ConcernsText,
+            HireRecommendation = evaluation.HireRecommendation,
+            SubmittedAt = evaluation.SubmittedAt
+        });
+    }
+
+    [HttpGet("offers/application/{applicationId:int}")]
+    public async Task<ActionResult<OfferDto>> GetOfferForApplication(int applicationId, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var offer = await _context.Offers
+            .AsNoTracking()
+            .Include(o => o.Application).ThenInclude(a => a.Job).ThenInclude(j => j.Department)
+            .Include(o => o.Application).ThenInclude(a => a.Interviews)
+            .FirstOrDefaultAsync(o => o.ApplicationId == applicationId && o.Application.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (offer == null)
+        {
+            return NotFound(new { message = "Offer not found." });
+        }
+
+        var isAuthorized = offer.Application.Job.HiringManagerId == userId ||
+            offer.Application.Interviews.Any(i => i.InterviewerId == userId) ||
+            offer.Application.Job.HiringManagerId == null;
+
+        if (!isAuthorized)
+        {
+            return Forbid();
+        }
+
+        return Ok(new OfferDto
+        {
+            Id = offer.Id,
+            ApplicationId = offer.ApplicationId,
+            OfferedSalary = offer.OfferedSalary,
+            SalaryCurrency = offer.SalaryCurrency,
+            ProposedStartDate = offer.ProposedStartDate,
+            OfferExpiryDate = offer.OfferExpiryDate,
+            Status = offer.Status,
+            Notes = offer.Notes,
+            ManagedBy = offer.ManagedBy,
+            CreatedAt = offer.CreatedAt
+        });
+    }
+
+    [HttpGet("offers")]
+    public async Task<ActionResult<List<OfferListDto>>> GetOffers(CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var offers = await _context.Offers
+            .AsNoTracking()
+            .Where(o => o.Application.Job.Department.CompanyId == companyId &&
+                        (o.Application.Job.HiringManagerId == userId ||
+                         o.Application.Interviews.Any(i => i.InterviewerId == userId) ||
+                         o.Application.Job.HiringManagerId == null))
+            .OrderByDescending(o => o.CreatedAt)
+            .Select(o => new OfferListDto
+            {
+                Id = o.Id,
+                ApplicationId = o.ApplicationId,
+                CandidateName = o.Application.Candidate.FirstName + " " + o.Application.Candidate.LastName,
+                JobTitle = o.Application.Job.Title,
+                Status = o.Status,
+                OfferedSalary = o.OfferedSalary,
+                SalaryCurrency = o.SalaryCurrency,
+                CreatedAt = o.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(offers);
+    }
+
+    [HttpPost("offers")]
+    public async Task<ActionResult<OfferDto>> SubmitOffer([FromBody] SubmitOfferDto request, CancellationToken cancellationToken)
+    {
+        var companyId = GetCompanyId();
+        var userId = GetUserId();
+
+        var application = await _context.Applications
+            .Include(a => a.Job).ThenInclude(j => j.Department)
+            .Include(a => a.Interviews)
+            .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.Job.Department.CompanyId == companyId, cancellationToken);
+
+        if (application == null)
+        {
+            return NotFound(new { message = "Application not found." });
+        }
+
+        var canCreateOffer = application.Job.Department.CompanyId == companyId;
+
+        if (!canCreateOffer)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not authorized to create an offer for this application." });
+        }
+
+        var offer = await _context.Offers
+            .FirstOrDefaultAsync(o => o.ApplicationId == request.ApplicationId, cancellationToken);
+
+        if (offer != null)
+        {
+            offer.OfferedSalary = request.OfferedSalary;
+            offer.SalaryCurrency = request.SalaryCurrency;
+            offer.ProposedStartDate = request.ProposedStartDate;
+            offer.OfferExpiryDate = request.OfferExpiryDate;
+            offer.Notes = request.Notes;
+            offer.UpdatedAt = DateTime.UtcNow;
+            _context.Offers.Update(offer);
+        }
+        else
+        {
+            offer = new Offer
+            {
+                ApplicationId = request.ApplicationId,
+                InitiatedBy = userId,
+                OfferedSalary = request.OfferedSalary,
+                SalaryCurrency = request.SalaryCurrency,
+                ProposedStartDate = request.ProposedStartDate,
+                OfferExpiryDate = request.OfferExpiryDate,
+                Status = "Pending",
+                Notes = request.Notes,
+                ManagedBy = (int?)null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Offers.Add(offer);
+        }
+
+        if (!application.Status.Equals("Offer Extended", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await _applicationStatusService.ChangeStatusAsync(
+                    application.Id,
+                    "Offer Extended",
+                    userId,
+                    "Offer initiated.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new OfferDto
+        {
+            Id = offer.Id,
+            ApplicationId = offer.ApplicationId,
+            OfferedSalary = offer.OfferedSalary,
+            SalaryCurrency = offer.SalaryCurrency,
+            ProposedStartDate = offer.ProposedStartDate,
+            OfferExpiryDate = offer.OfferExpiryDate,
+            Status = offer.Status,
+            Notes = offer.Notes,
+            ManagedBy = offer.ManagedBy,
+            CreatedAt = offer.CreatedAt
+        });
+    }
+
+    private static InterviewDto ToInterviewDto(Interview interview)
+    {
+        return new InterviewDto
+        {
+            Id = interview.Id,
+            ApplicationId = interview.ApplicationId,
+            CandidateName = interview.Application?.Candidate != null
+                ? $"{interview.Application.Candidate.FirstName} {interview.Application.Candidate.LastName}".Trim()
+                : "Unknown Candidate",
+            JobTitle = interview.Application?.Job?.Title ?? "Unknown Job",
+            InterviewType = interview.InterviewType ?? "",
+            ScheduledTime = interview.ScheduledTime,
+            DurationMinutes = interview.DurationMinutes,
+            MeetingLink = interview.MeetingLink,
+            Status = interview.Status ?? "",
+            Notes = interview.Notes,
+            InterviewerId = interview.InterviewerId,
+            InterviewerName = interview.Interviewer != null
+                ? $"{interview.Interviewer.FirstName} {interview.Interviewer.LastName}".Trim()
+                : "Unknown Interviewer"
+        };
+    }
+
     private int GetCompanyId()
     {
         var value = User.FindFirst("company_id")?.Value;
@@ -188,6 +553,7 @@ public class HiringManagerApplicationListDto
     public DateTime AppliedAt { get; set; }
     public string Status { get; set; } = "";
     public decimal? AiMatchScore { get; set; }
+    public DateTime? ScheduledTime { get; set; }
 }
 
 public class HiringManagerApplicationDetailDto : HiringManagerApplicationListDto

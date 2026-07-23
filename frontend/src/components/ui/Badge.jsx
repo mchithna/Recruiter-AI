@@ -7,13 +7,13 @@ import PropTypes from 'prop-types';
  * Used by all variants in their default (non-solid) mode.
  */
 const LIGHT_CLASSES = {
-  primary:   'bg-primary-50   text-primary-700',
-  secondary: 'bg-secondary-100 text-secondary-700',
-  success:   'bg-success-50   text-success-700',
-  danger:    'bg-danger-50    text-danger-700',
-  warning:   'bg-warning-50   text-warning-700',
-  info:      'bg-info-50      text-info-700',
-  ai:        'bg-ai-50        text-ai-700',
+  primary:   'bg-primary-50   text-primary-800   dark:bg-primary-100 dark:!text-primary-950',
+  secondary: 'bg-secondary-100 text-secondary-800 dark:bg-secondary-200 dark:!text-secondary-950',
+  success:   'bg-success-50   text-success-800   dark:bg-success-100 dark:!text-success-950',
+  danger:    'bg-danger-50    text-danger-800    dark:bg-danger-100 dark:!text-danger-950',
+  warning:   'bg-warning-50   text-warning-800   dark:bg-warning-100 dark:!text-warning-950',
+  info:      'bg-info-50      text-info-800      dark:bg-info-100 dark:!text-info-950',
+  ai:        'bg-ai-50        text-ai-800        dark:bg-ai-100 dark:!text-ai-950',
 };
 
 const SIZE_CLASSES = {
@@ -44,7 +44,7 @@ export function Badge({
   return (
     <span
       className={[
-        'inline-flex items-center rounded-full font-semibold leading-none',
+        'inline-flex items-center rounded-full font-semibold leading-none whitespace-nowrap',
         SIZE_CLASSES[size],
         LIGHT_CLASSES[variant],
         className,

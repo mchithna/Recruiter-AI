@@ -16,6 +16,11 @@ public class DashboardAiResponse<T>
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }
 
+public class ResumeExtractedSkillsDto
+{
+    public List<string> Skills { get; set; } = new();
+}
+
 public class CandidateProfileResumeAnalysisDto
 {
     public int ProfileCompletenessScore { get; set; }

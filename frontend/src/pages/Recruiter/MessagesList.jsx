@@ -8,10 +8,13 @@ import {
   CardTitle,
   EmptyState,
   Input,
+  Modal,
   Skeleton,
 } from '../../components/ui';
 import { recruiterApi } from './services/recruiterApi';
 import { formatMessageTime } from './utils/messageFormatting';
+
+const MESSAGE_REFRESH_INTERVAL_MS = 3000;
 
 export default function MessagesList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,35 +28,38 @@ export default function MessagesList() {
   const [sendError, setSendError] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     let isActive = true;
+    let isRefreshing = false;
 
-    async function loadConversations() {
-      setLoadingList(true);
-
+    async function loadConversations({ showLoading = false } = {}) {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      if (showLoading) setLoadingList(true);
       try {
         const convos = await recruiterApi.getConversations();
         if (!isActive) return;
 
         setConversations(convos);
-        if (!searchParams.get('applicationId') && convos.length > 0) {
-          setSearchParams({ applicationId: convos[0].applicationId }, { replace: true });
-        }
       } catch (error) {
         console.error('Failed to load conversations:', error);
       } finally {
-        if (isActive) setLoadingList(false);
+        isRefreshing = false;
+        if (isActive && showLoading) setLoadingList(false);
       }
     }
 
-    loadConversations();
+    loadConversations({ showLoading: true });
+    const refreshId = window.setInterval(loadConversations, MESSAGE_REFRESH_INTERVAL_MS);
 
     return () => {
       isActive = false;
+      window.clearInterval(refreshId);
     };
-  }, [searchParams, setSearchParams]);
+  }, []);
 
   useEffect(() => {
     if (!selectedAppId) {
@@ -63,10 +69,12 @@ export default function MessagesList() {
     }
 
     let isActive = true;
+    let isRefreshing = false;
 
-    async function loadThread() {
-      setLoadingThread(true);
-
+    async function loadThread({ showLoading = false, resetDraft = false } = {}) {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      if (showLoading) setLoadingThread(true);
       try {
         const [app, threadMessages] = await Promise.all([
           recruiterApi.getApplication(selectedAppId),
@@ -84,19 +92,22 @@ export default function MessagesList() {
         );
         setSelectedApplication(app);
         setMessages(threadMessages || []);
-        setDraftMessage('');
-        setSendError('');
+        if (resetDraft) setDraftMessage('');
+        if (resetDraft) setSendError('');
       } catch (error) {
         console.error('Failed to load thread:', error);
       } finally {
-        if (isActive) setLoadingThread(false);
+        isRefreshing = false;
+        if (isActive && showLoading) setLoadingThread(false);
       }
     }
 
-    loadThread();
+    loadThread({ showLoading: true, resetDraft: true });
+    const refreshId = window.setInterval(loadThread, MESSAGE_REFRESH_INTERVAL_MS);
 
     return () => {
       isActive = false;
+      window.clearInterval(refreshId);
     };
   }, [selectedAppId]);
 
@@ -104,8 +115,15 @@ export default function MessagesList() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (event) => {
-    event.preventDefault();
+  const handlePromptSend = (event) => {
+    if (event) event.preventDefault();
+    const trimmed = draftMessage.trim();
+    if (!trimmed || isSending) return;
+    setShowConfirmModal(true);
+  };
+
+  const confirmAndSendMessage = async () => {
+    setShowConfirmModal(false);
 
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
@@ -195,57 +213,63 @@ export default function MessagesList() {
                   const isSelected = conversation.applicationId === selectedAppId;
 
                   return (
-                    <Button
+                    <button
                       key={conversation.applicationId}
                       type="button"
-                      variant="ghost"
                       onClick={() => setSearchParams({ applicationId: conversation.applicationId })}
                       className={[
-                        'group h-auto w-full justify-start rounded-none border-b px-4 py-3 text-left transition-all duration-base',
+                        'group w-full text-left flex items-start gap-3 border-b px-4 py-3.5 transition-all duration-base',
                         isSelected
-                          ? 'border-primary-100 bg-primary-50/80 dark:border-primary-500/20 dark:bg-primary-500/10'
+                          ? 'border-primary-100 bg-primary-50/90 border-l-4 border-l-primary-600 dark:border-primary-500/20 dark:bg-primary-500/15'
+                          : conversation.unread
+                          ? 'border-l-4 border-l-primary-500 bg-primary-50/50 dark:bg-primary-500/10 border-secondary-100 dark:border-white/5'
                           : 'border-secondary-100 hover:bg-white/70 dark:border-white/5 dark:hover:bg-white/5',
                       ].join(' ')}
                     >
-                      <span className="flex min-w-0 items-start gap-3">
-                        <span className="relative shrink-0">
-                          <Avatar name={conversation.candidateName} size="md" />
-                          {conversation.unread && (
-                            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-primary-500 dark:border-secondary-900" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="mb-1 flex items-baseline justify-between gap-2">
-                            <span
-                              className={[
-                                'truncate text-body-sm font-semibold',
-                                conversation.unread
-                                  ? 'text-primary-700 dark:text-primary-300'
-                                  : 'text-secondary-900 dark:text-white',
-                              ].join(' ')}
-                            >
-                              {conversation.candidateName}
-                            </span>
-                            <span className="shrink-0 text-caption text-secondary-400">
+                      <span className="relative shrink-0 mt-0.5">
+                        <Avatar name={conversation.candidateName} size="md" />
+                        {conversation.unread && (
+                          <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-primary-500 shadow-sm shadow-primary-500/50 animate-pulse dark:border-secondary-900" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1 flex flex-col items-start text-left">
+                        <span className="mb-1 flex w-full items-center justify-between gap-2 text-left">
+                          <span
+                            className={[
+                              'truncate text-body-sm font-semibold text-left',
+                              conversation.unread
+                                ? 'text-primary-700 dark:text-primary-300 font-bold'
+                                : 'text-secondary-900 dark:text-white',
+                            ].join(' ')}
+                          >
+                            {conversation.candidateName}
+                          </span>
+                          <span className="flex items-center gap-1.5 shrink-0 text-left">
+                            {conversation.unread && (
+                              <span className="rounded-full bg-primary-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase text-primary-600 dark:bg-primary-400/20 dark:text-primary-300">
+                                Unread
+                              </span>
+                            )}
+                            <span className="text-caption text-secondary-400 text-left">
                               {formatMessageTime(conversation.sentAt)}
                             </span>
                           </span>
-                          <span className="mb-1 block line-clamp-1 text-caption text-secondary-500 dark:text-secondary-400">
-                            {conversation.jobTitle}
-                          </span>
-                          <span
-                            className={[
-                              'block line-clamp-2 text-body-sm leading-relaxed',
-                              conversation.unread
-                                ? 'font-semibold text-secondary-800 dark:text-secondary-200'
-                                : 'text-secondary-500 dark:text-secondary-400',
-                            ].join(' ')}
-                          >
-                            {conversation.body}
-                          </span>
+                        </span>
+                        <span className="mb-1 block w-full text-left line-clamp-1 text-caption text-secondary-500 dark:text-secondary-400">
+                          {conversation.jobTitle}
+                        </span>
+                        <span
+                          className={[
+                            'block w-full text-left line-clamp-2 text-body-sm leading-relaxed',
+                            conversation.unread
+                              ? 'font-semibold text-secondary-900 dark:text-secondary-100'
+                              : 'text-secondary-500 dark:text-secondary-400',
+                          ].join(' ')}
+                        >
+                          {conversation.body || 'No messages yet'}
                         </span>
                       </span>
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
@@ -300,13 +324,13 @@ export default function MessagesList() {
                         <Avatar name={message.sender} size="sm" className="shrink-0" />
                         <div
                           className={[
-                          'max-w-[68%] rounded-2xl px-3.5 py-2.5 shadow-sm transition-all',
+                            'max-w-[72%] rounded-2xl px-4 py-3 shadow-sm transition-all',
                             isRecruiter
-                              ? 'rounded-tr-md bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-500/20'
+                              ? 'rounded-tr-md bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-primary-500/20'
                               : 'rounded-tl-md border border-secondary-100 bg-white text-secondary-800 dark:border-white/10 dark:bg-white/5 dark:text-white',
                           ].join(' ')}
                         >
-                          <p className="text-body-sm leading-relaxed">{message.body}</p>
+                          <p className="text-body-sm leading-relaxed whitespace-pre-wrap">{message.body}</p>
                           <p
                             className={[
                               'mt-2 text-right text-caption',
@@ -325,24 +349,33 @@ export default function MessagesList() {
 
               <form
                 className="flex shrink-0 flex-col gap-2 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
-                onSubmit={handleSendMessage}
+                onSubmit={handlePromptSend}
               >
                 {sendError && <p className="text-body-sm font-semibold text-danger-500">{sendError}</p>}
                 <div className="flex items-end gap-3">
-                  <Input
+                  <textarea
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
-                    placeholder={`Message ${selectedApplication.candidateName}...`}
-                    className="recruiter-compose-input flex-1"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        if (draftMessage.trim() && !isSending) {
+                          handlePromptSend(event);
+                        }
+                      }
+                    }}
+                    rows={2}
+                    placeholder={`Message ${selectedApplication.candidateName}... (Press Enter to send, Shift+Enter for new line)`}
+                    className="flex-1 min-h-[72px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
                   />
                   <Button
                     type="submit"
-                    variant={draftMessage.trim() ? 'glass' : 'outline'}
+                    variant={draftMessage.trim() ? 'primary' : 'outline'}
                     size="md"
                     leftIcon={<Send size={16} strokeWidth={1.75} />}
                     disabled={!draftMessage.trim() || isSending}
                     isLoading={isSending}
-                    className="min-w-24 shrink-0 rounded-xl px-5"
+                    className="min-w-24 shrink-0 rounded-xl px-5 h-12"
                   >
                     Send
                   </Button>
@@ -364,6 +397,60 @@ export default function MessagesList() {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Confirm Message Delivery"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowConfirmModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              leftIcon={<Send size={16} />}
+              onClick={confirmAndSendMessage}
+              isLoading={isSending}
+            >
+              Send Message
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-1">
+          <div className="flex items-center gap-3.5 rounded-xl border border-primary-500/20 bg-primary-50/60 p-3.5 dark:border-primary-500/30 dark:bg-primary-500/10">
+            <Avatar name={selectedApplication?.candidateName || 'Candidate'} size="md" className="shrink-0" />
+            <div>
+              <h4 className="text-body-sm font-semibold text-secondary-900 dark:text-white">
+                {selectedApplication?.candidateName || 'Candidate'}
+              </h4>
+              <p className="text-caption text-secondary-500 dark:text-secondary-400">
+                Position: {selectedApplication?.jobTitle || 'Application'}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-secondary-200 bg-secondary-50/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <p className="text-caption font-semibold uppercase tracking-wider text-secondary-500 dark:text-secondary-400 mb-1.5">
+              Message Preview
+            </p>
+            <p className="text-body-sm text-secondary-800 dark:text-secondary-200 whitespace-pre-wrap max-h-36 overflow-y-auto">
+              {draftMessage}
+            </p>
+          </div>
+
+          <p className="text-body-sm text-secondary-600 dark:text-secondary-300">
+            Are you sure you have reviewed this message and want to send it to the candidate?
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

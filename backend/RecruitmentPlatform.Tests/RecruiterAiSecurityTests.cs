@@ -52,6 +52,17 @@ public class RecruiterAiSecurityTests
     }
 
     [Fact]
+    public async Task Structured_gemini_uses_first_balanced_json_object()
+    {
+        var service = CreateService(new JsonHandler("{\"overallMatchScore\":81}\n,\n{\"overallMatchScore\":12}"), SettingsWithKey());
+
+        var result = await service.GenerateJsonAsync<CandidateJobMatchResultDto>("test", "test");
+
+        Assert.NotNull(result);
+        Assert.Equal(81, result!.OverallMatchScore);
+    }
+
+    [Fact]
     public async Task Structured_gemini_falls_back_when_configured_model_is_unavailable()
     {
         var handler = new ModelFallbackHandler();
@@ -63,6 +74,39 @@ public class RecruiterAiSecurityTests
         Assert.Equal(77, result!.OverallMatchScore);
         Assert.Contains("gemini-test", handler.RequestedModels);
         Assert.Contains("gemini-3.5-flash", handler.RequestedModels);
+    }
+
+    [Fact]
+    public async Task Structured_gemini_honors_configured_model_list_order()
+    {
+        var handler = new ModelFallbackHandler();
+        var service = CreateService(handler, new Dictionary<string, string?>
+        {
+            ["GEMINI_API_KEY"] = "test-key",
+            ["GEMINI_MODELS"] = "gemini-low,gemini-mid,gemini-high"
+        });
+
+        var result = await service.GenerateJsonAsync<CandidateJobMatchResultDto>("test", "test");
+
+        Assert.NotNull(result);
+        Assert.Equal(["gemini-low", "gemini-mid"], handler.RequestedModels);
+    }
+
+    [Fact]
+    public async Task Structured_gemini_api_key_provider_does_not_use_vertex_fallback()
+    {
+        var handler = new AlwaysUnavailableHandler();
+        var service = CreateService(handler, new Dictionary<string, string?>
+        {
+            ["GEMINI_PROVIDER"] = "api-key",
+            ["GEMINI_API_KEY"] = "test-key",
+            ["VERTEX_AI_PROJECT_ID"] = "test-project"
+        });
+
+        var result = await service.GenerateJsonAsync<CandidateJobMatchResultDto>("test", "test");
+
+        Assert.Null(result);
+        Assert.All(handler.RequestedHosts, host => Assert.Equal("generativelanguage.googleapis.com", host));
     }
 
     private static GeminiStructuredService CreateService(HttpMessageHandler handler, Dictionary<string, string?> settings)
@@ -127,6 +171,17 @@ public class RecruiterAiSecurityTests
             {
                 Content = new StringContent(payload)
             });
+        }
+    }
+
+    private sealed class AlwaysUnavailableHandler : HttpMessageHandler
+    {
+        public List<string> RequestedHosts { get; } = new();
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestedHosts.Add(request.RequestUri!.Host);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
         }
     }
 }

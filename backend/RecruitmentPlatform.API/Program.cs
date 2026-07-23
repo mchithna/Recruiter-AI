@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using DotNetEnv;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication;
@@ -80,10 +81,27 @@ builder.Services.AddHttpClient<IAiChatService, GeminiChatService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(25);
 });
-builder.Services.AddHttpClient<IGeminiStructuredService, GeminiStructuredService>(client =>
+var aiProvider = builder.Configuration["AI_PROVIDER"];
+if (aiProvider == "OpenAI")
+{
+    builder.Services.AddHttpClient<IAiStructuredService, OpenAiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+else
+{
+    builder.Services.AddHttpClient<IAiStructuredService, GeminiStructuredService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(25);
+    });
+}
+
+builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(25);
 });
+builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -111,11 +129,23 @@ builder.Services.AddTransient<IClaimsTransformation, SupabaseClaimsTransformatio
 
 builder.Services.AddAuthorization();
 
+var corsOrigins = new List<string>
+{
+    "http://localhost:5173",
+    "https://localhost:5173"
+};
+
+var frontendBaseUrl = builder.Configuration["FrontendSettings:BaseUrl"];
+if (!string.IsNullOrWhiteSpace(frontendBaseUrl))
+{
+    corsOrigins.Add(frontendBaseUrl.TrimEnd('/'));
+}
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("FrontendCors", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(corsOrigins.Distinct().ToArray())
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -160,7 +190,11 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseCors("AllowAll");
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseCors("FrontendCors");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -173,7 +207,53 @@ app.MapGet("/api/health", () => Results.Ok(new
     .WithName("GetHealth")
     .WithTags("Health");
 
+app.MapGet("/config.js", (IConfiguration configuration) =>
+{
+    var apiBaseUrl = configuration["FrontendSettings:ApiBaseUrl"]
+        ?? configuration["VITE_API_BASE_URL"]
+        ?? "/api";
+    var supabaseUrl = configuration["FrontendSettings:SupabaseUrl"]
+        ?? configuration["VITE_SUPABASE_URL"]
+        ?? configuration["JwtSettings:SupabaseUrl"]
+        ?? "";
+    var supabaseAnonKey = configuration["FrontendSettings:SupabaseAnonKey"]
+        ?? configuration["VITE_SUPABASE_ANON_KEY"]
+        ?? "";
+
+    var config = new Dictionary<string, string>
+    {
+        ["VITE_API_BASE_URL"] = apiBaseUrl,
+        ["VITE_SUPABASE_URL"] = supabaseUrl,
+        ["VITE_SUPABASE_ANON_KEY"] = supabaseAnonKey
+    };
+    var json = JsonSerializer.Serialize(config);
+
+    return Results.Text($"window.__APP_CONFIG__ = {json};", "application/javascript");
+});
+
 app.MapControllers();
+
+app.MapFallback(async context =>
+{
+    if (context.Request.Path.StartsWithSegments("/api"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    var webRoot = app.Environment.WebRootPath
+        ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+    var indexFile = Path.Combine(webRoot, "index.html");
+
+    if (!File.Exists(indexFile))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    context.Response.ContentType = "text/html; charset=utf-8";
+    await context.Response.SendFileAsync(indexFile);
+});
 
 using (var scope = app.Services.CreateScope())
 {

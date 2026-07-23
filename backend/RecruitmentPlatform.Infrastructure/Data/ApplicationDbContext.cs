@@ -31,6 +31,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistories => Set<ApplicationStatusHistory>();
     public DbSet<CalendarIntegration> CalendarIntegrations => Set<CalendarIntegration>();
     public DbSet<Interview> Interviews => Set<Interview>();
+    public DbSet<InterviewSession> InterviewSessions => Set<InterviewSession>();
+    public DbSet<InterviewQuestion> InterviewQuestions => Set<InterviewQuestion>();
+    public DbSet<CandidateAnswer> CandidateAnswers => Set<CandidateAnswer>();
+    public DbSet<InterviewAiInsight> InterviewAiInsights => Set<InterviewAiInsight>();
     public DbSet<Evaluation> Evaluations => Set<Evaluation>();
     public DbSet<Offer> Offers => Set<Offer>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -1055,6 +1059,256 @@ public class ApplicationDbContext : DbContext
                 .WithMany(e => e.InterviewsConducted)
                 .HasForeignKey(e => e.InterviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InterviewSession>(entity =>
+        {
+            entity.ToTable("interview_sessions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.InterviewId)
+                .HasColumnName("interview_id")
+                .IsRequired();
+
+            entity.Property(e => e.ApplicationId)
+                .HasColumnName("application_id")
+                .IsRequired();
+
+            entity.Property(e => e.CandidateId)
+                .HasColumnName("candidate_id")
+                .IsRequired();
+
+            entity.Property(e => e.JobId)
+                .HasColumnName("job_id")
+                .IsRequired();
+
+            entity.Property(e => e.StartedByUserId)
+                .HasColumnName("started_by_user_id")
+                .IsRequired();
+
+            entity.Property(e => e.StartedByRole)
+                .HasColumnName("started_by_role")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Live");
+
+            entity.Property(e => e.QuestionMode)
+                .HasColumnName("question_mode")
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Adaptive");
+
+            entity.Property(e => e.Difficulty)
+                .HasColumnName("difficulty")
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Intermediate");
+
+            entity.Property(e => e.ConsentRecorded)
+                .HasColumnName("consent_recorded")
+                .IsRequired();
+
+            entity.Property(e => e.StartedAt)
+                .HasColumnName("started_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.EndedAt)
+                .HasColumnName("ended_at");
+
+            entity.HasIndex(e => e.InterviewId);
+            entity.HasIndex(e => new { e.InterviewId, e.Status });
+
+            entity.HasOne(e => e.Interview)
+                .WithMany()
+                .HasForeignKey(e => e.InterviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Application)
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Candidate)
+                .WithMany()
+                .HasForeignKey(e => e.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Job)
+                .WithMany()
+                .HasForeignKey(e => e.JobId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.StartedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.StartedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InterviewQuestion>(entity =>
+        {
+            entity.ToTable("interview_questions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.SessionId)
+                .HasColumnName("session_id")
+                .IsRequired();
+
+            entity.Property(e => e.QuestionText)
+                .HasColumnName("question_text")
+                .IsRequired();
+
+            entity.Property(e => e.QuestionType)
+                .HasColumnName("question_type")
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Category)
+                .HasColumnName("category")
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Skill)
+                .HasColumnName("skill")
+                .HasMaxLength(150);
+
+            entity.Property(e => e.Difficulty)
+                .HasColumnName("difficulty")
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason");
+
+            entity.Property(e => e.ExpectedPointsJson)
+                .HasColumnName("expected_points_json");
+
+            entity.Property(e => e.GeneratedAt)
+                .HasColumnName("generated_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.AskedAt)
+                .HasColumnName("asked_at");
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("Generated");
+
+            entity.HasIndex(e => e.SessionId);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(e => e.Questions)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CandidateAnswer>(entity =>
+        {
+            entity.ToTable("candidate_answers");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.QuestionId)
+                .HasColumnName("question_id")
+                .IsRequired();
+
+            entity.Property(e => e.Transcript)
+                .HasColumnName("transcript");
+
+            entity.Property(e => e.InterviewerNotes)
+                .HasColumnName("interviewer_notes");
+
+            entity.Property(e => e.AnswerSummary)
+                .HasColumnName("answer_summary");
+
+            entity.Property(e => e.RelevanceScore)
+                .HasColumnName("relevance_score");
+
+            entity.Property(e => e.DepthScore)
+                .HasColumnName("depth_score");
+
+            entity.Property(e => e.ClarityScore)
+                .HasColumnName("clarity_score");
+
+            entity.Property(e => e.Confidence)
+                .HasColumnName("confidence")
+                .HasMaxLength(50);
+
+            entity.Property(e => e.PotentialConcern)
+                .HasColumnName("potential_concern");
+
+            entity.Property(e => e.SuggestedAction)
+                .HasColumnName("suggested_action");
+
+            entity.Property(e => e.SuggestedFollowUpQuestion)
+                .HasColumnName("suggested_follow_up_question");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.QuestionId);
+
+            entity.HasOne(e => e.Question)
+                .WithMany(e => e.CandidateAnswers)
+                .HasForeignKey(e => e.QuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InterviewAiInsight>(entity =>
+        {
+            entity.ToTable("interview_ai_insights");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.SessionId)
+                .HasColumnName("session_id")
+                .IsRequired();
+
+            entity.Property(e => e.InsightType)
+                .HasColumnName("insight_type")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Content)
+                .HasColumnName("content")
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.SessionId);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(e => e.AiInsights)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Evaluation>(entity =>

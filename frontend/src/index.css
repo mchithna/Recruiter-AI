@@ -522,3 +522,37 @@ body {
 .dark header .text-secondary-900 {
   color: #f1f5f9 !important;
 }
+
+/* Dark mode high-contrast text for colored boxes, chips, pills, and badges */
+.dark .badge,
+.dark span[class*="bg-primary-50"],
+.dark span[class*="bg-primary-100"],
+.dark span[class*="bg-ai-50"],
+.dark span[class*="bg-ai-100"],
+.dark span[class*="bg-secondary-50"],
+.dark span[class*="bg-secondary-100"],
+.dark span[class*="bg-success-50"],
+.dark span[class*="bg-success-100"],
+.dark span[class*="bg-warning-50"],
+.dark span[class*="bg-warning-100"],
+.dark span[class*="bg-danger-50"],
+.dark span[class*="bg-danger-100"],
+.dark span[class*="bg-info-50"],
+.dark span[class*="bg-info-100"],
+.dark span[class*="bg-violet-50"],
+.dark span[class*="bg-violet-100"],
+.dark span[class*="bg-indigo-50"],
+.dark span[class*="bg-indigo-100"],
+.dark span[class*="bg-purple-50"],
+.dark span[class*="bg-purple-100"],
+.dark p[class*="bg-primary-50"],
+.dark p[class*="bg-secondary-50"],
+.dark p[class*="bg-indigo-50"],
+.dark p[class*="bg-purple-50"],
+.dark div[class*="bg-primary-50"],
+.dark div[class*="bg-secondary-50"],
+.dark div[class*="bg-indigo-50"],
+.dark div[class*="bg-purple-50"] {
+  color: #0f172a !important;
+  font-weight: 600;
+}

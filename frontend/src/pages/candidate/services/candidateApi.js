@@ -89,6 +89,11 @@ export const getStatusHistory = async (applicationId) => {
   return response.data;
 };
 
+export const getMyInterviews = async () => {
+  const response = await api.get('/candidate/interviews');
+  return response.data;
+};
+
 export const getMessages = async (applicationId) => {
   const response = await api.get(`/candidate/applications/${applicationId}/messages`);
   return response.data;
@@ -114,6 +119,10 @@ export const candidateAiApi = {
   },
   applicationAssistance: async (jobId, notes = '') => {
     const response = await api.post('/candidate/ai/application-assistance', { jobId, notes });
+    return response.data;
+  },
+  extractResumeSkills: async (documentId) => {
+    const response = await api.post(`/candidate/ai/extract-resume-skills/${documentId}`);
     return response.data;
   }
 };
