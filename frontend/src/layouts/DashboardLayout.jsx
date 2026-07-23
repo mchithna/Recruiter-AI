@@ -1,5 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
+  Bell,
   Briefcase,
   Calendar,
   ChevronLeft,
@@ -26,6 +27,7 @@ import { Avatar, Button, Tooltip } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import ChatBot from '../components/chat/ChatBot';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 const navItemsByRole = {
   Recruiter: [
@@ -33,6 +35,7 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/recruiter/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/recruiter/interviews', icon: Calendar },
     { name: 'Messages', path: '/recruiter/messages', icon: MessageSquare },
+    { name: 'Notifications', path: '/recruiter/notifications', icon: Bell },
   ],
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
@@ -47,12 +50,14 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/candidate/jobs', icon: Briefcase },
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
     { name: 'Meetings', path: '/candidate/meetings', icon: Video },
+    { name: 'Notifications', path: '/candidate/notifications', icon: Bell },
   ],
   HiringManager: [
     { name: 'Home', path: '/hiring-manager/home', icon: Home },
     { name: 'Jobs', path: '/hiring-manager/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/hiring-manager/interviews', icon: Calendar },
     { name: 'Offers', path: '/hiring-manager/offers', icon: FileCheck },
+    { name: 'Notifications', path: '/hiring-manager/notifications', icon: Bell },
   ],
   Guest: [
     { name: 'Overview', path: '/dashboard', icon: Home },
@@ -229,6 +234,7 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <NotificationBell />
             <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               <Button
                 type="button"
