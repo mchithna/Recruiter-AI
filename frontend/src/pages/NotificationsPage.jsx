@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -8,12 +8,13 @@ import {
   MessageSquare,
   CheckCheck,
   Trash2,
-  ExternalLink,
-  Filter
+  ExternalLink
 } from 'lucide-react';
 import { notificationsApi } from '../lib/notificationsApi';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Card, EmptyState, Badge, Spinner } from '../components/ui';
+
+const NOTIFICATION_REFRESH_INTERVAL_MS = 5000;
 
 function getEventIcon(type) {
   switch (type) {
@@ -57,21 +58,39 @@ export default function NotificationsPage() {
 
   const role = profile?.role || 'Guest';
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async ({ showLoading = false } = {}) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const data = await notificationsApi.getNotifications(activeTab === 'unread', 100);
       setNotifications(data || []);
     } catch {
       // Ignore background fetch error
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [activeTab]);
+    const refreshOnFocus = () => {
+      fetchNotifications();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+
+    fetchNotifications({ showLoading: true });
+    const interval = window.setInterval(fetchNotifications, NOTIFICATION_REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [fetchNotifications]);
 
   const handleMarkAsRead = async (id) => {
     try {

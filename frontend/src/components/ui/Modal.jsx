@@ -34,6 +34,7 @@ export function Modal({
   children,
   size = 'md',
   footer,
+  bodyClassName = '',
 }) {
   const panelRef = useRef(null);
   const triggerRef = useRef(null); // captures the element focused before open
@@ -148,7 +149,9 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-body-lg text-secondary-800 dark:text-secondary-200">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto px-6 py-5 text-body-lg text-secondary-800 dark:text-secondary-200 ${bodyClassName}`}>
+          {children}
+        </div>
 
         {/* Footer */}
         {footer && (
@@ -168,6 +171,7 @@ Modal.propTypes = {
   children: PropTypes.node,
   size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', '2xl']),
   footer: PropTypes.node,
+  bodyClassName: PropTypes.string,
 };
 
 export default Modal;

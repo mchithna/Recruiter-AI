@@ -16,12 +16,12 @@ const VARIANT_CLASSES = {
   secondary:
     'bg-secondary-100 text-secondary-800 hover:bg-secondary-200 active:bg-secondary-300',
   outline:
-    'border-secondary-300 bg-transparent text-secondary-700 ' +
-    'hover:bg-secondary-50 hover:border-secondary-400 active:bg-secondary-100',
+    'border-secondary-300 dark:border-secondary-600 bg-transparent text-secondary-700 dark:text-secondary-100 ' +
+    'hover:bg-secondary-50 dark:hover:bg-secondary-800 hover:border-secondary-400 dark:hover:border-secondary-500 active:bg-secondary-100 dark:active:bg-secondary-700',
   danger:
     'bg-danger-600 text-white hover:bg-danger-700 active:bg-danger-800',
   ghost:
-    'bg-transparent text-secondary-600 hover:bg-secondary-100 active:bg-secondary-200',
+    'bg-transparent text-secondary-600 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800 active:bg-secondary-200 dark:active:bg-secondary-700',
   ai:
     'bg-ai-600 text-white hover:bg-ai-700 active:bg-ai-800 shadow-row-hover',
   glass: 'glass-btn',

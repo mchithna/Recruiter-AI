@@ -1,9 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Button, Badge, Card, CardContent } from '../components/ui';
+import { Button, Badge } from '../components/ui';
+import { PayPalCheckoutButton } from '../components/payments/PayPalCheckoutButton';
 import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+
+const SALES_EMAIL_LINK = [
+  'mailto:hello@hirely.ai',
+  '?subject=Hirely%20Enterprise%20plan%20inquiry',
+  '&body=Hello%20Hirely%20Sales%2C%0A%0A',
+  'I%27m%20interested%20in%20the%20Enterprise%20plan.',
+  '%20Please%20contact%20me%20to%20discuss%20pricing%20and%20implementation.%0A%0A',
+  'Thank%20you.'
+].join('');
 
 const PLANS = [
   {
@@ -19,7 +28,7 @@ const PLANS = [
       'Community support',
     ],
     cta: 'Get Started Free',
-    variant: 'outline',
+    variant: 'primary',
     highlighted: false,
   },
   {
@@ -36,7 +45,7 @@ const PLANS = [
       'Advanced analytics & reports',
       'Priority email support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start 7-Day Free Trial',
     variant: 'primary',
     highlighted: true,
   },
@@ -55,12 +64,23 @@ const PLANS = [
       'On-premise deployment option',
     ],
     cta: 'Contact Sales',
-    variant: 'outline',
+    variant: 'primary',
     highlighted: false,
   },
 ];
 
 export default function Pricing() {
+  const navigate = useNavigate();
+
+  const handlePlanAction = (planName) => {
+    if (planName === 'Enterprise') {
+      window.location.href = SALES_EMAIL_LINK;
+      return;
+    }
+
+    navigate('/register/company');
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-secondary-50 dark:bg-secondary-950 text-secondary-900 dark:text-secondary-100 font-sans">
       <Navbar />
@@ -111,15 +131,17 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  <Link to="/register/company">
-                    <Button
-                      variant={variant}
-                      className={`w-full rounded-xl ${highlighted ? 'shadow-md shadow-primary-500/20' : ''}`}
-                      rightIcon={<ArrowRight size={14} />}
-                    >
-                      {cta}
-                    </Button>
-                  </Link>
+                  <Button
+                    type="button"
+                    variant={variant}
+                    className={`w-full rounded-xl ${highlighted ? 'shadow-md shadow-primary-500/20' : ''}`}
+                    rightIcon={<ArrowRight size={14} />}
+                    onClick={() => handlePlanAction(name)}
+                  >
+                    {cta}
+                  </Button>
+
+                  {name === 'Professional' && <PayPalCheckoutButton />}
                 </div>
               </div>
             ))}

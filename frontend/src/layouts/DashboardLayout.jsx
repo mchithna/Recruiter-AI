@@ -5,12 +5,11 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   Home,
   LogOut,
   Menu,
   MessageSquare,
-  Moon,
-  Sun,
   Building2,
   Network,
   BarChart2,
@@ -18,14 +17,12 @@ import {
   FileText,
   FileCheck,
   User,
-  UserCheck,
   Video,
   X
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { Avatar, Button, ThemeToggle } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import ChatBot from '../components/chat/ChatBot';
 import NotificationBell from '../components/notifications/NotificationBell';
 
@@ -40,6 +37,7 @@ const navItemsByRole = {
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
+    { name: 'Subscription', path: '/admin/subscription', icon: CreditCard },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
     { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
     { name: 'Notifications', path: '/admin/notifications', icon: Bell },
@@ -67,7 +65,6 @@ const navItemsByRole = {
 
 export default function DashboardLayout() {
   const { signOut, profile } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -172,7 +169,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isCollapsed ? 'md:justify-center md:px-2' : '',
                   isActive
@@ -180,6 +177,12 @@ export default function DashboardLayout() {
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
+                {isActive && (
+                  <span
+                    className="absolute top-1.5 left-1.5 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] ring-2 ring-white dark:ring-secondary-900 z-10"
+                    aria-label="Active Tab"
+                  />
+                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
@@ -199,9 +202,14 @@ export default function DashboardLayout() {
         <div className={['hidden border-t border-secondary-100 dark:border-white/10 md:block transition-all duration-300', isCollapsed ? 'p-2' : 'p-4'].join(' ')}>
           <Button
             type="button"
-            variant="glass"
+            variant="secondary"
             size="sm"
-            className={['w-full justify-center items-center', isCollapsed ? '!px-0 !justify-center' : ''].join(' ')}
+            className={[
+              'w-full justify-center items-center font-bold transition-all duration-200',
+              'bg-slate-900 text-white hover:bg-slate-800 border border-slate-800 shadow-md',
+              'dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:border-white/15 dark:shadow-sm',
+              isCollapsed ? '!px-0 !justify-center' : ''
+            ].join(' ')}
             leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             onClick={() => setIsCollapsed((value) => !value)}
             disabled={isLiveCopilotRoute}
@@ -234,7 +242,7 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
             <NotificationBell />
             <ThemeToggle />
             <button
@@ -259,7 +267,7 @@ export default function DashboardLayout() {
             </button>
             <button
               type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
+              className="flex h-9 w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400"
               onClick={() => navigate(profilePath)}
               aria-label="Open profile"
             >

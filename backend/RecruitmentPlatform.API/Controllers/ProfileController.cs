@@ -89,7 +89,7 @@ public class ProfileController : ControllerBase
         var newCompany = new Company
         {
             Name = request.CompanyName,
-            SubscriptionStatus = "Active",
+            SubscriptionStatus = "Inactive",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

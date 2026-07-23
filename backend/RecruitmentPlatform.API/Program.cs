@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RecruitmentPlatform.API.Chat;
 using RecruitmentPlatform.API.Authentication;
+using RecruitmentPlatform.API.Payments;
 
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -69,6 +70,10 @@ builder.Services.AddScoped<SmsNotificationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
+builder.Services.AddHttpClient<PayPalService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.AddSingleton<IChatAssistantConfigProvider, ChatAssistantConfigProvider>();
 builder.Services.AddScoped<IChatContextResolver, ChatContextResolver>();
 builder.Services.AddScoped<IChatPermissionValidator, ChatPermissionValidator>();
