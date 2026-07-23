@@ -136,7 +136,7 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className="relative inline-block" ref={containerRef}>
+    <div className="relative inline-block z-50" ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -152,8 +152,8 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-secondary-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-secondary-900 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-secondary-100 pb-3 dark:border-white/10">
+        <div className="notification-panel-popover absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-secondary-200 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.4)] dark:border-slate-700/80 z-[99999] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between border-b border-secondary-100 pb-3 dark:border-slate-700/80">
             <div className="flex items-center gap-2">
               <h3 className="text-body font-bold text-secondary-900 dark:text-white">Notifications</h3>
               {unreadCount > 0 && (
@@ -167,7 +167,7 @@ export default function NotificationBell() {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-secondary-500 hover:bg-secondary-100 hover:text-primary-700 dark:text-secondary-400 dark:hover:bg-white/10 dark:hover:text-primary-300"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-secondary-500 hover:bg-secondary-100 hover:text-primary-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-300"
                 >
                   <CheckCheck size={14} />
                   <span>Mark all read</span>
@@ -176,7 +176,7 @@ export default function NotificationBell() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-secondary-400 hover:bg-secondary-100 hover:text-secondary-700 dark:hover:bg-white/10 dark:hover:text-white"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-secondary-400 hover:bg-secondary-100 hover:text-secondary-700 dark:hover:bg-slate-800 dark:hover:text-white"
               >
                 <X size={16} />
               </button>
@@ -185,9 +185,9 @@ export default function NotificationBell() {
 
           <div className="mt-3 max-h-80 space-y-2 overflow-y-auto pr-1">
             {loading ? (
-              <div className="py-8 text-center text-body-sm text-secondary-400">Loading notifications...</div>
+              <div className="py-8 text-center text-body-sm text-secondary-400 dark:text-slate-400">Loading notifications...</div>
             ) : notifications.length === 0 ? (
-              <div className="py-8 text-center text-body-sm text-secondary-400">No notifications found</div>
+              <div className="py-8 text-center text-body-sm text-secondary-400 dark:text-slate-400">No notifications found</div>
             ) : (
               notifications.map((item) => (
                 <div
@@ -196,24 +196,24 @@ export default function NotificationBell() {
                   className={[
                     'group relative flex gap-3 rounded-xl p-3 text-left transition-all cursor-pointer',
                     item.isRead
-                      ? 'bg-transparent hover:bg-secondary-50 dark:hover:bg-white/5'
-                      : 'bg-primary-50/60 dark:bg-primary-950/30 hover:bg-primary-50 dark:hover:bg-primary-900/40',
+                      ? 'bg-secondary-50/50 hover:bg-secondary-100/70 dark:bg-slate-800/40 dark:hover:bg-slate-800/80'
+                      : 'bg-primary-50/80 hover:bg-primary-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 border border-primary-100 dark:border-indigo-500/20',
                   ].join(' ')}
                 >
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-secondary-800">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-slate-800">
                     {getEventIcon(item.type)}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <p className={`text-body-sm font-semibold truncate ${item.isRead ? 'text-secondary-700 dark:text-secondary-300' : 'text-secondary-900 dark:text-white'}`}>
+                      <p className={`text-body-sm font-semibold truncate ${item.isRead ? 'text-secondary-700 dark:text-slate-300' : 'text-secondary-900 dark:text-white'}`}>
                         {item.title}
                       </p>
-                      <span className="shrink-0 text-[10px] text-secondary-400">
+                      <span className="shrink-0 text-[10px] text-secondary-400 dark:text-slate-400">
                         {formatRelativeTime(item.sentAt)}
                       </span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-caption text-secondary-500 dark:text-secondary-400">
+                    <p className="mt-0.5 line-clamp-2 text-caption text-secondary-600 dark:text-slate-300">
                       {item.body}
                     </p>
                   </div>
@@ -226,11 +226,11 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="mt-3 border-t border-secondary-100 pt-3 dark:border-white/10">
+          <div className="mt-3 border-t border-secondary-100 pt-3 dark:border-slate-700/80">
             <button
               type="button"
               onClick={handleViewAll}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-50 py-2 text-body-sm font-semibold text-primary-700 hover:bg-primary-100 dark:bg-white/5 dark:text-primary-300 dark:hover:bg-white/10"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-100/80 py-2 text-body-sm font-semibold text-primary-700 hover:bg-primary-100 dark:bg-slate-800 dark:text-primary-300 dark:hover:bg-slate-700 transition-colors"
             >
               <span>View all notifications</span>
               <ExternalLink size={14} />
