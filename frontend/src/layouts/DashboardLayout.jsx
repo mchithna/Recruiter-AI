@@ -21,7 +21,7 @@ import {
   Video,
   X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Avatar, Button, Tooltip } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -67,8 +67,26 @@ export default function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const prevPathRef = useRef(location.pathname);
+  const savedCollapseState = useRef(false);
+  const isLiveCopilotRoute = location.pathname.includes('/live-copilot');
+
   useEffect(() => {
     setMobileOpen(false);
+    
+    const isNowCopilot = location.pathname.includes('/live-copilot');
+    const wasCopilot = prevPathRef.current.includes('/live-copilot');
+
+    if (isNowCopilot && !wasCopilot) {
+      setIsCollapsed((current) => {
+        savedCollapseState.current = current;
+        return true;
+      });
+    } else if (!isNowCopilot && wasCopilot) {
+      setIsCollapsed(savedCollapseState.current);
+    }
+    
+    prevPathRef.current = location.pathname;
   }, [location.pathname]);
 
   const handleSignOut = async () => {
@@ -169,7 +187,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div className="hidden border-t border-secondary-100 p-4 dark:border-white/10 md:block">
-          <Tooltip content={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          <Tooltip content={isLiveCopilotRoute ? 'Sidebar locked in copilot mode' : (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}>
             <Button
               type="button"
               variant="glass"
@@ -177,6 +195,7 @@ export default function DashboardLayout() {
               className="w-full justify-center"
               leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               onClick={() => setIsCollapsed((value) => !value)}
+              disabled={isLiveCopilotRoute}
             >
               <span className={isCollapsed ? 'md:hidden' : ''}>
                 {isCollapsed ? 'Expand' : 'Collapse'}

@@ -43,10 +43,10 @@ const DIFFICULTY_OPTIONS = [
   { value: 'Advanced',     label: 'Advanced'     },
 ];
 const STATUS_BADGE = {
-  Asked:    'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  Skipped:  'border-amber-500/30  bg-amber-500/10  text-amber-400',
-  Saved:    'border-violet-500/30  bg-violet-500/10  text-violet-400',
-  Rejected: 'border-red-500/30    bg-red-500/10    text-red-400',
+  Asked:    'border-emerald-500/30 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  Skipped:  'border-amber-500/30  bg-amber-50 text-amber-700 dark:bg-amber-500/10  dark:text-amber-400',
+  Saved:    'border-violet-500/30  bg-violet-50 text-violet-700 dark:bg-violet-500/10  dark:text-violet-400',
+  Rejected: 'border-red-500/30    bg-red-50 text-red-700 dark:bg-red-500/10    dark:text-red-400',
 };
 
 /* ── helpers ── */
@@ -72,10 +72,10 @@ const detectTopic = (txt) =>
     .slice(-4).join(' ');
 
 const scoreStyle = (v) => {
-  if (v == null) return { ring: 'border-white/10',      text: 'text-white/30',  bar: '' };
-  if (v >= 75)   return { ring: 'border-emerald-500/60', text: 'text-emerald-400', bar: 'bg-emerald-500' };
-  if (v >= 50)   return { ring: 'border-amber-500/60',   text: 'text-amber-400',   bar: 'bg-amber-500' };
-  return           { ring: 'border-red-500/60',        text: 'text-red-400',     bar: 'bg-red-500' };
+  if (v == null) return { ring: 'border-slate-300 dark:border-white/10', text: 'text-slate-400 dark:text-white/30', bar: '' };
+  if (v >= 75)   return { ring: 'border-emerald-500/80', text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' };
+  if (v >= 50)   return { ring: 'border-amber-500/80',   text: 'text-amber-600 dark:text-amber-400',   bar: 'bg-amber-500' };
+  return           { ring: 'border-red-500/80',     text: 'text-red-600 dark:text-red-400',     bar: 'bg-red-500' };
 };
 
 /* ════════════════════════════════════════ COMPONENT ═══════════════════════════ */
@@ -110,6 +110,7 @@ export default function LiveInterviewCopilot() {
   const [capMode,     setCapMode]     = useState('manual');
   const [speechOk,    setSpeechOk]    = useState(Boolean(getSpeech()));
   const [capStatus,   setCapStatus]   = useState('Camera and speech capture are off.');
+  const [activeTab,   setActiveTab]   = useState('Live Analysis');
 
   const questions   = session?.questions || [];
   const context     = session?.context;
@@ -276,81 +277,82 @@ export default function LiveInterviewCopilot() {
 
   /* ════════════════ RENDER ════════════════ */
   return (
-    <div className="mx-auto max-w-[1600px] space-y-5">
+    <div className="mx-auto max-w-[1600px] space-y-3">
 
       {/* ── HEADER ── */}
-      <header className="relative overflow-hidden rounded-2xl border border-white/[0.07]"
-        style={{ background: 'linear-gradient(135deg, #0c0d1a 0%, #0f1025 50%, #0e0e20 100%)' }}>
+      <header className="relative mb-1 overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-violet-50/40 shadow-sm dark:border-white/[0.07] dark:bg-gradient-to-br dark:from-[#0c0d1a] dark:via-[#0f1025] dark:to-[#0e0e20]">
         {/* top rainbow bar */}
-        <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl"
-          style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1, #22d3ee, #34d399)' }} />
+        <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl"
+          style={{ background: 'gradient(90deg, #8b5cf6, #6366f1, #22d3ee, #34d399)' }} />
         {/* glow accents */}
-        <div className="pointer-events-none absolute right-12 top-2 h-36 w-64 rounded-full opacity-25 blur-3xl"
+        <div className="pointer-events-none absolute right-12 top-2 h-36 w-64 rounded-full opacity-10 blur-3xl dark:opacity-20"
           style={{ background: 'radial-gradient(ellipse, #6366f1, transparent)' }} />
 
-        <div className="relative flex flex-col gap-4 px-7 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           {/* left: back + title */}
-          <div className="flex items-start gap-4">
+          <div className="flex items-center gap-3">
             <button type="button" onClick={() => navigate(backPath)}
-              className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[12px] font-semibold text-white/60 transition hover:bg-white/[0.09] hover:text-white">
-              <ArrowLeft size={13} /> Back
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60 dark:hover:bg-white/[0.09] dark:hover:text-white">
+              <ArrowLeft size={12} /> Back
             </button>
+            <div className="h-6 w-px bg-slate-200 dark:bg-white/[0.07]" />
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-violet-300">
-                  <BrainCircuit size={10} className="animate-pulse" /> AI Copilot Active
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-400">
-                  <Zap size={9} /> Vertex AI
-                </span>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">Live Interview Copilot</h1>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-violet-700 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-300">
+                    <BrainCircuit size={9} className="animate-pulse" /> Active
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <Zap size={8} /> Vertex AI
+                  </span>
+                </div>
               </div>
-              <h1 className="mt-2 text-[22px] font-bold tracking-tight text-white">Live Interview Copilot</h1>
-              <p className="mt-0.5 text-[12px] text-white/30">
+              <p className="mt-0.5 text-[10px] text-slate-500 dark:text-white/30">
                 Real-time AI assistance · question generation · live answer analysis
               </p>
             </div>
           </div>
           {/* right: timer + counts + end */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-mono text-[15px] font-bold tabular-nums
-                ${session && session.status !== 'Ended'
-                  ? 'border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.12)]'
-                  : 'border-white/[0.07] bg-white/[0.03] text-white/30'}`}>
-              <Radio size={11} className={session && session.status !== 'Ended' ? 'animate-pulse text-emerald-400' : 'text-white/20'} />
-              {elapsed}
-            </div>
-            {session && (
-              <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-2 text-[12px] font-semibold">
-                <span className="text-violet-400">{askedCount}</span>
-                <span className="text-white/25">asked</span>
-                <span className="text-white/15 mx-0.5">·</span>
-                <span className="text-amber-400">{skippedCount}</span>
-                <span className="text-white/25">skipped</span>
+            <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03]">
+              <div className={`flex items-center gap-2 px-4 py-2 font-mono text-[14px] font-bold tabular-nums
+                  ${session && session.status !== 'Ended' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-300' : 'text-slate-400 dark:text-white/30'}`}>
+                <Radio size={11} className={session && session.status !== 'Ended' ? 'animate-pulse text-emerald-500 dark:text-emerald-400' : 'text-slate-300 dark:text-white/20'} />
+                {elapsed}
               </div>
-            )}
-            <button type="button" onClick={endSession}
-              disabled={!session || session.status === 'Ended' || loading === 'end'}
-              className="inline-flex items-center gap-2 rounded-xl border border-red-500/35 bg-red-500/12 px-4 py-2 text-[13px] font-bold text-red-400 transition hover:bg-red-500/20 hover:text-red-300 shadow-[0_0_18px_rgba(239,68,68,0.15)] disabled:cursor-not-allowed disabled:opacity-40">
-              <PhoneOff size={13} />
-              {loading === 'end' ? 'Ending…' : 'End Session'}
-            </button>
+              {session && (
+                <div className="flex items-center gap-1.5 border-l border-slate-200 px-4 py-2 text-[12px] font-semibold dark:border-white/[0.07]">
+                  <span className="text-violet-600 dark:text-violet-400">{askedCount}</span>
+                  <span className="text-slate-500 dark:text-white/25">asked</span>
+                  <span className="text-slate-300 dark:text-white/15">·</span>
+                  <span className="text-amber-600 dark:text-amber-400">{skippedCount}</span>
+                  <span className="text-slate-500 dark:text-white/25">skipped</span>
+                </div>
+              )}
+              <button type="button" onClick={endSession}
+                disabled={!session || session.status === 'Ended' || loading === 'end'}
+                className="flex items-center gap-2 border-l border-slate-200 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 dark:border-white/[0.07] dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 dark:hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40">
+                <PhoneOff size={13} />
+                {loading === 'end' ? 'Ending…' : 'End Session'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* ── ERROR ── */}
       {error && (
-        <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.06] px-5 py-4 text-[13px] font-medium text-red-300">
-          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-[13px] font-medium text-red-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/[0.06] dark:text-red-300">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-500 dark:text-red-400" />
           <span className="flex-1">{error}</span>
-          <button type="button" onClick={() => setError('')} className="text-red-400/50 hover:text-red-300"><X size={14} /></button>
+          <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-700 dark:text-red-400/50 dark:hover:text-red-300"><X size={14} /></button>
         </div>
       )}
 
       {/* ── PRE-SESSION SETUP ── */}
       {!session ? (
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.07] p-8"
-          style={{ background: 'linear-gradient(135deg, #0c0d1a, #0f1025)' }}>
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-white/[0.07] dark:bg-gradient-to-br dark:from-[#0c0d1a] dark:to-[#0f1025]">
           <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full opacity-10 blur-3xl"
             style={{ background: 'radial-gradient(ellipse, #8b5cf6, transparent)' }} />
           <div className="relative mb-8 text-center">
@@ -358,21 +360,21 @@ export default function LiveInterviewCopilot() {
               style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
               <Sparkles size={28} className="text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white">Configure AI Interview Assistant</h2>
-            <p className="mt-1 text-[13px] text-white/35">Set up question mode, difficulty and consent before starting.</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Configure AI Interview Assistant</h2>
+            <p className="mt-1 text-[13px] text-slate-500 dark:text-white/35">Set up question mode, difficulty and consent before starting.</p>
           </div>
           <div className="relative grid items-end gap-4 sm:grid-cols-4">
             <Select label="Question mode" value={mode} onChange={e => setMode(e.target.value)} options={MODE_OPTIONS} />
             <Select label="Difficulty" value={difficulty} onChange={e => setDifficulty(e.target.value)} options={DIFFICULTY_OPTIONS} />
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.05]">
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100 dark:border-white/[0.07] dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors
-                  ${consent ? 'border-violet-500 bg-violet-500' : 'border-white/20'}`}>
+                  ${consent ? 'border-violet-600 bg-violet-600 dark:border-violet-500 dark:bg-violet-500' : 'border-slate-300 dark:border-white/20'}`}>
                 {consent && <CheckCircle2 size={13} className="text-white" />}
               </span>
               <input type="checkbox" className="sr-only" checked={consent} onChange={e => setConsent(e.target.checked)} />
               <div>
-                <p className="text-[13px] font-semibold text-white">Consent recorded</p>
-                <p className="text-[10px] text-white/30">Candidate agreed to recording</p>
+                <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Consent recorded</p>
+                <p className="text-[10px] text-slate-500 dark:text-white/30">Candidate agreed to recording</p>
               </div>
             </label>
             <button type="button" onClick={startSession} disabled={loading === 'start'}
@@ -384,373 +386,447 @@ export default function LiveInterviewCopilot() {
           </div>
         </div>
       ) : (
-        /* ── ACTIVE SESSION: 3-column grid ── */
-        <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+        /* ── ACTIVE SESSION: 2-column grid (60/40) ── */
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
 
-          {/* ══════════ LEFT: CANDIDATE ══════════ */}
-          <aside className="space-y-4">
-            {/* Candidate card */}
-            <div className="overflow-hidden rounded-2xl border border-white/[0.07]"
-              style={{ background: 'linear-gradient(160deg, #0f1025 0%, #0c0d1a 100%)' }}>
+          {/* ══════════ LEFT COLUMN: Video, Controls & Tabs ══════════ */}
+          <div className="flex min-w-0 flex-col gap-3">
 
-              {/* Avatar area */}
-              <div className="flex flex-col items-center gap-3 px-6 pt-7 pb-5 text-center">
-                <div className="relative">
-                  <div className="h-[68px] w-[68px] overflow-hidden rounded-[18px] ring-2 ring-white/10 ring-offset-2 ring-offset-[#0f1025]">
-                    <Avatar name={context?.candidateName || 'C'} src={context?.candidatePhotoUrl} size="lg" className="h-full w-full object-cover" />
-                  </div>
-                  <span className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0f1025] bg-emerald-500">
-                    <Radio size={9} className="animate-pulse text-white" />
-                  </span>
-                </div>
-                <div>
-                  <h2 className="text-[15px] font-bold text-white">{context?.candidateName || 'Candidate'}</h2>
-                  <p className="mt-0.5 text-[12px] text-white/35">{context?.position || 'Position not specified'}</p>
-                </div>
-              </div>
-
-              {/* Stats grid — fixed equal height cells */}
-              <div className="grid grid-cols-2 gap-px border-y border-white/[0.05] bg-white/[0.05]">
-                {[
-                  ['EXPERIENCE', context?.experienceYears ? `${context.experienceYears} yrs` : '—'],
-                  ['STAGE',      context?.interviewStage || 'Interview'],
-                  ['DURATION',   `${context?.interviewDurationMinutes || 0} min`],
-                  ['PRIOR SCORE',context?.previousInterviewScore ? `${context.previousInterviewScore}/100` : '—'],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex flex-col items-center justify-center gap-1 bg-[#0c0d1a] px-3 py-4">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/25">{label}</p>
-                    <p className="text-center text-[13px] font-bold leading-tight text-white/80">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Skills + CV */}
-              <div className="space-y-5 px-5 py-5">
-                {context?.candidateSkills?.length > 0 && (
-                  <div>
-                    <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-white/25">Candidate Skills</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {context.candidateSkills.map(s => (
-                        <span key={s} className="rounded-full border border-violet-500/20 bg-violet-500/[0.08] px-2.5 py-1 text-[11px] font-semibold text-violet-300">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {context?.requiredJobSkills?.length > 0 && (
-                  <div>
-                    <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-white/25">Required Skills</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {context.requiredJobSkills.map(s => (
-                        <span key={s} className="rounded-full border border-cyan-500/20 bg-cyan-500/[0.08] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {context?.cvSummary && (
-                  <div>
-                    <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-white/25">CV Summary</p>
-                    <p className="text-[12px] leading-relaxed text-white/40">{context.cvSummary}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Meeting link */}
-            {context?.meetingLink && (
-              <button type="button" onClick={joinMeeting}
-                className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3.5 text-left transition hover:border-violet-500/20 hover:bg-violet-500/[0.05]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/15">
-                    <Video size={14} className="text-violet-400" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-bold text-white/70">Meeting Link</p>
-                    <p className="text-[10px] text-white/25">Open in new tab</p>
-                  </div>
-                </div>
-                <ChevronRight size={14} className="text-white/25 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            )}
-          </aside>
-
-          {/* ══════════ CENTER: WORKSPACE ══════════ */}
-          <div className="min-w-0 space-y-4">
-
-            {/* ── Capture toolbar ── */}
-            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-[#0c0d1a] px-5 py-3.5">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/20 mr-1">
-                <Camera size={10} /> Capture
-              </span>
-              <button type="button" onClick={startMeetCapture}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-[12px] font-semibold text-white/50 transition hover:bg-white/[0.07] hover:text-white">
-                <MonitorUp size={12} /> Capture Meeting Tab
-              </button>
-              <button type="button" onClick={listening ? stopCapture : startCapture}
-                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[12px] font-bold transition
-                    ${listening
-                      ? 'border border-red-500/25 bg-red-500/12 text-red-400 hover:bg-red-500/20'
-                      : 'text-white shadow-[0_0_14px_rgba(139,92,246,0.25)]'}`}
-                style={!listening ? { background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' } : undefined}>
-                {listening ? <MicOff size={12} /> : <Mic size={12} />}
-                {listening ? 'Stop Capture' : 'My Camera + Mic'}
-              </button>
-              <div className="ml-auto flex items-center gap-2.5 text-[11px] text-white/25">
-                <span className={`flex items-center gap-1 ${listening ? 'text-emerald-400' : ''}`}>
-                  <Radio size={10} className={listening ? 'animate-pulse' : ''} />
-                  {capMode === 'meeting' ? 'Meeting tab' : listening ? 'Mic active' : 'Manual'}
-                </span>
-                <span>·&nbsp;{speechOk ? 'Speech ready' : 'Speech unsupported'}</span>
-              </div>
-            </div>
-
-            {/* ── Video preview + Current Question ── */}
-            <div className="grid gap-4 md:grid-cols-[200px_minmax(0,1fr)]">
-              {/* Camera */}
-              <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-black">
-                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                  <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
-                  {!cameraOn && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#080a12]">
-                      <Camera size={22} className="text-white/10" />
-                      <p className="text-[11px] text-white/15">Preview off</p>
-                    </div>
-                  )}
-                  {listening && (
-                    <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full border border-emerald-500/30 bg-black/80 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
-                      <Radio size={7} className="animate-pulse" /> LIVE
-                    </span>
-                  )}
-                </div>
-                <div className="px-3 py-2 text-[10px] leading-snug text-white/20">{capStatus}</div>
-              </div>
-
-              {/* Current question */}
-              <div className="relative overflow-hidden rounded-2xl border border-violet-500/15 p-5"
-                style={{ background: 'linear-gradient(135deg, #11133a 0%, #0e1028 60%, #0c0d1a 100%)' }}>
-                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20 blur-2xl"
-                  style={{ background: 'radial-gradient(ellipse, #8b5cf6, transparent)' }} />
-                <div className="relative h-full flex flex-col">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/15">
-                      <Target size={11} className="text-violet-400" />
-                    </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Current Question</p>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-300">
-                      <Sparkles size={9} /> AI GENERATED RESPONSE
-                    </span>
-                    {question?.skill && (
-                      <span className="ml-auto rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-0.5 text-[10px] text-white/30">{question.skill}</span>
+            {/* TOP ROW: Video & AI Command Center */}
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
+              {/* Left cell: Video + Capture Controls */}
+              <div className="flex flex-col gap-3">
+                {/* 1. Dominant Video Feed */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm dark:border-white/[0.07] dark:bg-black">
+                  <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                    <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+                    {!cameraOn && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900 dark:bg-[#080a12]">
+                        <Camera size={28} className="text-slate-600 dark:text-white/10" />
+                        <p className="text-[13px] text-slate-400 dark:text-white/15">Preview off</p>
+                      </div>
+                    )}
+                    {listening && (
+                      <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-black/80 px-2.5 py-1 text-[10px] font-bold text-emerald-400">
+                        <Radio size={9} className="animate-pulse" /> LIVE
+                      </span>
                     )}
                   </div>
-                  <p className="flex-1 text-[14px] font-semibold leading-relaxed text-white">
-                    {question?.question || 'Generate the first AI-adaptive question when you are ready.'}
-                  </p>
-                  {question?.reason && (
-                    <p className="mt-3 text-[11px] leading-relaxed text-white/30">💡 {question.reason}</p>
-                  )}
-                  {expPoints.length > 0 && (
-                    <details className="mt-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
-                      <summary className="cursor-pointer text-[11px] font-bold text-white/40 hover:text-white transition-colors">
-                        Expected points ({expPoints.length})
-                      </summary>
-                      <ul className="mt-2.5 space-y-1.5">
-                        {expPoints.map((p, i) => (
-                          <li key={p} className="flex items-start gap-2 text-[11px] text-white/35">
-                            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[8px] font-bold text-violet-400">{i + 1}</span>
-                            {p}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
+                  <div className="px-4 py-2.5 text-[11px] leading-snug text-slate-400 bg-slate-800 border-t border-slate-700 dark:bg-[#080a12] dark:text-white/20 dark:border-white/[0.05]">{capStatus}</div>
+                </div>
+
+                {/* 2. Capture Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm dark:border-white/[0.07] dark:bg-[#0c0d1a]">
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={listening ? stopCapture : startCapture}
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-bold transition
+                          ${listening
+                            ? 'border border-red-500/25 bg-red-500/12 text-red-600 dark:text-red-400 hover:bg-red-500/20'
+                            : 'text-white shadow-[0_0_14px_rgba(139,92,246,0.25)]'}`}
+                      style={!listening ? { background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' } : undefined}>
+                      {listening ? <MicOff size={13} /> : <Mic size={13} />}
+                      {listening ? 'Stop Capture' : 'My Camera + Mic'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-white/40">
+                      <span className={`flex items-center gap-1 ${listening ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
+                        <Radio size={10} className={listening ? 'animate-pulse' : ''} />
+                        {capMode === 'meeting' ? 'Meeting tab' : listening ? 'Mic active' : 'Manual'}
+                      </span>
+                      <span>·</span>
+                      <span>{speechOk ? 'Speech ready' : 'Speech unsupported'}</span>
+                    </div>
+                    <button type="button" onClick={startMeetCapture}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/50 dark:hover:bg-white/[0.07] dark:hover:text-white">
+                      <MonitorUp size={12} /> Capture Meeting Tab
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right cell: AI Command Center */}
+              <div className="overflow-hidden rounded-2xl border border-violet-500/20 bg-white shadow-sm flex flex-col dark:border-violet-500/12 dark:bg-gradient-to-br dark:from-[#110f2a] dark:via-[#0e0f1f] dark:to-[#0c0d1a]">
+
+                <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3 shrink-0 dark:border-white/[0.05]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] shadow-[0_0_14px_rgba(139,92,246,0.4)]"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                    <BrainCircuit size={17} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-bold text-slate-900 dark:text-white">AI Command Center</p>
+                    <p className="text-[11px] text-violet-600 dark:text-violet-400/60">Real-time intelligence</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 p-4 flex-1 overflow-y-auto min-h-0">
+                  {/* Unified Mic/Listening Status */}
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 shrink-0 dark:border-white/[0.05] dark:bg-white/[0.02]">
+                    <span className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${listening ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-slate-300 dark:bg-white/20'}`} />
+                    <p className="text-[12px] font-medium text-slate-700 dark:text-white/70">
+                      {listening ? 'Mic live' : 'Mic off'} <span className="text-slate-300 dark:text-white/20 mx-1.5">·</span>
+                      <span className="text-violet-600 dark:text-violet-300 font-semibold">{confidence}</span>
+                    </p>
+                  </div>
+
+
+
+                  <Textarea label="Detected topic / hint" rows={2} value={topic}
+                    onChange={e => setTopic(e.target.value)}
+                    placeholder="Auto-detected from speech, or type a topic…"
+                    className="text-[12px] shrink-0" />
+
+                  <div className="pt-1 mt-auto shrink-0">
+                    <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/20">Question Generation</p>
+                    <button type="button" onClick={() => generate('Generate')} disabled={loading === 'Generate'}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white shadow-[0_0_16px_rgba(139,92,246,0.25)] transition hover:opacity-90 disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                      <Sparkles size={14} />
+                      {loading === 'Generate' ? 'Generating…' : 'Generate Next Question'}
+                    </button>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {[
+                        { icon: <Gauge size={12} />,         label: 'Easier',    action: 'Make Easier'  },
+                        { icon: <Gauge size={12} />,         label: 'Harder',    action: 'Make Harder'  },
+                        { icon: <MessageSquare size={12} />, label: 'Follow-up', action: 'Ask Follow-up' },
+                        { icon: <FileText size={12} />,      label: 'New Topic', action: 'Change Topic' },
+                      ].map(({ icon, label, action }) => (
+                        <button key={action} type="button" onClick={() => generate(action)}
+                          disabled={loading === action}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white disabled:opacity-40">
+                          {icon}
+                          {loading === action ? '…' : label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* ── Transcript ── */}
-            <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0c0d1a]">
-              <div className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-5 py-3.5">
-                <div className="flex items-center gap-2">
-                  <Captions size={13} className="text-white/25" />
-                  <p className="text-[13px] font-bold text-white">Candidate Answer Transcript</p>
-                </div>
-                <button type="button" onClick={() => { setNotes(''); setInterim(''); }}
-                  className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[11px] font-semibold text-white/35 transition hover:bg-white/[0.07] hover:text-white">
-                  Clear
-                </button>
-              </div>
-              {interim && (
-                <p className="animate-pulse border-b border-white/[0.04] px-5 py-2.5 text-[12px] italic text-violet-300/50">{interim}</p>
-              )}
-              <Textarea label="" rows={6} value={transcript}
-                onChange={e => { setNotes(e.target.value); setInterim(''); }}
-                placeholder="For a remote interview, capture the meeting tab with audio enabled, paste the transcript, or type the candidate's answer before AI analysis."
-                className="resize-none rounded-none border-0 bg-transparent font-mono text-[12px] focus:ring-0" />
-            </div>
 
-            {/* ── Action buttons ── */}
-            <div className="flex flex-wrap gap-2.5">
-              <Btn onClick={() => updateQ('Asked')} disabled={!question} loading={loading === 'Asked'}
-                className="bg-violet-600 text-white hover:bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.25)]"
-                icon={<CheckCircle2 size={13} />} label="Mark Asked" />
-              <Btn onClick={analyze} disabled={!session || !question} loading={loading === 'answer'}
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
-                icon={<Sparkles size={13} />} label="Analyze Live Answer" />
-              <Btn onClick={() => updateQ('Skipped')} disabled={!question} icon={<SkipForward size={13} />} label="Skip" />
-              <Btn onClick={() => updateQ('Saved')}   disabled={!question} icon={<Save size={13} />}        label="Save" />
-              <Btn onClick={() => updateQ('Rejected')} disabled={!question} icon={<ShieldAlert size={13} />} label="Report" />
-            </div>
-
-            {/* ── Question history ── */}
-            <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0c0d1a]">
-              <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-3.5">
-                <p className="text-[13px] font-bold text-white">Question History</p>
-                <span className="rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-white/25">
-                  {questions.length} generated
-                </span>
-              </div>
-              <div className="max-h-52 space-y-1.5 overflow-y-auto p-3">
-                {questions.length === 0 ? (
-                  <p className="py-7 text-center text-[12px] text-white/15">No questions generated yet.</p>
-                ) : questions.map(q => {
-                  const active = q.questionId === question?.questionId;
+            {/* 3. Tab Group */}
+            <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-[#0c0d1a]">
+              {/* Tabs Header */}
+              <div className="flex border-b border-slate-200 bg-slate-50/60 dark:border-white/[0.05] dark:bg-transparent overflow-x-auto">
+                {['Live Analysis', 'Meeting details', 'Candidate details', `History (${questions.length})`].map((tLabel) => {
+                  const baseTab = tLabel.split(' (')[0];
+                  const isActive = activeTab === baseTab;
                   return (
-                    <button key={q.questionId} type="button" onClick={() => setQuestion(q)}
-                      className={`w-full rounded-xl border p-3.5 text-left transition-all
-                          ${active ? 'border-violet-500/25 bg-violet-500/[0.07]' : 'border-white/[0.04] bg-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.04]'}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="line-clamp-2 text-[12px] font-medium text-white/65">{q.question}</p>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${STATUS_BADGE[q.status] || 'border-white/10 bg-white/5 text-white/30'}`}>
-                          {q.status || 'Pending'}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[10px] text-white/20">{q.skill || q.category || 'General'}</p>
+                    <button
+                      key={tLabel}
+                      type="button"
+                      onClick={() => setActiveTab(baseTab)}
+                      className={`relative flex-1 shrink-0 px-4 py-3.5 text-[12px] font-bold transition-colors whitespace-nowrap ${
+                        isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-white/35 dark:hover:text-white/60'
+                      }`}
+                    >
+                      {tLabel}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-violet-600 dark:bg-violet-500 shadow-[0_-2px_8px_rgba(139,92,246,0.5)]" />
+                      )}
                     </button>
                   );
                 })}
               </div>
+
+              {/* Tabs Content */}
+              <div className="flex-1 p-0">
+                {activeTab === 'Meeting details' && (
+                  <div className="p-4 space-y-4">
+                    {/* One-line horizontal card with centered profile & metrics on sides */}
+                    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm dark:border-white/[0.07] dark:bg-[#0f1025]">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        
+                        {/* Left Side: Experience & Duration — stacked 2 lines */}
+                        <div className="flex flex-col gap-2.5 shrink-0 order-2 sm:order-1 min-w-[80px]">
+                          <div className="text-center sm:text-left">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">EXPERIENCE</p>
+                            <p className="mt-0.5 text-[13px] font-bold text-slate-900 dark:text-white/90">
+                              {context?.experienceYears ? `${context.experienceYears} yrs` : '—'}
+                            </p>
+                          </div>
+                          <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
+                          <div className="text-center sm:text-left">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">DURATION</p>
+                            <p className="mt-0.5 text-[13px] font-bold text-slate-900 dark:text-white/90">
+                              {`${context?.interviewDurationMinutes || 0} min`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Center: Profile avatar, Name & Position */}
+                        <div className="flex flex-col items-center text-center shrink-0 order-1 sm:order-2 px-2">
+                          <div className="relative mb-1">
+                            <div className="h-14 w-14 overflow-hidden rounded-[16px] ring-2 ring-slate-200 ring-offset-2 ring-offset-white dark:ring-white/10 dark:ring-offset-[#0f1025]">
+                              <Avatar name={context?.candidateName || 'C'} src={context?.candidatePhotoUrl} size="md" className="h-full w-full object-cover" />
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 dark:border-[#0f1025]">
+                              <Radio size={8} className="animate-pulse text-white" />
+                            </span>
+                          </div>
+                          <h2 className="text-[14px] font-bold text-slate-900 dark:text-white">{context?.candidateName || 'Candidate'}</h2>
+                          <p className="text-[11px] text-slate-500 dark:text-white/40">{context?.position || 'Position not specified'}</p>
+                        </div>
+
+                        {/* Right Side: Stage & Prior Score — stacked 2 lines */}
+                        <div className="flex flex-col gap-2.5 shrink-0 order-3 min-w-[80px]">
+                          <div className="text-center sm:text-right">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">STAGE</p>
+                            <p className="mt-0.5 text-[13px] font-bold text-slate-900 dark:text-white/90">
+                              {context?.interviewStage || 'Interview'}
+                            </p>
+                          </div>
+                          <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
+                          <div className="text-center sm:text-right">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">PRIOR SCORE</p>
+                            <p className="mt-0.5 text-[13px] font-bold text-slate-900 dark:text-white/90">
+                              {context?.previousInterviewScore ? `${context.previousInterviewScore}/100` : '—'}
+                            </p>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Meeting Link Button */}
+                    {context?.meetingLink && (
+                      <button type="button" onClick={joinMeeting}
+                        className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-left transition hover:border-violet-500/30 hover:bg-violet-50 dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:border-violet-500/20 dark:hover:bg-violet-500/[0.05]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/15">
+                            <Video size={14} className="text-violet-600 dark:text-violet-400" />
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-bold text-slate-900 dark:text-white/70">Meeting Link</p>
+                            <p className="text-[10px] text-slate-500 dark:text-white/25">Open in new tab</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-400 transition-transform group-hover:translate-x-0.5 dark:text-white/25" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'Candidate details' && (
+                  <div className="space-y-4 p-4">
+                    {context?.candidateSkills?.length > 0 && (
+                      <div>
+                        <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">Candidate Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {context.candidateSkills.map(s => (
+                            <span key={s} className="rounded-full border border-violet-500/30 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/[0.08] dark:text-violet-300">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {context?.requiredJobSkills?.length > 0 && (
+                      <div>
+                        <p className="mb-2.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">Required Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {context.requiredJobSkills.map(s => (
+                            <span key={s} className="rounded-full border border-cyan-500/30 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/[0.08] dark:text-cyan-300">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {context?.cvSummary && (
+                      <div>
+                        <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">CV Summary</p>
+                        <p className="text-[12px] leading-relaxed text-slate-600 dark:text-white/40">{context.cvSummary}</p>
+                      </div>
+                    )}
+                    {!context?.candidateSkills?.length && !context?.requiredJobSkills?.length && !context?.cvSummary && (
+                      <p className="py-8 text-center text-[12px] text-slate-400 dark:text-white/30">No candidate skill details or CV summary available.</p>
+                    )}
+                  </div>
+                )}
+
+                {(activeTab === 'Live Analysis' || activeTab === 'Transcript') && (
+                  <div className="flex flex-col gap-4 p-4">
+                    {/* Top Bar inside Tab: Title + Actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-white/[0.05]">
+                      <div>
+                        <p className="text-[13px] font-bold text-slate-900 dark:text-white">Live Candidate Answer & AI Evaluation</p>
+                        <p className="text-[11px] text-slate-500 dark:text-white/35">Speech auto-captured or type notes directly</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => { setNotes(''); setInterim(''); }}
+                          className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/40 dark:hover:bg-white/[0.07] dark:hover:text-white">
+                          Clear
+                        </button>
+                        <Btn onClick={analyze} disabled={!session || !question} loading={loading === 'answer'}
+                          className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(139,92,246,0.3)] hover:opacity-90"
+                          icon={<Sparkles size={13} />} label="Analyze Live Answer" />
+                      </div>
+                    </div>
+
+                    {/* Main side-by-side Grid: Answer Textarea (Left) | Analysis Results (Right) */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* Left: Candidate Answer Box */}
+                      <div className="flex flex-col gap-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/30">Candidate Response / Transcript</p>
+                        {interim && (
+                          <p className="animate-pulse rounded-lg border border-violet-500/20 bg-violet-50 px-3 py-2 text-[11px] italic text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/[0.08] dark:text-violet-300">{interim}</p>
+                        )}
+                        <Textarea label="" rows={7} value={transcript}
+                          onChange={e => { setNotes(e.target.value); setInterim(''); }}
+                          placeholder="Candidate answer will transcribe here automatically when mic is active, or type notes manually..."
+                          className="min-h-[180px] resize-none rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 font-mono text-[12px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-1 focus:ring-violet-500/40 dark:border-white/[0.07] dark:bg-black/30 dark:text-white dark:placeholder:text-white/20" />
+                      </div>
+
+                      {/* Right: AI Analysis Results */}
+                      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400/80">AI Answer Evaluation</p>
+                        
+                        {insight ? (
+                          <div className="space-y-3">
+                            {/* Score rings */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <Ring label="Relevant" value={insight.relevanceScore} />
+                              <Ring label="Depth"    value={insight.depthScore}     />
+                              <Ring label="Clarity"  value={insight.clarityScore}   />
+                            </div>
+
+                            {/* Potential Concern */}
+                            {concern && (
+                              <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/15 dark:bg-red-500/[0.06]">
+                                <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
+                                  <AlertTriangle size={9} /> Potential Concern
+                                </p>
+                                <p className="mt-1.5 text-[11px] leading-relaxed text-slate-700 dark:text-white/60">{concern}</p>
+                              </div>
+                            )}
+
+                            {/* Suggested Follow-up */}
+                            {insight?.suggestedFollowUpQuestion && (
+                              <button type="button" onClick={() => generate('Ask Follow-up')}
+                                className="w-full rounded-xl border border-cyan-200 bg-cyan-50/80 p-3 text-left transition hover:bg-cyan-100 dark:border-cyan-500/20 dark:bg-cyan-500/[0.05] dark:hover:border-cyan-500/35 dark:hover:bg-cyan-500/[0.08]">
+                                <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-cyan-700 dark:text-cyan-400">
+                                  <TrendingUp size={9} /> Suggested Follow-up
+                                </p>
+                                <p className="mt-1.5 text-[11px] font-semibold leading-snug text-slate-800 dark:text-white/80">{insight.suggestedFollowUpQuestion}</p>
+                                <p className="mt-1 text-[9px] text-cyan-600 dark:text-cyan-400/50">Click to use this question →</p>
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
+                            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
+                              <Sparkles size={16} />
+                            </div>
+                            <p className="text-[12px] font-medium text-slate-600 dark:text-white/50">No analysis generated yet</p>
+                            <p className="mt-1 max-w-[220px] text-[10px] text-slate-400 dark:text-white/25">Capture or type the answer on the left and click <span className="text-violet-600 dark:text-violet-300 font-semibold">Analyze Live Answer</span> above.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'History' && (
+                  <div className="max-h-[400px] space-y-1.5 overflow-y-auto p-4">
+                    {questions.length === 0 ? (
+                      <p className="py-10 text-center text-[12px] text-slate-400 dark:text-white/25">No questions generated yet.</p>
+                    ) : questions.map(q => {
+                      const active = q.questionId === question?.questionId;
+                      return (
+                        <button key={q.questionId} type="button" onClick={() => setQuestion(q)}
+                          className={`w-full rounded-xl border p-4 text-left transition-all
+                              ${active ? 'border-violet-500/40 bg-violet-50 dark:border-violet-500/25 dark:bg-violet-500/[0.07]' : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-white/[0.04] dark:bg-white/[0.02] dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]'}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="line-clamp-2 text-[13px] font-medium text-slate-800 dark:text-white/75">{q.question}</p>
+                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold ${STATUS_BADGE[q.status] || 'border-slate-200 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/30'}`}>
+                              {q.status || 'Pending'}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-[11px] text-slate-500 dark:text-white/30">{q.skill || q.category || 'General'}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ══════════ RIGHT: AI COMMAND CENTER ══════════ */}
-          <aside className="space-y-4">
+          {/* ══════════ RIGHT COLUMN: Question & Command Center ══════════ */}
+          <aside className="flex flex-col gap-3">
 
-            {/* Command Center card */}
-            <div className="overflow-hidden rounded-2xl border border-violet-500/12"
-              style={{ background: 'linear-gradient(160deg, #110f2a 0%, #0e0f1f 60%, #0c0d1a 100%)' }}>
-
-              {/* glow */}
-              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-10 blur-3xl"
-                style={{ background: 'radial-gradient(ellipse, #8b5cf6, transparent)' }} />
-
-              {/* header row */}
-              <div className="flex items-center gap-3 border-b border-white/[0.05] px-5 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] shadow-[0_0_14px_rgba(139,92,246,0.4)]"
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
-                  <BrainCircuit size={17} className="text-white" />
+            {/* Current question + Actions Card */}
+            <div className="flex flex-col overflow-hidden rounded-2xl border border-violet-500/20 bg-white shadow-sm dark:border-violet-500/15 dark:bg-gradient-to-br dark:from-[#11133a] dark:via-[#0e1028] dark:to-[#0c0d1a]">
+              <div className="relative flex-1 p-4">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10 blur-2xl dark:opacity-20"
+                  style={{ background: 'radial-gradient(ellipse, #8b5cf6, transparent)' }} />
+                
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/15">
+                    <Target size={13} className="text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400">Current Question</p>
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-700 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-300">
+                    <Sparkles size={9} /> AI GEN
+                  </span>
                 </div>
-                <div>
-                  <p className="text-[14px] font-bold text-white">AI Command Center</p>
-                  <p className="text-[11px] text-violet-400/60">Real-time intelligence</p>
-                </div>
+                
+                {question?.skill && (
+                  <span className="mb-3 inline-block rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] text-slate-600 dark:border-white/[0.07] dark:bg-white/[0.03] dark:text-white/30">{question.skill}</span>
+                )}
+                
+                <p className="text-[15px] font-semibold leading-relaxed text-slate-900 dark:text-white">
+                  {question?.question || 'Generate the first AI-adaptive question when you are ready.'}
+                </p>
+                
+                {question?.reason && (
+                  <p className="mt-4 text-[12px] leading-relaxed text-slate-600 dark:text-white/35">💡 {question.reason}</p>
+                )}
+                
+                {expPoints.length > 0 && (
+                  <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/[0.07] dark:bg-white/[0.02]">
+                    <summary className="cursor-pointer text-[12px] font-bold text-slate-700 transition-colors hover:text-slate-900 dark:text-white/40 dark:hover:text-white">
+                      Expected points ({expPoints.length})
+                    </summary>
+                    <ul className="mt-3 space-y-2">
+                      {expPoints.map((p, i) => (
+                        <li key={p} className="flex items-start gap-2 text-[12px] text-slate-700 dark:text-white/40">
+                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[8px] font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-400">{i + 1}</span>
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </div>
-
-              <div className="space-y-4 p-5">
-                {/* 2×2 metrics — fixed height, no text wrap */}
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'MIC',        value: listening ? 'Live' : 'Off', accent: listening ? 'emerald' : 'neutral' },
-                    { label: 'CONFIDENCE', value: confidence,                  accent: 'violet'  },
-                    { label: 'ASKED',      value: askedCount,                  accent: 'violet'  },
-                    { label: 'SKIPPED',    value: skippedCount,                accent: 'amber'   },
-                  ].map(({ label, value, accent }) => (
-                    <Metric key={label} label={label} value={String(value)} accent={accent} />
-                  ))}
-                </div>
-
-                {/* Score rings */}
-                {insight && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <Ring label="Relevant" value={insight.relevanceScore} />
-                    <Ring label="Depth"    value={insight.depthScore}     />
-                    <Ring label="Clarity"  value={insight.clarityScore}   />
-                  </div>
-                )}
-
-                {/* Concern */}
-                {concern && (
-                  <div className="rounded-xl border border-red-500/12 bg-red-500/[0.05] p-3.5">
-                    <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-red-400">
-                      <AlertTriangle size={9} /> Potential Concern
-                    </p>
-                    <p className="mt-2 text-[12px] leading-relaxed text-white/45">{concern}</p>
-                  </div>
-                )}
-
-                {/* Follow-up suggestion */}
-                {insight?.suggestedFollowUpQuestion && (
-                  <button type="button" onClick={() => generate('Ask Follow-up')}
-                    className="w-full rounded-xl border border-cyan-500/12 bg-cyan-500/[0.04] p-3.5 text-left transition hover:border-cyan-500/25 hover:bg-cyan-500/[0.07]">
-                    <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-cyan-400">
-                      <TrendingUp size={9} /> Suggested Follow-up
-                    </p>
-                    <p className="mt-2 text-[12px] font-semibold leading-snug text-white/65">{insight.suggestedFollowUpQuestion}</p>
-                    <p className="mt-2 text-[10px] text-cyan-400/40">Click to use this question →</p>
-                  </button>
-                )}
-
-                {/* Topic input */}
-                <Textarea label="Detected topic / hint" rows={2} value={topic}
-                  onChange={e => setTopic(e.target.value)}
-                  placeholder="Auto-detected from speech, or type a topic…"
-                  className="text-[12px]" />
+              
+              {/* Action Buttons Row */}
+              <div className="flex flex-wrap gap-2 border-t border-slate-200 bg-slate-50 p-3 dark:border-white/[0.05] dark:bg-black/20">
+                <Btn onClick={() => updateQ('Asked')} disabled={!question} loading={loading === 'Asked'}
+                  className="flex-1 justify-center bg-violet-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.25)] hover:bg-violet-500"
+                  icon={<CheckCircle2 size={13} />} label="Mark Asked" />
+                
+                <Btn onClick={() => updateQ('Skipped')} disabled={!question} icon={<SkipForward size={13} />} label="Skip" />
+                <Btn onClick={() => updateQ('Saved')}   disabled={!question} icon={<Save size={13} />}        label="Save" />
+                <Btn onClick={() => updateQ('Rejected')} disabled={!question} icon={<ShieldAlert size={13} />} label="Report" />
               </div>
             </div>
 
-            {/* Question controls */}
-            <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0c0d1a] p-5">
-              <p className="mb-3.5 text-[9px] font-bold uppercase tracking-widest text-white/20">Question Controls</p>
-              <div className="space-y-2.5">
-                <button type="button" onClick={() => generate('Generate')} disabled={loading === 'Generate'}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-bold text-white shadow-[0_0_16px_rgba(139,92,246,0.25)] transition hover:opacity-90 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
-                  <Sparkles size={14} />
-                  {loading === 'Generate' ? 'Generating…' : 'Generate Next Question'}
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { icon: <Gauge size={12} />,         label: 'Easier',     action: 'Make Easier'  },
-                    { icon: <Gauge size={12} />,         label: 'Harder',     action: 'Make Harder'  },
-                    { icon: <MessageSquare size={12} />, label: 'Follow-up',  action: 'Ask Follow-up' },
-                    { icon: <FileText size={12} />,      label: 'New Topic',  action: 'Change Topic' },
-                  ].map(({ icon, label, action }) => (
-                    <button key={action} type="button" onClick={() => generate(action)}
-                      disabled={loading === action}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.02] py-2.5 text-[12px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-40">
-                      {icon}
-                      {loading === action ? '…' : label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+
           </aside>
         </div>
       )}
 
       {/* ── POST-SESSION SUMMARY ── */}
       {summary && (
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/12 p-7"
-          style={{ background: 'linear-gradient(135deg, #071912 0%, #0c0d1a 100%)' }}>
-          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full opacity-8 blur-3xl"
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-emerald-50/50 p-7 shadow-sm dark:border-emerald-500/12 dark:bg-gradient-to-br dark:from-[#071912] dark:to-[#0c0d1a]">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full opacity-10 blur-3xl dark:opacity-8"
             style={{ background: 'radial-gradient(ellipse, #10b981, transparent)' }} />
           <div className="relative mb-6 flex items-center gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-emerald-500/15">
-              <CheckCircle2 size={22} className="text-emerald-400" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-emerald-100 dark:bg-emerald-500/15">
+              <CheckCircle2 size={22} className="text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-[16px] font-bold text-white">Interview Summary</h2>
-              <p className="text-[11px] text-white/25">AI-generated post-session analysis</p>
+              <h2 className="text-[16px] font-bold text-slate-900 dark:text-white">Interview Summary</h2>
+              <p className="text-[11px] text-slate-500 dark:text-white/25">AI-generated post-session analysis</p>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -758,24 +834,24 @@ export default function LiveInterviewCopilot() {
               { title: 'Strong Areas',         items: summary.strongAreas || [],                dot: 'bg-emerald-500' },
               { title: 'Areas for Validation', items: summary.areasRequiringValidation || [],   dot: 'bg-amber-500'   },
             ].map(({ title, items, dot }) => (
-              <div key={title} className="rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">{title}</p>
+              <div key={title} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/[0.05] dark:bg-white/[0.02]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">{title}</p>
                 {items.length > 0 ? (
                   <ul className="mt-3 space-y-2">
                     {items.map(i => (
-                      <li key={i} className="flex items-start gap-2 text-[12px] text-white/45">
+                      <li key={i} className="flex items-start gap-2 text-[12px] text-slate-700 dark:text-white/45">
                         <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
                         {i}
                       </li>
                     ))}
                   </ul>
-                ) : <p className="mt-2 text-[12px] text-white/15">Not available</p>}
+                ) : <p className="mt-2 text-[12px] text-slate-400 dark:text-white/15">Not available</p>}
               </div>
             ))}
-            <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">AI Recommendation</p>
-              <p className="mt-2 text-[13px] font-semibold leading-relaxed text-white/75">{summary.aiRecommendation}</p>
-              {summary.disclaimer && <p className="mt-3 text-[10px] text-white/20">{summary.disclaimer}</p>}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/[0.05] dark:bg-white/[0.02]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/25">AI Recommendation</p>
+              <p className="mt-2 text-[13px] font-semibold leading-relaxed text-slate-800 dark:text-white/75">{summary.aiRecommendation}</p>
+              {summary.disclaimer && <p className="mt-3 text-[10px] text-slate-400 dark:text-white/20">{summary.disclaimer}</p>}
             </div>
           </div>
         </div>
@@ -789,7 +865,7 @@ export default function LiveInterviewCopilot() {
 function Btn({ icon, label, onClick, disabled, loading: isLoading, className = '', style }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled || isLoading}
-      className={`inline-flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-2.5 text-[12px] font-bold text-white/45 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+      className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:border-white/[0.07] dark:bg-white/[0.03] dark:text-white/45 dark:hover:bg-white/[0.07] dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
       style={style}>
       {icon}
       {isLoading ? 'Working…' : label}
@@ -799,14 +875,14 @@ function Btn({ icon, label, onClick, disabled, loading: isLoading, className = '
 
 function Metric({ label, value, accent }) {
   const styles = {
-    emerald: 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400',
-    violet:  'border-violet-500/15  bg-violet-500/[0.05]  text-violet-300',
-    amber:   'border-amber-500/20   bg-amber-500/[0.06]   text-amber-400',
-    neutral: 'border-white/[0.06]  bg-white/[0.02]       text-white/30',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/[0.06] dark:text-emerald-400',
+    violet:  'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/15 dark:bg-violet-500/[0.05] dark:text-violet-300',
+    amber:   'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/[0.06] dark:text-amber-400',
+    neutral: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-white/30',
   };
   return (
     <div className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border px-3 py-3.5 ${styles[accent] || styles.neutral}`}>
-      <p className="text-[9px] font-bold uppercase tracking-widest opacity-50">{label}</p>
+      <p className="text-[9px] font-bold uppercase tracking-widest opacity-60">{label}</p>
       {/* truncate long values so they never wrap */}
       <p className="w-full truncate text-center text-[13px] font-bold">{value}</p>
     </div>
@@ -819,14 +895,14 @@ function Ring({ label, value }) {
   const deg = v ? v * 3.6 : 0;
   const col = v == null ? 'transparent' : v >= 75 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444';
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-white/[0.05] bg-white/[0.02] p-3">
+    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-3 dark:border-white/[0.05] dark:bg-white/[0.02]">
       <div className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 ${ring}`}
         style={{ background: `conic-gradient(${col} ${deg}deg, transparent 0deg)` }}>
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0c0d1a]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white dark:bg-[#0c0d1a]">
           <span className={`text-[12px] font-bold tabular-nums ${text}`}>{v ?? '—'}</span>
         </div>
       </div>
-      <p className="text-[9px] font-bold uppercase tracking-widest text-white/20">{label}</p>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/20">{label}</p>
     </div>
   );
 }
