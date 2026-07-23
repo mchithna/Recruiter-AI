@@ -57,14 +57,9 @@ const Unauthorized = () => (
 const PublicChatBotMount = () => {
   const location = useLocation();
   const path = location.pathname || '/';
-  const isDashboardPath =
-    path.startsWith('/candidate')
-    || path.startsWith('/recruiter')
-    || path.startsWith('/admin')
-    || path.startsWith('/hiring-manager')
-    || path.startsWith('/dashboard');
+  const chatbotPages = ['/', '/features', '/pricing', '/about', '/contact'];
 
-  return isDashboardPath ? null : <ChatBot />;
+  return chatbotPages.includes(path) ? <ChatBot variant="home" /> : null;
 };
 
 function App() {
