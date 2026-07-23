@@ -18,17 +18,20 @@ public class InterviewsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IApplicationStatusService _applicationStatusService;
+    private readonly INotificationFactory _notificationFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<InterviewsController> _logger;
 
     public InterviewsController(
         ApplicationDbContext context,
         IApplicationStatusService applicationStatusService,
+        INotificationFactory notificationFactory,
         IConfiguration configuration,
         ILogger<InterviewsController> logger)
     {
         _context = context;
         _applicationStatusService = applicationStatusService;
+        _notificationFactory = notificationFactory;
         _configuration = configuration;
         _logger = logger;
     }
@@ -158,6 +161,23 @@ public class InterviewsController : ControllerBase
             _context.Interviews.Add(interview);
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            try
+            {
+                var compositeService = _notificationFactory.Create("All");
+                await compositeService.SendAsync(
+                    recipientId: interviewer.Id,
+                    type: "InterviewAssigned",
+                    title: $"Interview Assigned: {application.CandidateName}",
+                    body: $"You are scheduled to interview {application.CandidateName} for {application.JobTitle} on {interview.ScheduledTime:g}.",
+                    relatedEntityType: "Interview",
+                    relatedEntityId: interview.Id
+                );
+            }
+            catch
+            {
+                // Non-blocking catch
+            }
 
             return Ok(new InterviewDto
             {

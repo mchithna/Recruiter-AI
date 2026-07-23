@@ -46,6 +46,7 @@ import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 import CandidateMeetings from './pages/candidate/Meetings';
+import NotificationsPage from './pages/NotificationsPage';
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -98,6 +99,7 @@ function App() {
                   <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
                   <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
                   <Route path="offers" element={<HiringManagerOffers />} />
+                  <Route path="notifications" element={<NotificationsPage />} />
                 </Route>
               </Route>
 
@@ -111,6 +113,7 @@ function App() {
                 <Route path="/candidate/applications" element={<Applications />} />
                 <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationDetail />} />
                 <Route path="/candidate/meetings" element={<CandidateMeetings />} />
+                <Route path="/candidate/notifications" element={<NotificationsPage />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
@@ -119,6 +122,7 @@ function App() {
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
                 <Route path="/admin/analytics" element={<Analytics />} />
                 <Route path="/admin/activity" element={<ActivityLog />} />
+                <Route path="/admin/notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
 
@@ -135,6 +139,7 @@ function App() {
                 <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
                 <Route path="interviews/:interviewId/live-copilot" element={<LiveInterviewCopilot />} />
                 <Route path="messages" element={<MessagesList />} />
+                <Route path="notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
           </Route>

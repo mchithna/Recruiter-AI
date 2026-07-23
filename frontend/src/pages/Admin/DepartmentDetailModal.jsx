@@ -171,6 +171,7 @@ const DepartmentDetailModal = ({ isOpen, onClose, department, allDepartments }) 
                         <Select
                           placeholder="Move to..."
                           value=""
+                          dropdownClassName="absolute z-[120] mt-2 w-full rounded-xl border border-secondary-200 bg-white py-1 shadow-2xl dark:border-[#3a4368] dark:!bg-[#1e2338]"
                           onChange={(e) => handleReassign(staff.id, e.target.value)}
                           options={allDepartments
                             ?.filter((d) => d.id !== department.id)

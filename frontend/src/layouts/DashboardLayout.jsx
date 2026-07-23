@@ -1,5 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
+  Bell,
   Briefcase,
   Calendar,
   ChevronLeft,
@@ -22,10 +23,11 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
-import { Avatar, Button, Tooltip } from '../components/ui';
+import { Avatar, Button, ThemeToggle } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import ChatBot from '../components/chat/ChatBot';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 const navItemsByRole = {
   Recruiter: [
@@ -33,12 +35,14 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/recruiter/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/recruiter/interviews', icon: Calendar },
     { name: 'Messages', path: '/recruiter/messages', icon: MessageSquare },
+    { name: 'Notifications', path: '/recruiter/notifications', icon: Bell },
   ],
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
     { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
+    { name: 'Notifications', path: '/admin/notifications', icon: Bell },
   ],
   Candidate: [
     { name: 'Home', path: '/candidate/home', icon: Home },
@@ -47,12 +51,14 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/candidate/jobs', icon: Briefcase },
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
     { name: 'Meetings', path: '/candidate/meetings', icon: Video },
+    { name: 'Notifications', path: '/candidate/notifications', icon: Bell },
   ],
   HiringManager: [
     { name: 'Home', path: '/hiring-manager/home', icon: Home },
     { name: 'Jobs', path: '/hiring-manager/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/hiring-manager/interviews', icon: Calendar },
     { name: 'Offers', path: '/hiring-manager/offers', icon: FileCheck },
+    { name: 'Notifications', path: '/hiring-manager/notifications', icon: Bell },
   ],
   Guest: [
     { name: 'Overview', path: '/dashboard', icon: Home },
@@ -61,7 +67,7 @@ const navItemsByRole = {
 
 export default function DashboardLayout() {
   const { signOut, profile } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -73,7 +79,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     setMobileOpen(false);
-    
+
     const isNowCopilot = location.pathname.includes('/live-copilot');
     const wasCopilot = prevPathRef.current.includes('/live-copilot');
 
@@ -85,7 +91,7 @@ export default function DashboardLayout() {
     } else if (!isNowCopilot && wasCopilot) {
       setIsCollapsed(savedCollapseState.current);
     }
-    
+
     prevPathRef.current = location.pathname;
   }, [location.pathname]);
 
@@ -131,11 +137,15 @@ export default function DashboardLayout() {
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-multiply dark:opacity-40 dark:mix-blend-screen"
           />
-          <div className="relative flex min-w-0 flex-1 items-center gap-3">
-            <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-ai-600 text-h4 text-white shadow-glow-primary">
-              H
+          <div className={['relative flex min-w-0 flex-1 items-center gap-3', isCollapsed ? 'justify-center' : ''].join(' ')}>
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900/95 border border-indigo-500/40 shadow-[0_0_18px_rgba(99,102,241,0.4)] dark:bg-slate-900/90 dark:border-indigo-400/50 overflow-hidden">
+              <img
+                src="/logo.png"
+                alt="Hirely Logo"
+                className="h-8 w-8 object-contain filter brightness-130 contrast-125 drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] transform scale-[2.0]"
+              />
             </div>
-            <div className={['min-w-0 transition-opacity duration-200', isCollapsed ? 'md:hidden' : ''].join(' ')}>
+            <div className={['min-w-0 transition-opacity duration-200', isCollapsed ? 'hidden' : ''].join(' ')}>
               <h2 className="text-h3 text-secondary-900 dark:text-white">Hirely</h2>
               <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
                 {role} command center
@@ -162,7 +172,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isCollapsed ? 'md:justify-center md:px-2' : '',
                   isActive
@@ -170,15 +180,6 @@ export default function DashboardLayout() {
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
-                {isActive && (
-                  <span
-                    className={[
-                      'absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18),0_0_12px_rgba(52,211,153,0.65)]',
-                      isCollapsed ? 'md:left-2 md:top-2' : '',
-                    ].join(' ')}
-                    aria-hidden="true"
-                  />
-                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
@@ -195,27 +196,23 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        <div className="hidden border-t border-secondary-100 p-4 dark:border-white/10 md:block">
-          <Tooltip content={isLiveCopilotRoute ? 'Sidebar locked in copilot mode' : (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}>
-            <Button
-              type="button"
-              variant="glass"
-              size="sm"
-              className="w-full justify-center"
-              leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-              onClick={() => setIsCollapsed((value) => !value)}
-              disabled={isLiveCopilotRoute}
-            >
-              <span className={isCollapsed ? 'md:hidden' : ''}>
-                {isCollapsed ? 'Expand' : 'Collapse'}
-              </span>
-            </Button>
-          </Tooltip>
+        <div className={['hidden border-t border-secondary-100 dark:border-white/10 md:block transition-all duration-300', isCollapsed ? 'p-2' : 'p-4'].join(' ')}>
+          <Button
+            type="button"
+            variant="glass"
+            size="sm"
+            className={['w-full justify-center items-center', isCollapsed ? '!px-0 !justify-center' : ''].join(' ')}
+            leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            onClick={() => setIsCollapsed((value) => !value)}
+            disabled={isLiveCopilotRoute}
+          >
+            {isCollapsed ? null : 'Collapse'}
+          </Button>
         </div>
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+        <header className="relative z-50 flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2.5">
               <button
@@ -237,43 +234,37 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
-            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              <Button
-                type="button"
-                variant="glass"
-                size="sm"
-                className="h-8 w-8 rounded-xl px-0 shadow-sm [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
-                leftIcon={
-                  theme === 'dark'
-                    ? <Sun size={14} strokeWidth={2} />
-                    : <Moon size={14} strokeWidth={2} />
-                }
-                onClick={toggleTheme}
-              >
-                <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
-              </Button>
-            </Tooltip>
-            <Button
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <NotificationBell />
+            <ThemeToggle />
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 rounded-xl bg-white/55 px-0 shadow-sm hover:bg-white/80 dark:bg-white/10 dark:hover:bg-white/15 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
-              leftIcon={<LogOut size={14} strokeWidth={2} />}
               onClick={handleSignOut}
+              className="group relative flex items-center justify-center shrink-0 w-9 h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+              aria-label="Sign Out"
+              title="Sign Out"
+              style={{
+                background: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.08) 100%)',
+                border: '1px solid rgba(239,68,68,0.25)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(239,68,68,0.12)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+              }}
             >
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
-            <Tooltip content="Open profile">
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/55 p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400 dark:bg-white/10"
-                onClick={() => navigate(profilePath)}
-                aria-label="Open profile"
-              >
-                <Avatar name={profileName} src={profile?.profilePictureUrl} size="sm" />
-              </button>
-            </Tooltip>
+              <span
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
+              />
+              <LogOut size={15} strokeWidth={2} className="text-red-500 dark:text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.6)]" />
+            </button>
+            <button
+              type="button"
+              className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
+              onClick={() => navigate(profilePath)}
+              aria-label="Open profile"
+            >
+              <Avatar name={profileName} src={profile?.profilePictureUrl} size="sm" />
+            </button>
           </div>
         </header>
 
@@ -281,7 +272,7 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
-      {role !== 'Guest' && <ChatBot variant="dashboard" />}
+      {role !== 'Guest' && <ChatBot />}
     </div>
   );
 }

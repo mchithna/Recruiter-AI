@@ -127,6 +127,7 @@ export default function MessagesList() {
 
     const trimmed = draftMessage.trim();
     if (!trimmed) return;
+    if (!window.confirm('Confirm that you reviewed and want to send this message?')) return;
 
     setIsSending(true);
     setSendError('');
