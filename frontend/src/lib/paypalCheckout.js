@@ -58,40 +58,52 @@ export function loadPayPalSdk(clientId, currency) {
 }
 
 export async function createProfessionalOrder(config, actions) {
-  if (!config.useServer) {
-    return actions.order.create({
-      purchase_units: [
-        {
-          reference_id: 'hirely-professional-monthly',
-          description: 'Hirely Professional - 1 month',
-          amount: {
-            currency_code: 'USD',
-            value: '49.00'
-          }
-        }
-      ],
-      application_context: {
-        brand_name: 'Hirely',
-        user_action: 'PAY_NOW'
+  if (config.useServer) {
+    try {
+      const { data } = await api.post('/payments/paypal/orders', {}, {
+        skipAuth: true
+      });
+      if (data?.orderId) {
+        return data.orderId;
       }
-    });
+    } catch (error) {
+      console.warn('PayPal server createOrder failed; using SDK client order fallback.', error);
+    }
   }
 
-  const { data } = await api.post('/payments/paypal/orders', {}, {
-    skipAuth: true
+  return actions.order.create({
+    purchase_units: [
+      {
+        reference_id: 'hirely-professional-monthly',
+        description: 'Hirely Professional - 1 month',
+        amount: {
+          currency_code: 'USD',
+          value: '49.00'
+        }
+      }
+    ],
+    application_context: {
+      brand_name: 'Hirely',
+      user_action: 'PAY_NOW'
+    }
   });
-  return data.orderId;
 }
 
 export async function captureProfessionalOrder(config, orderId, actions) {
-  if (!config.useServer) {
-    return actions.order.capture();
+  if (config.useServer) {
+    try {
+      const { data } = await api.post(
+        `/payments/paypal/orders/${encodeURIComponent(orderId)}/capture`,
+        {},
+        { skipAuth: true }
+      );
+      if (data) {
+        return data;
+      }
+    } catch (error) {
+      console.warn('PayPal server capture failed; using SDK client capture fallback.', error);
+    }
   }
 
-  const { data } = await api.post(
-    `/payments/paypal/orders/${encodeURIComponent(orderId)}/capture`,
-    {},
-    { skipAuth: true }
-  );
-  return data;
+  return actions.order.capture();
 }

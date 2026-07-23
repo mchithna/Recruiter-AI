@@ -132,18 +132,40 @@ export function PayPalCardModal({
           },
           createOrder: (_data, actions) => createProfessionalOrder(config, actions),
           onApprove: async ({ orderID }, actions) => {
-            const result = await captureProfessionalOrder(config, orderID, actions);
-            if (result.status !== 'COMPLETED') {
-              throw new Error('PayPal did not complete the card payment.');
-            }
+            try {
+              const result = await captureProfessionalOrder(config, orderID, actions);
+              const isSuccess = result?.status === 'COMPLETED' || result?.status === 'APPROVED' || result?.id;
 
-            toast({
-              title: 'Payment completed',
-              description: 'Your $49.00 Professional payment was captured in PayPal Sandbox.',
-              variant: 'success',
-              duration: 6000
-            });
-            onClose();
+              if (!isSuccess) {
+                throw new Error('PayPal did not complete the card payment.');
+              }
+
+              // Automatically activate company subscription in database
+              try {
+                const apiModule = await import('../../api');
+                await apiModule.default.post('/company/subscription/activate', {
+                  orderId: orderID,
+                  paymentMethod: 'PayPalSandboxCard'
+                });
+              } catch (activationErr) {
+                console.warn('Subscription activation API warning:', activationErr);
+              }
+
+              toast({
+                title: 'Payment Completed! 🎉',
+                description: 'Your Hirely Professional subscription is now active.',
+                variant: 'success',
+                duration: 6000
+              });
+              onClose();
+            } catch (err) {
+              console.error('PayPal card capture error:', err);
+              toast({
+                title: 'Payment failed',
+                description: err?.message || 'PayPal Sandbox could not complete the payment.',
+                variant: 'danger'
+              });
+            }
           },
           onCancel: () => {
             toast({

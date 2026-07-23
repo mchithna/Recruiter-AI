@@ -9,20 +9,28 @@ import { chatApi } from '../../lib/chatApi';
 const DEFAULT_CONTEXT = {
   contextKey: 'home',
   assistantName: 'Hirely',
-  welcomeMessage: 'Hi, I can help with general website questions, registration, login, navigation, and support.',
+  welcomeMessage: 'I can help with general website questions, registration, login, navigation, and support.',
   scopeDescription: 'General website assistance only.',
-  outOfScopeResponse: 'I can help with general website questions here. For private dashboard information, please log in and open the relevant dashboard.',
-  missingDataResponse: "I couldn't find enough current information to answer that question. Please check the dashboard data or contact support.",
+  outOfScopeResponse: 'I can help with general website questions here.',
+  missingDataResponse: "I couldn't find enough current information to answer that question.",
   exampleQuestions: ['What is this website?', 'How do I register?', 'Which dashboard should I use?'],
   requiresAuthentication: false
 };
 
 const ChatBot = ({ variant = 'default' }) => {
   const location = useLocation();
-  const isHomeVariant = variant === 'home';
-  const isDashboardVariant = variant === 'dashboard';
+  const activePath = location.pathname || '/';
+
+  // Do not render chatbot on invitation accept pages
+  if (activePath.includes('/invite') || activePath.includes('/accept')) {
+    return null;
+  }
+
+  const isHomePage = activePath === '/' || activePath === '/home' || variant === 'home';
+  const isDashboardPage = !isHomePage;
+  
   const [uiState, setUiState] = useState(
-    isDashboardVariant || (typeof window !== 'undefined' && window.innerWidth < 768) ? 'button' : 'greeting'
+    isDashboardPage || (typeof window !== 'undefined' && window.innerWidth < 768) ? 'button' : 'greeting'
   );
   const [showHistory, setShowHistory] = useState(false);
   const [contextMeta, setContextMeta] = useState(DEFAULT_CONTEXT);
@@ -36,7 +44,6 @@ const ChatBot = ({ variant = 'default' }) => {
   const [lastFailedMessage, setLastFailedMessage] = useState('');
 
   const messagesEndRef = useRef(null);
-  const activePath = location.pathname || '/';
 
   useEffect(() => {
     const handleResize = () => {
@@ -178,19 +185,31 @@ const ChatBot = ({ variant = 'default' }) => {
   const suggestions = contextMeta.exampleQuestions?.length ? contextMeta.exampleQuestions : DEFAULT_CONTEXT.exampleQuestions;
   const canSend = input.trim() && !isLoading && !isContextLoading;
 
-  const chatPanelSize = isHomeVariant
-    ? 'w-[calc(100vw-1.5rem)] sm:w-[460px] h-[min(640px,calc(100dvh-5rem))]'
+  // Clean welcome message: Keep ONLY "Hi, I'm Hirely" at top header, remove from chat body area
+  const displayWelcomeMessage = (contextMeta.welcomeMessage || '')
+    .replace(/^Hi,\s*(I'm|I am)\s*Hirely[!.?]*\s*/i, '')
+    .replace(/^Hi,\s*/i, '');
+
+  // Larger chatbot window size ONLY on Home dashboard
+  const chatPanelSize = isHomePage
+    ? 'w-[calc(100vw-1.5rem)] sm:w-[540px] md:w-[580px] h-[min(720px,calc(100dvh-4rem))]'
     : 'w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))]';
-  const greetingSize = isHomeVariant
-    ? 'w-[125px] h-[210px] sm:w-[150px] sm:h-[250px]'
+    
+  const greetingSize = isHomePage
+    ? 'w-[145px] h-[240px] sm:w-[175px] sm:h-[285px]'
     : 'w-[110px] h-[185px] sm:w-[130px] sm:h-[220px]';
-  const launcherOuterSize = isDashboardVariant
+
+  // Circle sizes
+  const launcherOuterSize = isDashboardPage
+    ? 'w-[64px] h-[64px] sm:w-[72px] sm:h-[72px]'
+    : 'w-[54px] h-[54px] sm:w-[64px] sm:h-[64px]';
+    
+  const launcherInnerSize = isDashboardPage
     ? 'w-[58px] h-[58px] sm:w-[66px] sm:h-[66px]'
-    : 'w-[38px] h-[38px] sm:w-[44px] sm:h-[44px]';
-  const launcherInnerSize = isDashboardVariant
-    ? 'w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]'
-    : 'w-[34px] h-[34px] sm:w-[40px] sm:h-[40px]';
-  const showLauncherLabel = !isDashboardVariant;
+    : 'w-[48px] h-[48px] sm:w-[58px] sm:h-[58px]';
+
+  // "Ask Hirely" label ONLY on Home dashboard
+  const showLauncherLabel = isHomePage;
 
   return (
     <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
@@ -222,8 +241,8 @@ const ChatBot = ({ variant = 'default' }) => {
               />
             </div>
             {showLauncherLabel && (
-              <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-2 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
-                <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
+              <div className="bg-white/70 dark:bg-slate-900/80 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-white/60 dark:border-slate-700/60 flex items-center gap-2 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300">
+                <span className="font-extrabold text-indigo-950 dark:text-indigo-100 text-sm sm:text-base tracking-wide">Ask Hirely</span>
               </div>
             )}
           </motion.div>
@@ -328,7 +347,7 @@ const ChatBot = ({ variant = 'default' }) => {
                     <div className="flex flex-col items-center justify-center min-h-[300px] text-center px-4 space-y-6 my-auto">
                       <div className="space-y-2.5">
                         <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-[310px] mx-auto">
-                          {isContextLoading ? 'Loading the AI assistant for this page...' : contextMeta.welcomeMessage}
+                          {isContextLoading ? 'Loading the AI assistant for this page...' : displayWelcomeMessage}
                         </p>
                       </div>
 
