@@ -17,10 +17,12 @@ const DEFAULT_CONTEXT = {
   requiresAuthentication: false
 };
 
-const ChatBot = () => {
+const ChatBot = ({ variant = 'default' }) => {
   const location = useLocation();
+  const isHomeVariant = variant === 'home';
+  const isDashboardVariant = variant === 'dashboard';
   const [uiState, setUiState] = useState(
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 'button' : 'greeting'
+    isDashboardVariant || (typeof window !== 'undefined' && window.innerWidth < 768) ? 'button' : 'greeting'
   );
   const [showHistory, setShowHistory] = useState(false);
   const [contextMeta, setContextMeta] = useState(DEFAULT_CONTEXT);
@@ -176,6 +178,20 @@ const ChatBot = () => {
   const suggestions = contextMeta.exampleQuestions?.length ? contextMeta.exampleQuestions : DEFAULT_CONTEXT.exampleQuestions;
   const canSend = input.trim() && !isLoading && !isContextLoading;
 
+  const chatPanelSize = isHomeVariant
+    ? 'w-[calc(100vw-1.5rem)] sm:w-[460px] h-[min(640px,calc(100dvh-5rem))]'
+    : 'w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))]';
+  const greetingSize = isHomeVariant
+    ? 'w-[125px] h-[210px] sm:w-[150px] sm:h-[250px]'
+    : 'w-[110px] h-[185px] sm:w-[130px] sm:h-[220px]';
+  const launcherOuterSize = isDashboardVariant
+    ? 'w-[48px] h-[48px] sm:w-[56px] sm:h-[56px]'
+    : 'w-[38px] h-[38px] sm:w-[44px] sm:h-[44px]';
+  const launcherInnerSize = isDashboardVariant
+    ? 'w-[43px] h-[43px] sm:w-[51px] sm:h-[51px]'
+    : 'w-[34px] h-[34px] sm:w-[40px] sm:h-[40px]';
+  const showLauncherLabel = !isDashboardVariant;
+
   return (
     <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
       <AnimatePresence mode="wait">
@@ -194,7 +210,7 @@ const ChatBot = () => {
             aria-label="Open Hirely assistant"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUiState('chat'); }}
           >
-            <div className="w-[110px] h-[185px] sm:w-[130px] sm:h-[220px] mb-1.5 relative flex justify-center items-end">
+            <div className={`${greetingSize} mb-1.5 relative flex justify-center items-end`}>
               <video
                 src="/assets/chatbot-media/Gif_clean.webm"
                 autoPlay
@@ -205,9 +221,11 @@ const ChatBot = () => {
                 className="max-w-full max-h-full object-contain pointer-events-none"
               />
             </div>
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-2 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
-            </div>
+            {showLauncherLabel && (
+              <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 flex items-center gap-2 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+                <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -226,12 +244,14 @@ const ChatBot = () => {
             className="flex items-center gap-1.5 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
             aria-label="Open Hirely assistant"
           >
-            <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
-              <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-[11px] tracking-wide">Ask Hirely</span>
-            </span>
-            <span className="relative w-[38px] h-[38px] sm:w-[44px] sm:h-[44px] rounded-full shadow-md flex items-center justify-center overflow-hidden">
+            {showLauncherLabel && (
+              <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
+                <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-[11px] tracking-wide">Ask Hirely</span>
+              </span>
+            )}
+            <span className={`relative ${launcherOuterSize} rounded-full shadow-md flex items-center justify-center overflow-hidden`}>
               <span className="absolute w-[150%] h-[150%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_30%,#818cf8_60%,#4f46e5_85%,#312e81_100%)] animate-[spin_2s_linear_infinite]" />
-              <span className="relative w-[34px] h-[34px] sm:w-[40px] sm:h-[40px] rounded-full border-[2px] border-white bg-indigo-50 overflow-hidden z-10">
+              <span className={`relative ${launcherInnerSize} rounded-full border-[2px] border-white bg-indigo-50 overflow-hidden z-10`}>
                 <img src="/assets/chatbot-media/Avatar02.jpeg" alt="" className="w-full h-full object-cover object-center" />
               </span>
             </span>
@@ -246,7 +266,7 @@ const ChatBot = () => {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             style={{ transformOrigin: 'bottom right' }}
-            className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[24px] sm:rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))] border border-white/50 dark:border-slate-700/50 overflow-hidden relative ring-1 ring-black/5 dark:ring-white/10"
+            className={`bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-[24px] sm:rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col ${chatPanelSize} border border-white/50 dark:border-slate-700/50 overflow-hidden relative ring-1 ring-black/5 dark:ring-white/10`}
             role="dialog"
             aria-label="Hirely assistant"
           >
@@ -307,14 +327,6 @@ const ChatBot = () => {
                   {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center min-h-[300px] text-center px-4 space-y-6 my-auto">
                       <div className="space-y-2.5">
-                        <div className="flex items-center justify-center gap-2.5 text-2xl font-extrabold text-indigo-950 dark:text-white">
-                          {isContextLoading ? (
-                            <Loader2 className="animate-spin text-indigo-600 dark:text-indigo-400" size={26} />
-                          ) : (
-                            <Sparkles className="text-indigo-600 dark:text-indigo-400 fill-indigo-500/20" size={26} />
-                          )}
-                          <span>Hi, I'm Hirely</span>
-                        </div>
                         <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-[310px] mx-auto">
                           {isContextLoading ? 'Loading the AI assistant for this page...' : contextMeta.welcomeMessage}
                         </p>

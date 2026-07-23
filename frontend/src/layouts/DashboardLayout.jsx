@@ -253,7 +253,7 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
-      {role !== 'Guest' && <ChatBot />}
+      {role !== 'Guest' && <ChatBot variant="dashboard" />}
     </div>
   );
 }
