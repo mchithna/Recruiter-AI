@@ -167,7 +167,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isCollapsed ? 'md:justify-center md:px-2' : '',
                   isActive
@@ -175,6 +175,12 @@ export default function DashboardLayout() {
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
+                {isActive && (
+                  <span
+                    className="absolute top-1.5 left-1.5 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] ring-2 ring-white dark:ring-secondary-900 z-10"
+                    aria-label="Active Tab"
+                  />
+                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
@@ -194,9 +200,14 @@ export default function DashboardLayout() {
         <div className={['hidden border-t border-secondary-100 dark:border-white/10 md:block transition-all duration-300', isCollapsed ? 'p-2' : 'p-4'].join(' ')}>
           <Button
             type="button"
-            variant="glass"
+            variant="secondary"
             size="sm"
-            className={['w-full justify-center items-center', isCollapsed ? '!px-0 !justify-center' : ''].join(' ')}
+            className={[
+              'w-full justify-center items-center font-bold transition-all duration-200',
+              'bg-slate-900 text-white hover:bg-slate-800 border border-slate-800 shadow-md',
+              'dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:border-white/15 dark:shadow-sm',
+              isCollapsed ? '!px-0 !justify-center' : ''
+            ].join(' ')}
             leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             onClick={() => setIsCollapsed((value) => !value)}
             disabled={isLiveCopilotRoute}
