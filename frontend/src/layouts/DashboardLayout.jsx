@@ -9,8 +9,6 @@ import {
   LogOut,
   Menu,
   MessageSquare,
-  Moon,
-  Sun,
   Building2,
   Network,
   BarChart2,
@@ -18,14 +16,12 @@ import {
   FileText,
   FileCheck,
   User,
-  UserCheck,
   Video,
   X
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { Avatar, Button, ThemeToggle } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import ChatBot from '../components/chat/ChatBot';
 import NotificationBell from '../components/notifications/NotificationBell';
 
@@ -67,7 +63,6 @@ const navItemsByRole = {
 
 export default function DashboardLayout() {
   const { signOut, profile } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -234,7 +229,7 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
             <NotificationBell />
             <ThemeToggle />
             <button
@@ -259,7 +254,7 @@ export default function DashboardLayout() {
             </button>
             <button
               type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
+              className="flex h-9 w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400"
               onClick={() => navigate(profilePath)}
               aria-label="Open profile"
             >

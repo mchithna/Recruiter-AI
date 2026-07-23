@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Briefcase, Calendar, FileCheck, MessageSquare, CheckCheck, ExternalLink, X } from 'lucide-react';
 import { notificationsApi } from '../../lib/notificationsApi';
 import { useAuth } from '../../contexts/AuthContext';
+
+const NOTIFICATION_REFRESH_INTERVAL_MS = 5000;
 
 function getEventIcon(type) {
   switch (type) {
@@ -64,16 +66,16 @@ export default function NotificationBell() {
     }
   };
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const count = await notificationsApi.getUnreadCount();
       setUnreadCount(count || 0);
     } catch {
       // Ignore background fetch errors
     }
-  };
+  }, []);
 
-  const fetchRecentNotifications = async () => {
+  const fetchRecentNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await notificationsApi.getNotifications(false, 5);
@@ -83,19 +85,38 @@ export default function NotificationBell() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // 30s light poll
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchRecentNotifications();
-    }
-  }, [isOpen]);
+    const refreshOnFocus = () => {
+      fetchUnreadCount();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = window.setInterval(fetchUnreadCount, NOTIFICATION_REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [fetchUnreadCount]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    fetchRecentNotifications();
+    const interval = window.setInterval(fetchRecentNotifications, NOTIFICATION_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [fetchRecentNotifications, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -141,7 +162,7 @@ export default function NotificationBell() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="View notifications"
-        className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-secondary-600 transition-all hover:bg-white hover:text-primary-700 dark:bg-white/10 dark:text-secondary-300 dark:hover:bg-white/20 dark:hover:text-white sm:h-9 sm:w-9"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 text-secondary-600 transition-all hover:bg-white hover:text-primary-700 dark:bg-white/10 dark:text-secondary-300 dark:hover:bg-white/20 dark:hover:text-white"
       >
         <Bell size={18} strokeWidth={1.75} />
         {unreadCount > 0 && (
@@ -152,9 +173,9 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="notification-panel-popover absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-secondary-200 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.4)] dark:border-slate-700/80 z-[99999] animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-secondary-100 pb-3 dark:border-slate-700/80">
-            <div className="flex items-center gap-2">
+        <div className="notification-panel-popover fixed inset-x-3 top-[4.75rem] z-[99999] flex max-h-[calc(100dvh-5.75rem)] flex-col overflow-hidden rounded-2xl border border-secondary-200 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.4)] dark:border-slate-700/80 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-none sm:w-96 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-start justify-between gap-3 border-b border-secondary-100 pb-3 dark:border-slate-700/80">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h3 className="text-body font-bold text-secondary-900 dark:text-white">Notifications</h3>
               {unreadCount > 0 && (
                 <span className="rounded-full bg-primary-100 px-2 py-0.5 text-caption font-semibold text-primary-700 dark:bg-primary-500/20 dark:text-primary-300">
@@ -162,7 +183,7 @@ export default function NotificationBell() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -170,7 +191,7 @@ export default function NotificationBell() {
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-secondary-500 hover:bg-secondary-100 hover:text-primary-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-300"
                 >
                   <CheckCheck size={14} />
-                  <span>Mark all read</span>
+                  <span className="hidden min-[360px]:inline">Mark all read</span>
                 </button>
               )}
               <button
@@ -183,7 +204,7 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          <div className="mt-3 max-h-80 space-y-2 overflow-y-auto pr-1">
+          <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 sm:max-h-80">
             {loading ? (
               <div className="py-8 text-center text-body-sm text-secondary-400 dark:text-slate-400">Loading notifications...</div>
             ) : notifications.length === 0 ? (
@@ -206,7 +227,7 @@ export default function NotificationBell() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <p className={`text-body-sm font-semibold truncate ${item.isRead ? 'text-secondary-700 dark:text-slate-300' : 'text-secondary-900 dark:text-white'}`}>
+                      <p className={`truncate text-body-sm font-semibold ${item.isRead ? 'text-secondary-700 dark:text-slate-300' : 'text-secondary-900 dark:text-white'}`}>
                         {item.title}
                       </p>
                       <span className="shrink-0 text-[10px] text-secondary-400 dark:text-slate-400">
@@ -226,13 +247,13 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="mt-3 border-t border-secondary-100 pt-3 dark:border-slate-700/80">
+          <div className="mt-3 shrink-0 border-t border-secondary-100 pt-3 dark:border-slate-700/80">
             <button
               type="button"
               onClick={handleViewAll}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-100/80 py-2 text-body-sm font-semibold text-primary-700 hover:bg-primary-100 dark:bg-slate-800 dark:text-primary-300 dark:hover:bg-slate-700 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-100/80 px-3 py-2 text-body-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:bg-slate-800 dark:text-primary-300 dark:hover:bg-slate-700"
             >
-              <span>View all notifications</span>
+              <span className="min-w-0 truncate">View all notifications</span>
               <ExternalLink size={14} />
             </button>
           </div>

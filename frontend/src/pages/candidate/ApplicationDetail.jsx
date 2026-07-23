@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spinner, StatusBadge, Input } from '../../components/ui';
+import { Button, Spinner, StatusBadge } from '../../components/ui';
 import { getApplication, getStatusHistory, getMessages, sendMessage } from './services/candidateApi';
 import { Send, Clock } from 'lucide-react';
+
+const MESSAGE_REFRESH_INTERVAL_MS = 3000;
 
 export default function CandidateApplicationDetail() {
   const { applicationId } = useParams();
@@ -15,21 +17,59 @@ export default function CandidateApplicationDetail() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [appData, historyData, messagesData] = await Promise.all([
+          getApplication(applicationId),
+          getStatusHistory(applicationId),
+          getMessages(applicationId)
+        ]);
+        if (!isActive) return;
+
+        setApplication(appData);
+        setHistory(historyData.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt)));
+        setMessages(messagesData);
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    }
+
     loadData();
+
+    return () => {
+      isActive = false;
+    };
   }, [applicationId]);
 
-  const loadData = async () => {
-    setLoading(true);
-    const [appData, historyData, messagesData] = await Promise.all([
-      getApplication(applicationId),
-      getStatusHistory(applicationId),
-      getMessages(applicationId)
-    ]);
-    setApplication(appData);
-    setHistory(historyData.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt)));
-    setMessages(messagesData);
-    setLoading(false);
-  };
+  useEffect(() => {
+    let isActive = true;
+    let isRefreshing = false;
+
+    async function refreshMessages() {
+      if (isRefreshing || document.visibilityState !== 'visible') return;
+      isRefreshing = true;
+      try {
+        const latestMessages = await getMessages(applicationId);
+        if (isActive) setMessages(latestMessages || []);
+      } catch (error) {
+        console.error('Failed to refresh candidate messages:', error);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    const interval = window.setInterval(refreshMessages, MESSAGE_REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshMessages);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshMessages);
+    };
+  }, [applicationId]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -87,7 +127,7 @@ export default function CandidateApplicationDetail() {
           <h3 className="text-h3 text-secondary-900 dark:text-white">Status History</h3>
           <div className="rounded-3xl border border-white/60 bg-white/75 p-6 shadow-glass backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/55 dark:shadow-glass-dark">
             <div className="relative border-l-2 border-secondary-200 dark:border-secondary-800 ml-4 space-y-8 pb-4">
-              {history.map((entry, idx) => (
+              {history.map((entry) => (
                 <div key={entry.id} className="relative pl-6">
                   <span className="absolute -left-[9px] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-100 ring-4 ring-white dark:bg-primary-900 dark:ring-secondary-950">
                     <span className="h-2 w-2 rounded-full bg-primary-500" />
