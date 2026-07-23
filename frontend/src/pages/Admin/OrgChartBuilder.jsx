@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
 import Modal from '../../components/ui/Modal';
-import { useConfirmDialog } from '../../components/ui';
+import { useConfirmDialog, Badge } from '../../components/ui';
 import { useToast } from '../../lib/ToastContext';
 import api from '../../api';
-import { Plus, Edit2, Trash2, Network } from 'lucide-react';
+import { Plus, Edit2, Trash2, Network, LockKeyhole, Sparkles, CreditCard, ArrowRight } from 'lucide-react';
 import DepartmentDetailModal from './DepartmentDetailModal';
 
 const OrgChartBuilder = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [departments, setDepartments] = useState([]);
+  const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activating, setActivating] = useState(false);
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: 'add',
@@ -25,18 +29,48 @@ const OrgChartBuilder = () => {
   const [selectedDeptForDetail, setSelectedDeptForDetail] = useState(null);
 
   useEffect(() => {
-    fetchDepartments();
+    fetchCompanyAndDepartments();
   }, []);
 
-  const fetchDepartments = async () => {
+  const fetchCompanyAndDepartments = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/departments');
-      setDepartments(response.data);
+      const [compRes, deptRes] = await Promise.allSettled([
+        api.get('/company/me'),
+        api.get('/departments')
+      ]);
+      if (compRes.status === 'fulfilled') setCompany(compRes.value.data);
+      if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data);
     } catch {
       try { toast({ title: 'Failed to load departments.', variant: 'danger' }); } catch (e) {}
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInstantActivate = async () => {
+    try {
+      setActivating(true);
+      const res = await api.post('/company/subscription/activate', {
+        isManualTest: true,
+        paymentMethod: 'SandboxManual',
+      });
+      setCompany(res.data);
+      toast({
+        title: 'Subscription Activated! 🎉',
+        description: 'Org Chart is now fully unlocked for your company.',
+        variant: 'success',
+        duration: 6000,
+      });
+      fetchCompanyAndDepartments();
+    } catch {
+      toast({
+        title: 'Activation Failed',
+        description: 'Could not activate subscription. Please try again.',
+        variant: 'danger',
+      });
+    } finally {
+      setActivating(false);
     }
   };
 
@@ -220,49 +254,108 @@ const OrgChartBuilder = () => {
   };
 
   const tree = buildTree(departments);
+  const isSubscribed = company?.subscriptionStatus?.toLowerCase() === 'active';
 
   return (
-    <div className="min-w-full max-w-none space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-h3 font-bold text-secondary-900 dark:text-white">Org Chart Builder</h3>
-          <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
-            Build your company's organization chart and manage departments.
-          </p>
+    <div className="relative min-w-full max-w-none space-y-6">
+      {/* Blurred background view when unsubscribed */}
+      <div className={!isSubscribed && company ? 'filter blur-md pointer-events-none select-none transition-all duration-300' : ''}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-h3 font-bold text-secondary-900 dark:text-white">Org Chart Builder</h3>
+            <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
+              Build your company's organization chart and manage departments.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => handleOpenAdd(null)} leftIcon={<Plus size={16} />}>
+            Add Top-Level Department
+          </Button>
         </div>
-        <Button variant="primary" onClick={() => handleOpenAdd(null)} leftIcon={<Plus size={16} />}>
-          Add Top-Level Department
-        </Button>
+
+        <div className="min-h-[400px] rounded-2xl border border-secondary-200 bg-secondary-50/80 p-5 dark:border-secondary-800 dark:bg-secondary-900/50 sm:p-6">
+          {loading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Spinner size="lg" className="text-primary-700" />
+            </div>
+          ) : departments.length === 0 ? (
+            <div className="flex h-64 flex-col items-center justify-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary-100 dark:bg-secondary-800">
+                <Plus size={24} className="text-secondary-400" />
+              </div>
+              <h4 className="mb-1 text-body-lg font-medium text-secondary-900 dark:text-secondary-100">
+                No Departments Yet
+              </h4>
+              <p className="mb-6 max-w-sm text-secondary-500 dark:text-secondary-400">
+                Get started by creating your first top-level department to build your org chart.
+              </p>
+              <Button variant="primary" onClick={() => handleOpenAdd(null)}>
+                Add Department
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {tree.map((node, index) => (
+                <DepartmentNode key={node.id} node={node} isLast={index === tree.length - 1} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="min-h-[400px] rounded-2xl border border-secondary-200 bg-secondary-50/80 p-5 dark:border-secondary-800 dark:bg-secondary-900/50 sm:p-6">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Spinner size="lg" className="text-primary-700" />
-          </div>
-        ) : departments.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary-100 dark:bg-secondary-800">
-              <Plus size={24} className="text-secondary-400" />
+      {/* Subscription Paywall Modal */}
+      {!isSubscribed && company && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-secondary-950/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative max-w-lg w-full rounded-3xl border border-white/20 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl text-center space-y-6">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-lg shadow-amber-500/10">
+              <LockKeyhole size={32} />
             </div>
-            <h4 className="mb-1 text-body-lg font-medium text-secondary-900 dark:text-secondary-100">
-              No Departments Yet
-            </h4>
-            <p className="mb-6 max-w-sm text-secondary-500 dark:text-secondary-400">
-              Get started by creating your first top-level department to build your org chart.
-            </p>
-            <Button variant="primary" onClick={() => handleOpenAdd(null)}>
-              Add Department
-            </Button>
+
+            <div>
+              <Badge variant="primary" className="mb-2 uppercase tracking-widest text-[10px]">
+                Subscription Required
+              </Badge>
+              <h3 className="text-2xl font-black text-secondary-900 dark:text-white">
+                Unlock Org Chart Feature
+              </h3>
+              <p className="mt-2 text-sm text-secondary-600 dark:text-secondary-300 leading-relaxed">
+                To access the Interactive Organization Chart and manage your company structure, please activate your account subscription.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-secondary-50 dark:bg-slate-800/60 border border-secondary-100 dark:border-slate-700/60 space-y-2 text-left text-xs text-secondary-600 dark:text-secondary-300">
+              <div className="font-bold text-secondary-900 dark:text-white mb-1">What's included in Hirely Professional ($49/mo Sandbox):</div>
+              <div>• Full access to Org Chart Builder & department trees</div>
+              <div>• Team role management & staff invitations</div>
+              <div>• AI Candidate Copilot & Screening assistant</div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                onClick={() => navigate('/admin/subscription')}
+                rightIcon={<ArrowRight size={18} />}
+                className="w-full justify-center text-base font-bold shadow-lg shadow-primary-500/25"
+              >
+                Activate Account & Subscribe
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="md"
+                isLoading={activating}
+                onClick={handleInstantActivate}
+                leftIcon={<Sparkles size={16} className="text-amber-500" />}
+                className="w-full justify-center text-xs font-semibold text-secondary-500 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-white"
+              >
+                Instant Activate (Test Sandbox)
+              </Button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {tree.map((node, index) => (
-              <DepartmentNode key={node.id} node={node} isLast={index === tree.length - 1} />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <Modal
         isOpen={modalState.isOpen}

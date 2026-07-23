@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CreditCard } from 'lucide-react';
 import { useToast } from '../../lib/ToastContext';
-import { PayPalCardModal } from './PayPalCardModal';
 import {
   captureProfessionalOrder,
   createProfessionalOrder,
@@ -14,8 +12,6 @@ export function PayPalCheckoutButton() {
   const { toast } = useToast();
   const [status, setStatus] = useState('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  const [checkout, setCheckout] = useState(null);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -75,7 +71,6 @@ export function PayPalCheckoutButton() {
 
         await buttons.render(containerRef.current);
         if (isActive) {
-          setCheckout({ paypal, config });
           setStatus('ready');
         }
       } catch (error) {
@@ -111,17 +106,6 @@ export function PayPalCheckoutButton() {
         <div ref={containerRef} className="min-h-11" />
       </div>
 
-      {status === 'ready' && (
-        <button
-          type="button"
-          onClick={() => setIsCardModalOpen(true)}
-          className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-secondary-800 px-4 text-sm font-bold text-white transition-colors hover:bg-secondary-700 focus-ring dark:bg-white/10 dark:hover:bg-white/15"
-        >
-          <CreditCard size={19} />
-          Debit or Credit Card
-        </button>
-      )}
-
       {status === 'error' && (
         <p className="mt-2 text-center text-xs text-danger-600 dark:text-danger-400" role="alert">
           {errorMessage}
@@ -131,13 +115,6 @@ export function PayPalCheckoutButton() {
       <p className="mt-1.5 text-center text-[11px] text-secondary-400 dark:text-secondary-500">
         Sandbox test payment - $49.00 USD
       </p>
-
-      <PayPalCardModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        paypal={checkout?.paypal}
-        config={checkout?.config}
-      />
     </div>
   );
 }

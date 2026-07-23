@@ -5,6 +5,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   Home,
   LogOut,
   Menu,
@@ -36,6 +37,7 @@ const navItemsByRole = {
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
+    { name: 'Subscription', path: '/admin/subscription', icon: CreditCard },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
     { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
     { name: 'Notifications', path: '/admin/notifications', icon: Bell },
