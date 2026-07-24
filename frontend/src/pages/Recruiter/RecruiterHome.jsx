@@ -365,29 +365,27 @@ export default function RecruiterHome() {
               <Link
                 key={application.id}
                 to={`/recruiter/applications/${application.id}`}
-                className="group flex flex-col gap-3 p-4 transition-all duration-base hover:bg-white/70 dark:hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                className="group flex items-center justify-between gap-4 p-4 transition-all duration-base hover:bg-white/70 dark:hover:bg-white/5"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <Avatar name={application.candidateName} size="md" className="shrink-0" />
-                  <div className="min-w-0 flex-1">
+                  <Avatar name={application.candidateName} size="md" />
+                  <div className="min-w-0">
                     <h3 className="truncate text-body-lg font-semibold text-secondary-900 transition-colors group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
                       {application.candidateName}
                     </h3>
-                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-body-sm text-secondary-500 dark:text-secondary-300">
-                      <span className="font-medium text-secondary-700 dark:text-secondary-200">{application.jobTitle}</span>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-body-sm text-secondary-500 dark:text-secondary-300">
+                      <span>{application.jobTitle}</span>
                       <span>Applied {formatDate(application.appliedAt)}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-secondary-100/60 pt-2 dark:border-white/5 sm:border-0 sm:pt-0 sm:shrink-0 sm:justify-end sm:gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
-                    <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
-                  </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
+                  <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
                   <ChevronRight
                     size={20}
                     strokeWidth={1.75}
-                    className="text-secondary-400 transition-transform group-hover:translate-x-1 group-hover:text-primary-600 shrink-0"
+                    className="text-secondary-400 transition-transform group-hover:translate-x-1 group-hover:text-primary-600"
                   />
                 </div>
               </Link>

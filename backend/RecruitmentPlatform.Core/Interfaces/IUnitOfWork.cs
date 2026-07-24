@@ -16,5 +16,9 @@ public interface IUnitOfWork : IDisposable
     IRepository<UserInvitation> UserInvitations { get; }
     IRepository<AuditLog> AuditLogs { get; }
     IRepository<Notification> Notifications { get; }
+    IRepository<PracticeQuestion> PracticeQuestions { get; }
+    IRepository<PracticeSession> PracticeSessions { get; }
+    IRepository<PracticeSessionQuestion> PracticeSessionQuestions { get; }
+    IRepository<Skill> Skills { get; }
     Task<int> SaveChangesAsync();
 }

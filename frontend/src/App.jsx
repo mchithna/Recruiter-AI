@@ -48,6 +48,9 @@ import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 import CandidateMeetings from './pages/candidate/Meetings';
 import NotificationsPage from './pages/NotificationsPage';
+import PracticeHome from './pages/candidate/Practice/PracticeHome';
+import PracticeSession from './pages/candidate/Practice/PracticeSession';
+import PracticeResult from './pages/candidate/Practice/PracticeResult';
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -114,6 +117,9 @@ function App() {
                 <Route path="/candidate/applications" element={<Applications />} />
                 <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationDetail />} />
                 <Route path="/candidate/meetings" element={<CandidateMeetings />} />
+                <Route path="/candidate/practice" element={<PracticeHome />} />
+                <Route path="/candidate/practice/session/:sessionId" element={<PracticeSession />} />
+                <Route path="/candidate/practice/result/:sessionId" element={<PracticeResult />} />
                 <Route path="/candidate/notifications" element={<NotificationsPage />} />
               </Route>
 
