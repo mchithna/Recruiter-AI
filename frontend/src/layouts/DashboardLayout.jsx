@@ -222,35 +222,35 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="relative z-50 flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+        <header className="relative z-50 flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
               <button
                 type="button"
                 aria-label="Open sidebar"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
                 onClick={() => setMobileOpen(true)}
               >
-                <Menu size={14} strokeWidth={2} />
+                <Menu size={16} strokeWidth={2} />
               </button>
-              <div className="min-w-0">
-                <p className="text-[8px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
                   {role} dashboard
                 </p>
-                <h1 className="mt-1 truncate text-[11px] font-bold leading-none text-secondary-900 dark:text-white sm:text-h3">
+                <h1 className="mt-0.5 truncate text-xs font-bold leading-tight text-secondary-900 dark:text-white sm:text-h3 sm:mt-1">
                   Welcome, {profile?.firstName || role}!
                 </h1>
               </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <NotificationBell />
             <ThemeToggle />
             <button
               type="button"
               onClick={handleSignOut}
-              className="group relative flex items-center justify-center shrink-0 w-9 h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+              className="group relative flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
               aria-label="Sign Out"
               title="Sign Out"
               style={{
@@ -265,11 +265,11 @@ export default function DashboardLayout() {
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
               />
-              <LogOut size={15} strokeWidth={2} className="text-red-500 dark:text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.6)]" />
+              <LogOut size={14} strokeWidth={2} className="text-red-500 dark:text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.6)]" />
             </button>
             <button
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 shrink-0"
               onClick={() => navigate(profilePath)}
               aria-label="Open profile"
             >
@@ -278,7 +278,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <div className="relative flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:pr-12">
+        <div className="relative flex-1 overflow-y-auto px-3 pb-24 pt-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:pr-12">
           <Outlet />
         </div>
       </main>

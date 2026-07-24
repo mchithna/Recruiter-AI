@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MessageSquare, Search, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Search, Send, Sparkles } from 'lucide-react';
 import {
   Avatar,
   Badge,
@@ -187,7 +187,11 @@ export default function MessagesList() {
       </div>
 
       <div className="glass-card-heavy flex min-h-0 flex-1 overflow-hidden rounded-2xl border-none p-0">
-        <div className="flex w-[22rem] min-w-[22rem] flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]">
+        {/* Left: Conversations list */}
+        <div className={[
+          'flex flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]',
+          selectedAppId ? 'hidden md:flex md:w-[22rem] md:min-w-[22rem]' : 'w-full md:w-[22rem] md:min-w-[22rem]',
+        ].join(' ')}>
           <div className="shrink-0 border-b border-secondary-100 p-4 dark:border-white/10">
             <CardTitle className="mb-3 text-h4">Conversations</CardTitle>
             <Input
@@ -287,7 +291,11 @@ export default function MessagesList() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col bg-white/40 dark:bg-white/[0.01]">
+        {/* Right: Selected thread pane */}
+        <div className={[
+          'flex min-w-0 flex-1 flex-col bg-white/40 dark:bg-white/[0.01]',
+          !selectedAppId ? 'hidden md:flex' : 'flex',
+        ].join(' ')}>
           {loadingThread ? (
             <div className="flex-1 space-y-4 p-5">
               <Skeleton height="5rem" />
@@ -295,22 +303,32 @@ export default function MessagesList() {
             </div>
           ) : selectedApplication ? (
             <>
-              <div className="flex shrink-0 items-center gap-4 border-b border-secondary-100 bg-white/60 px-5 py-3.5 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]">
-                <Avatar name={selectedApplication.candidateName} size="md" />
+              <div className="flex shrink-0 items-center gap-3 border-b border-secondary-100 bg-white/60 px-4 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] sm:px-5 sm:py-3.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchParams({})}
+                  className="md:hidden shrink-0 !p-1.5 h-8 w-8 text-secondary-600 dark:text-secondary-300"
+                  aria-label="Back to conversations"
+                >
+                  <ArrowLeft size={18} />
+                </Button>
+                <Avatar name={selectedApplication.candidateName} size="md" className="shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-body-lg font-semibold text-secondary-900 dark:text-white">
+                  <h2 className="truncate text-body-md sm:text-body-lg font-semibold text-secondary-900 dark:text-white">
                     {selectedApplication.candidateName}
                   </h2>
-                  <p className="truncate text-body-sm text-secondary-500 dark:text-secondary-400">
+                  <p className="truncate text-caption text-secondary-500 dark:text-secondary-400">
                     {selectedApplication.jobTitle}
                   </p>
                 </div>
-                <Badge variant="primary" size="sm">
+                <Badge variant="primary" size="sm" className="hidden sm:inline-flex">
                   {messages.length} messages
                 </Badge>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
                 <div className="mx-auto max-w-2xl space-y-3.5">
                   {messages.map((message) => {
                     const isRecruiter = message.sender !== selectedApplication.candidateName;
@@ -318,12 +336,12 @@ export default function MessagesList() {
                     return (
                       <div
                         key={message.id}
-                        className={['flex gap-3', isRecruiter ? 'flex-row-reverse' : 'flex-row'].join(' ')}
+                        className={['flex gap-2.5 sm:gap-3', isRecruiter ? 'flex-row-reverse' : 'flex-row'].join(' ')}
                       >
                         <Avatar name={message.sender} size="sm" className="shrink-0" />
                         <div
                           className={[
-                            'max-w-[72%] rounded-2xl px-4 py-3 shadow-sm transition-all',
+                            'max-w-[85%] sm:max-w-[72%] rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-sm transition-all',
                             isRecruiter
                               ? 'rounded-tr-md bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-primary-500/20'
                               : 'rounded-tl-md border border-secondary-100 bg-white text-secondary-800 dark:border-white/10 dark:bg-white/5 dark:text-white',
@@ -332,7 +350,7 @@ export default function MessagesList() {
                           <p className="text-body-sm leading-relaxed whitespace-pre-wrap">{message.body}</p>
                           <p
                             className={[
-                              'mt-2 text-right text-caption',
+                              'mt-1.5 text-right text-caption',
                               isRecruiter ? 'text-primary-100' : 'text-secondary-400',
                             ].join(' ')}
                           >
@@ -347,11 +365,11 @@ export default function MessagesList() {
               </div>
 
               <form
-                className="flex shrink-0 flex-col gap-2 border-t border-secondary-100 bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]"
+                className="flex shrink-0 flex-col gap-2 border-t border-secondary-100 bg-white/60 px-3.5 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] sm:px-5 sm:py-4"
                 onSubmit={handlePromptSend}
               >
                 {sendError && <p className="text-body-sm font-semibold text-danger-500">{sendError}</p>}
-                <div className="flex items-end gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2.5">
                   <textarea
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
@@ -364,17 +382,17 @@ export default function MessagesList() {
                       }
                     }}
                     rows={2}
-                    placeholder={`Message ${selectedApplication.candidateName}... (Press Enter to send, Shift+Enter for new line)`}
-                    className="flex-1 min-h-[72px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
+                    placeholder={`Message ${selectedApplication.candidateName}...`}
+                    className="flex-1 min-h-[60px] sm:min-h-[72px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
                   />
                   <Button
                     type="submit"
                     variant={draftMessage.trim() ? 'primary' : 'outline'}
                     size="md"
-                    leftIcon={<Send size={16} strokeWidth={1.75} />}
+                    leftIcon={<Send size={15} strokeWidth={1.75} />}
                     disabled={!draftMessage.trim() || isSending}
                     isLoading={isSending}
-                    className="min-w-24 shrink-0 rounded-xl px-5 h-12"
+                    className="w-full sm:w-auto sm:min-w-24 shrink-0 rounded-xl px-5 h-11 sm:h-12"
                   >
                     Send
                   </Button>

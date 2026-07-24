@@ -199,18 +199,18 @@ const ChatBot = ({ variant = 'default' }) => {
 
   // Circle sizes
   const launcherOuterSize = isHomePage
-    ? 'w-[58px] h-[58px] sm:w-[66px] sm:h-[66px]'
-    : 'w-[64px] h-[64px] sm:w-[74px] sm:h-[74px]';
+    ? 'w-[48px] h-[48px] sm:w-[66px] sm:h-[66px]'
+    : 'w-[48px] h-[48px] sm:w-[64px] sm:h-[64px]';
 
   const launcherInnerSize = isHomePage
-    ? 'w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]'
-    : 'w-[58px] h-[58px] sm:w-[68px] sm:h-[68px]';
+    ? 'w-[42px] h-[42px] sm:w-[60px] sm:h-[60px]'
+    : 'w-[42px] h-[42px] sm:w-[58px] sm:h-[58px]';
 
   // "Ask Hirely" label ONLY on Home dashboard
   const showLauncherLabel = isHomePage;
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
+    <div className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
       <AnimatePresence mode="wait">
         {uiState === 'greeting' && (
           <motion.div

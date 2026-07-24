@@ -180,8 +180,8 @@ function StatusAndInterviews({
             <CardDescription>Screening & Decisioning</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="flex flex-wrap gap-2">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
             {canShortlist && (
               <Button type="button" variant="primary" size="sm" onClick={onShortlist} disabled={isStatusUpdating || isJobClosed} title={isJobClosed ? 'Job posting is finalized and closed' : undefined}>
                 {isStatusUpdating ? 'Updating...' : 'Shortlist'}
@@ -192,17 +192,17 @@ function StatusAndInterviews({
                 {isStatusUpdating ? 'Updating...' : 'Reject'}
               </Button>
             )}
-            {isJobClosed && (
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                Job posting is finalized & closed. Candidate status actions are locked.
-              </p>
-            )}
-            {!canShortlist && !canReject && !isShortlisted && !isJobClosed && (
-              <p className="text-body-sm leading-relaxed text-secondary-600">
-                No status actions are available for this application right now.
-              </p>
-            )}
           </div>
+          {isJobClosed && (
+            <div className="rounded-xl border border-amber-200/80 bg-amber-50/80 p-3 text-xs font-medium text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300">
+              Job posting is finalized &amp; closed. Candidate status actions are locked.
+            </div>
+          )}
+          {!canShortlist && !canReject && !isShortlisted && !isJobClosed && (
+            <p className="text-body-sm leading-relaxed text-secondary-600">
+              No status actions are available for this application right now.
+            </p>
+          )}
 
           {isShortlisted && (
             <div className="rounded-xl border border-primary-200/50 bg-primary-500/10 p-4 text-body-sm text-primary-900 dark:text-primary-200">
