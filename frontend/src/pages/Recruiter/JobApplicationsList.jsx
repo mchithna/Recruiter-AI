@@ -220,13 +220,13 @@ export function JobApplicationsList() {
         </div>
 
         {/* Right: Job Finalize & Navigation Buttons */}
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="danger"
             onClick={handlePromptCloseJob}
             disabled={isClosing || !job || job.status === 'Closed'}
-            className="flex-1 sm:flex-none justify-center bg-danger-600 hover:bg-danger-700 text-white font-medium shadow-sm shadow-danger-600/20"
+            className="bg-danger-600 hover:bg-danger-700 text-white font-medium shadow-sm shadow-danger-600/20"
           >
             {isClosing ? 'Closing...' : (job?.status === 'Closed' ? 'Job Closed' : 'Finalize & Close Job')}
           </Button>
@@ -235,7 +235,6 @@ export function JobApplicationsList() {
             variant="outline"
             leftIcon={<ArrowLeft size={18} />}
             onClick={() => navigate('/recruiter/jobs')}
-            className="flex-1 sm:flex-none justify-center"
           >
             Back to Jobs
           </Button>
@@ -302,8 +301,8 @@ export function JobApplicationsList() {
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="flex flex-col gap-4 border-b border-secondary-100 p-4 sm:p-6 dark:border-white/10 md:flex-row md:items-center md:justify-between bg-secondary-50/30 dark:bg-secondary-900/20">
+        <CardContent>
+          <div className="flex flex-col gap-4 border-b border-secondary-100 p-6 dark:border-white/10 md:flex-row md:items-center md:justify-between bg-secondary-50/30 dark:bg-secondary-900/20">
             <div className="flex-1 max-w-md">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
@@ -320,16 +319,16 @@ export function JobApplicationsList() {
                 className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer dark:bg-secondary-700 accent-ai-500 hover:accent-ai-600" 
               />
             </div>
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-              <div className="flex items-center space-x-2 shrink-0">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center space-x-2">
                 <Switch id="strict-exp" checked={strictExperience} onChange={(e) => setStrictExperience(e.target.checked)} />
-                <label htmlFor="strict-exp" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1 cursor-pointer">
+                <label htmlFor="strict-exp" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
                   <Briefcase size={14} /> Strict Experience
                 </label>
               </div>
-              <div className="flex items-center space-x-2 shrink-0">
+              <div className="flex items-center space-x-2">
                 <Switch id="strict-edu" checked={strictEducation} onChange={(e) => setStrictEducation(e.target.checked)} />
-                <label htmlFor="strict-edu" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1 cursor-pointer">
+                <label htmlFor="strict-edu" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
                   <GraduationCap size={14} /> Strict Education
                 </label>
               </div>
@@ -343,8 +342,7 @@ export function JobApplicationsList() {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
-              <Table density="comfortable" className="min-w-[650px]">
+            <Table density="comfortable">
               <TableHeader>
                 <TableRow isHeader>
                   <TableHead>Candidate</TableHead>
@@ -438,8 +436,7 @@ export function JobApplicationsList() {
               })}
               </TableBody>
             </Table>
-          </div>
-        )}
+          )}
         </CardContent>
       </Card>
 
