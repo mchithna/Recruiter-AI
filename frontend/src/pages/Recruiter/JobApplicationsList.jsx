@@ -302,8 +302,8 @@ export function JobApplicationsList() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 border-b border-secondary-100 p-6 dark:border-white/10 md:flex-row md:items-center md:justify-between bg-secondary-50/30 dark:bg-secondary-900/20">
-            <div className="flex-1 max-w-md">
+          <div className="flex flex-col gap-4 border-b border-secondary-100 p-4 sm:p-6 dark:border-white/10 md:flex-row md:items-center md:justify-between bg-secondary-50/30 dark:bg-secondary-900/20">
+            <div className="w-full md:flex-1 md:max-w-md">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
                   <Sparkles size={14} className="text-ai-500" /> AI Match Threshold
@@ -319,16 +319,16 @@ export function JobApplicationsList() {
                 className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer dark:bg-secondary-700 accent-ai-500 hover:accent-ai-600" 
               />
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6">
               <div className="flex items-center space-x-2">
                 <Switch id="strict-exp" checked={strictExperience} onChange={(e) => setStrictExperience(e.target.checked)} />
-                <label htmlFor="strict-exp" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
+                <label htmlFor="strict-exp" className="text-xs sm:text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1 whitespace-nowrap">
                   <Briefcase size={14} /> Strict Experience
                 </label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="strict-edu" checked={strictEducation} onChange={(e) => setStrictEducation(e.target.checked)} />
-                <label htmlFor="strict-edu" className="text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1">
+                <label htmlFor="strict-edu" className="text-xs sm:text-sm font-medium text-secondary-700 dark:text-secondary-300 flex items-center gap-1 whitespace-nowrap">
                   <GraduationCap size={14} /> Strict Education
                 </label>
               </div>
@@ -342,100 +342,102 @@ export function JobApplicationsList() {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : (
-            <Table density="comfortable">
-              <TableHeader>
-                <TableRow isHeader>
-                  <TableHead>Candidate</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead className="text-right">AI Match</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedApplications.map((application) => {
-                  const isBelowThreshold = application.aiMatchScore < aiThreshold;
-                  
-                  const screening = application.screeningResult;
-                  const failsExp = strictExperience && screening && screening.experienceMatchScore < 50;
-                  const failsEdu = strictEducation && screening && screening.educationMatchScore < 50;
-                  const hasStrictFailures = failsExp || failsEdu;
+            <div className="w-full overflow-x-auto">
+              <Table density="comfortable" className="min-w-[600px] w-full">
+                <TableHeader>
+                  <TableRow isHeader>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead>Applied</TableHead>
+                    <TableHead className="text-right">AI Match</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedApplications.map((application) => {
+                    const isBelowThreshold = application.aiMatchScore < aiThreshold;
+                    
+                    const screening = application.screeningResult;
+                    const failsExp = strictExperience && screening && screening.experienceMatchScore < 50;
+                    const failsEdu = strictEducation && screening && screening.educationMatchScore < 50;
+                    const hasStrictFailures = failsExp || failsEdu;
 
-                  return (
-                    <TableRow
-                      key={application.id}
-                      className={`cursor-pointer transition-all duration-300 ${isBelowThreshold ? 'opacity-40 grayscale-[50%] blur-[0.5px]' : 'hover:bg-secondary-50 dark:hover:bg-white/5'} ${hasStrictFailures ? 'bg-danger-50/50 dark:bg-danger-900/10' : ''}`}
-                      onClick={() => navigate(`/recruiter/applications/${application.id}`)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        navigate(`/recruiter/applications/${application.id}`);
-                      }
-                    }}
-                    role="link"
-                    tabIndex={0}
-                  >
-                    <TableCell className="font-semibold text-secondary-900">
-                      <div className="flex items-center gap-2">
-                        {application.candidateName}
-                        {hasStrictFailures && (
-                          <span className="flex items-center gap-1 rounded bg-danger-100 px-1.5 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-900/50 dark:text-danger-300">
-                            <AlertTriangle size={12} />
-                            {failsExp && 'Exp'} {failsExp && failsEdu && '&'} {failsEdu && 'Edu'}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatAppliedAt(application.appliedAt)}</TableCell>
-                    <TableCell numeric>
-                      <span className={`font-bold ${isBelowThreshold ? 'text-danger-500' : 'text-ai-600 dark:text-ai-400'}`}>
-                        {application.aiMatchScore}%
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        {application.status === 'Shortlisted' ? (
+                    return (
+                      <TableRow
+                        key={application.id}
+                        className={`cursor-pointer transition-all duration-300 ${isBelowThreshold ? 'opacity-40 grayscale-[50%] blur-[0.5px]' : 'hover:bg-secondary-50 dark:hover:bg-white/5'} ${hasStrictFailures ? 'bg-danger-50/50 dark:bg-danger-900/10' : ''}`}
+                        onClick={() => navigate(`/recruiter/applications/${application.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          navigate(`/recruiter/applications/${application.id}`);
+                        }
+                      }}
+                      role="link"
+                      tabIndex={0}
+                    >
+                      <TableCell className="font-semibold text-secondary-900">
+                        <div className="flex items-center gap-2">
+                          {application.candidateName}
+                          {hasStrictFailures && (
+                            <span className="flex items-center gap-1 rounded bg-danger-100 px-1.5 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-900/50 dark:text-danger-300">
+                              <AlertTriangle size={12} />
+                              {failsExp && 'Exp'} {failsExp && failsEdu && '&'} {failsEdu && 'Edu'}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatAppliedAt(application.appliedAt)}</TableCell>
+                      <TableCell numeric>
+                        <span className={`font-bold ${isBelowThreshold ? 'text-danger-500' : 'text-ai-600 dark:text-ai-400'}`}>
+                          {application.aiMatchScore}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          {application.status === 'Shortlisted' ? (
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900"
+                              onClick={(e) => handleStatusChange(e, application.id, 'Applied')}
+                              disabled={job?.status === 'Closed'}
+                              title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
+                            >
+                              Revoke
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 border-success-200 text-success-700 hover:bg-success-50 hover:text-success-800 dark:border-success-900/50 dark:text-success-400 dark:hover:bg-success-900/30"
+                              onClick={(e) => handleStatusChange(e, application.id, 'Shortlisted')}
+                              disabled={job?.status === 'Closed'}
+                              title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
+                            >
+                              <Check size={14} className="mr-1" /> Shortlist
+                            </Button>
+                          )}
                           <Button 
                             size="sm" 
                             variant="ghost" 
-                            className="h-8 text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900"
-                            onClick={(e) => handleStatusChange(e, application.id, 'Applied')}
+                            className="h-8 text-danger-600 hover:bg-danger-50 hover:text-danger-700 dark:text-danger-400 dark:hover:bg-danger-900/30"
+                            onClick={(e) => handleStatusChange(e, application.id, 'Rejected')}
                             disabled={job?.status === 'Closed'}
                             title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
                           >
-                            Revoke
+                            <X size={14} className="mr-1" /> Reject
                           </Button>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-8 border-success-200 text-success-700 hover:bg-success-50 hover:text-success-800 dark:border-success-900/50 dark:text-success-400 dark:hover:bg-success-900/30"
-                            onClick={(e) => handleStatusChange(e, application.id, 'Shortlisted')}
-                            disabled={job?.status === 'Closed'}
-                            title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
-                          >
-                            <Check size={14} className="mr-1" /> Shortlist
-                          </Button>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-8 text-danger-600 hover:bg-danger-50 hover:text-danger-700 dark:text-danger-400 dark:hover:bg-danger-900/30"
-                          onClick={(e) => handleStatusChange(e, application.id, 'Rejected')}
-                          disabled={job?.status === 'Closed'}
-                          title={job?.status === 'Closed' ? 'Job posting is finalized and closed' : undefined}
-                        >
-                          <X size={14} className="mr-1" /> Reject
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              </TableBody>
-            </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
