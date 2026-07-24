@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MessageSquare, Search, Send, Sparkles } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Search, Send, Sparkles } from 'lucide-react';
 import {
   Avatar,
   Badge,
@@ -174,13 +174,13 @@ export default function MessagesList() {
 
   return (
     <div className="relative z-10 mx-auto flex h-[calc(100vh-11rem)] max-w-7xl flex-col animate-slide-up">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-ai-200 bg-ai-50 px-3.5 py-1.5 text-caption font-semibold leading-none text-ai-700 shadow-sm dark:border-ai-400/20 dark:bg-ai-400/10 dark:text-ai-200">
             <Sparkles size={12} strokeWidth={1.75} className="shrink-0" />
             Communication hub
           </span>
-          <h1 className="mt-4 text-h1 text-secondary-900 dark:text-white">Messages</h1>
+          <h1 className="mt-2 sm:mt-4 text-h2 sm:text-h1 text-secondary-900 dark:text-white">Messages</h1>
           <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-300">
             Manage candidate communications across all jobs.
           </p>
@@ -188,8 +188,9 @@ export default function MessagesList() {
       </div>
 
       <div className="glass-card-heavy flex min-h-0 flex-1 overflow-hidden rounded-2xl border-none p-0">
-        <div className="flex w-[22rem] min-w-[22rem] flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02]">
-          <div className="shrink-0 border-b border-secondary-100 p-4 dark:border-white/10">
+        {/* Left Panel: Conversations List */}
+        <div className={`flex flex-col border-r border-white/60 bg-white/30 dark:border-white/10 dark:bg-white/[0.02] w-full md:w-[22rem] md:min-w-[22rem] ${selectedAppId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="shrink-0 border-b border-secondary-100 p-3.5 sm:p-4 dark:border-white/10">
             <CardTitle className="mb-3 text-h4">Conversations</CardTitle>
             <Input
               value={searchQuery}
@@ -288,7 +289,8 @@ export default function MessagesList() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col bg-white/40 dark:bg-white/[0.01]">
+        {/* Right Panel: Chat Thread */}
+        <div className={`flex min-w-0 flex-1 flex-col bg-white/40 dark:bg-white/[0.01] ${selectedAppId ? 'flex w-full' : 'hidden md:flex'}`}>
           {loadingThread ? (
             <div className="flex-1 space-y-4 p-5">
               <Skeleton height="5rem" />
@@ -296,8 +298,17 @@ export default function MessagesList() {
             </div>
           ) : selectedApplication ? (
             <>
-              <div className="flex shrink-0 items-center gap-4 border-b border-secondary-100 bg-white/60 px-5 py-3.5 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03]">
-                <Avatar name={selectedApplication.candidateName} size="md" />
+              <div className="flex shrink-0 items-center gap-3 border-b border-secondary-100 bg-white/60 px-4 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] sm:px-5 sm:py-3.5">
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({})}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-secondary-600 shadow-sm hover:bg-white dark:bg-white/10 dark:text-white md:hidden"
+                  aria-label="Back to conversations"
+                  title="Back to conversations"
+                >
+                  <ChevronLeft size={20} strokeWidth={2} />
+                </button>
+                <Avatar name={selectedApplication.candidateName} size="md" className="shrink-0" />
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-body-lg font-semibold text-secondary-900 dark:text-white">
                     {selectedApplication.candidateName}
@@ -306,8 +317,8 @@ export default function MessagesList() {
                     {selectedApplication.jobTitle}
                   </p>
                 </div>
-                <Badge variant="primary" size="sm">
-                  {messages.length} messages
+                <Badge variant="primary" size="sm" className="shrink-0">
+                  {messages.length} msgs
                 </Badge>
               </div>
 
