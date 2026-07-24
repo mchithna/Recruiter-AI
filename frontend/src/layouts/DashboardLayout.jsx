@@ -220,35 +220,35 @@ export default function DashboardLayout() {
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="relative z-50 flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+        <header className="relative z-50 flex h-auto min-h-16 shrink-0 items-center justify-between gap-2 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 aria-label="Open sidebar"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
                 onClick={() => setMobileOpen(true)}
               >
-                <Menu size={14} strokeWidth={2} />
+                <Menu size={16} strokeWidth={2} />
               </button>
-              <div className="min-w-0">
-                <p className="text-[8px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[9px] sm:text-caption font-bold uppercase leading-none tracking-wide text-secondary-400">
                   {role} dashboard
                 </p>
-                <h1 className="mt-1 truncate text-[11px] font-bold leading-none text-secondary-900 dark:text-white sm:text-h3">
+                <h1 className="mt-1 truncate text-xs sm:text-h3 font-bold leading-tight text-secondary-900 dark:text-white">
                   Welcome, {profile?.firstName || role}!
                 </h1>
               </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <NotificationBell />
             <ThemeToggle />
             <button
               type="button"
               onClick={handleSignOut}
-              className="group relative flex items-center justify-center shrink-0 w-9 h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
+              className="group relative flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
               aria-label="Sign Out"
               title="Sign Out"
               style={{
@@ -267,7 +267,7 @@ export default function DashboardLayout() {
             </button>
             <button
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 shrink-0"
               onClick={() => navigate(profilePath)}
               aria-label="Open profile"
             >
