@@ -247,9 +247,9 @@ export function Home() {
                 <div
                   key={item.id}
                   onClick={() => navigate(item.link)}
-                  className="flex items-center justify-between p-5 hover:bg-secondary-50/50 dark:hover:bg-white/5 cursor-pointer transition-colors group"
+                  className="flex flex-col gap-3 p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between hover:bg-secondary-50/50 dark:hover:bg-white/5 cursor-pointer transition-colors group"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
                     <div className={`rounded-xl p-2 shrink-0 ${
                       item.severity === 'high'
                         ? 'bg-danger-50 text-danger-600 dark:bg-danger-950/30 dark:text-danger-400'
@@ -257,8 +257,8 @@ export function Home() {
                     }`}>
                       <AlertCircle size={20} />
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h4 className="text-body-md font-bold text-secondary-900 dark:text-white">
                           {item.title}
                         </h4>
@@ -274,7 +274,7 @@ export function Home() {
                       </p>
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-secondary-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight size={18} className="text-secondary-400 group-hover:text-primary-600 transition-colors shrink-0 self-end sm:self-center" />
                 </div>
               ))}
             </div>
