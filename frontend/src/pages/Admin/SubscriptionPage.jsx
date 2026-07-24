@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, CheckCircle2, ShieldCheck, Zap, Sparkles, Power } from 'lucide-react';
+import { CreditCard, CheckCircle2, ShieldCheck, Zap, Sparkles, Power, FileText } from 'lucide-react';
 import api from '../../api';
 import { useToast } from '../../lib/ToastContext';
 import { Badge, Button, Card, CardContent, Spinner } from '../../components/ui';
 import { PayPalCheckoutButton } from '../../components/payments/PayPalCheckoutButton';
+import { CreditCardModal } from '../../components/payments/CreditCardModal';
+import { PaymentReceiptModal } from '../../components/payments/PaymentReceiptModal';
 
 export default function SubscriptionPage() {
   const navigate = useNavigate();
@@ -12,6 +14,9 @@ export default function SubscriptionPage() {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
 
   const fetchCompany = async () => {
     try {
@@ -34,6 +39,12 @@ export default function SubscriptionPage() {
   }, []);
 
   const isActive = company?.subscriptionStatus?.toLowerCase() === 'active';
+
+  const handleCardPaymentSuccess = (receipt) => {
+    setReceiptData(receipt);
+    setIsReceiptModalOpen(true);
+    fetchCompany();
+  };
 
   const handleToggleSubscription = async () => {
     try {
@@ -171,11 +182,24 @@ export default function SubscriptionPage() {
             <CardContent className="p-5 sm:p-6 space-y-5">
               <div className="flex items-center gap-2.5 text-sm font-bold text-secondary-900 dark:text-white">
                 <CreditCard size={18} className="text-primary-600 dark:text-primary-400 shrink-0" />
-                <span>Pay via PayPal Sandbox</span>
+                <span>Payment Methods</span>
               </div>
+
+              {/* Credit Card Modal Button */}
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => setIsCardModalOpen(true)}
+                leftIcon={<CreditCard size={16} />}
+                className="w-full justify-center text-sm font-bold h-12 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white shadow-lg shadow-primary-600/20"
+              >
+                Pay via Credit / Debit Card
+              </Button>
 
               {/* PayPal Sandbox Widget */}
               <div className="rounded-2xl border border-secondary-100 bg-secondary-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                <p className="text-xs font-semibold text-secondary-500 mb-2">Or Pay via PayPal Express:</p>
                 <PayPalCheckoutButton onSuccess={fetchCompany} />
               </div>
 
@@ -212,6 +236,21 @@ export default function SubscriptionPage() {
           </Card>
         </div>
       </div>
+
+      {/* Credit Card Modal */}
+      <CreditCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        onSuccess={handleCardPaymentSuccess}
+      />
+
+      {/* Payment Receipt Modal */}
+      <PaymentReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        receiptData={receiptData}
+      />
     </div>
   );
 }
+
