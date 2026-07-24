@@ -170,6 +170,24 @@ public class CompanyController : ControllerBase
             UpdatedAt = company.UpdatedAt
         };
 
+        if (GetAppUserId() is int appUserId)
+        {
+            var notification = new Notification
+            {
+                RecipientId = appUserId,
+                Type = "SUBSCRIPTION_ACTIVATED",
+                Title = "Subscription Activated 🎉",
+                Body = $"Your Hirely Professional subscription for {company.Name} has been successfully activated.",
+                Channel = "InApp",
+                IsRead = false,
+                RelatedEntityType = "Company",
+                RelatedEntityId = company.Id,
+                SentAt = DateTime.UtcNow
+            };
+            await _unitOfWork.Notifications.AddAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         await _auditLogger.LogAsync(
             userId: GetAppUserId(),
             action: "SUBSCRIPTION_ACTIVATED",
@@ -224,6 +242,24 @@ public class CompanyController : ControllerBase
             CreatedAt = company.CreatedAt,
             UpdatedAt = company.UpdatedAt
         };
+
+        if (GetAppUserId() is int userId)
+        {
+            var notification = new Notification
+            {
+                RecipientId = userId,
+                Type = "SUBSCRIPTION_DEACTIVATED",
+                Title = "Subscription Deactivated ⚠️",
+                Body = $"Your Hirely Professional subscription for {company.Name} has been deactivated.",
+                Channel = "InApp",
+                IsRead = false,
+                RelatedEntityType = "Company",
+                RelatedEntityId = company.Id,
+                SentAt = DateTime.UtcNow
+            };
+            await _unitOfWork.Notifications.AddAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
 
         await _auditLogger.LogAsync(
             userId: GetAppUserId(),

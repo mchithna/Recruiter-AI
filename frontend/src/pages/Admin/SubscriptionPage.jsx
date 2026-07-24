@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, CheckCircle2, ShieldCheck, Zap, Sparkles, Power } from 'lucide-react';
+import { CreditCard, CheckCircle2, Zap, Sparkles, Power } from 'lucide-react';
 import api from '../../api';
 import { useToast } from '../../lib/ToastContext';
 import { Badge, Button, Card, CardContent, Spinner } from '../../components/ui';
@@ -44,7 +44,7 @@ export default function SubscriptionPage() {
     try {
       setActivating(true);
       if (isActive) {
-        const res = await api.post('/company/subscription/deactivate');
+        const res = await api.post('/company/subscription/deactivate', {});
         setCompany(res.data);
         toast({
           title: 'Subscription Deactivated',
@@ -65,10 +65,11 @@ export default function SubscriptionPage() {
           duration: 6000,
         });
       }
-    } catch {
+    } catch (err) {
+      console.error('Subscription toggle error:', err);
       toast({
         title: 'Action Failed',
-        description: 'Could not update subscription status. Please try again.',
+        description: err?.response?.data?.title || err?.response?.data?.message || err?.message || 'Could not update subscription status. Please try again.',
         variant: 'danger',
       });
     } finally {
@@ -256,11 +257,11 @@ export default function SubscriptionPage() {
                 }} />
               </div>
 
-              <div className="relative flex items-center justify-center my-1.5">
+              <div className="relative flex items-center justify-center my-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-secondary-200 dark:border-slate-800" />
                 </div>
-                <span className="relative bg-white dark:bg-slate-900 px-3 text-[10px] sm:text-[11px] uppercase tracking-wider text-secondary-400 font-bold">
+                <span className="relative bg-white dark:bg-slate-900 px-2.5 text-[10px] sm:text-[11px] uppercase tracking-wider text-secondary-400 font-bold">
                   OR TEST MODE
                 </span>
               </div>
@@ -272,15 +273,15 @@ export default function SubscriptionPage() {
                 size="md"
                 isLoading={activating}
                 onClick={handleToggleSubscription}
-                leftIcon={isActive ? <Power size={16} className="text-red-500 shrink-0" /> : <Sparkles size={16} className="text-amber-500 shrink-0" />}
+                leftIcon={isActive ? <Power size={15} className="text-red-500 shrink-0" /> : <Sparkles size={15} className="text-amber-500 shrink-0" />}
                 className={[
-                  'w-full justify-center text-xs sm:text-sm font-bold h-11 transition-all duration-200',
+                  'w-full justify-center text-xs font-bold h-auto min-h-[42px] py-2.5 px-3 leading-snug text-center transition-all duration-200',
                   isActive
                     ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/30 dark:text-red-400'
                     : 'bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border border-amber-500/30 dark:text-amber-300',
                 ].join(' ')}
               >
-                {isActive ? 'Deactivate Account (Sandbox Test)' : 'Instant Activate (Sandbox Test)'}
+                {isActive ? 'Deactivate Subscription' : 'Instant Activate (Test)'}
               </Button>
               <p className="text-center text-[10px] sm:text-[11px] leading-relaxed text-secondary-400 dark:text-secondary-500 px-1">
                 Quick test shortcut to toggle account subscription state.

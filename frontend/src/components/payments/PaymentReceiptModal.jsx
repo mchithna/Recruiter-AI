@@ -164,20 +164,20 @@ For support, contact support@hirely.ai
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="space-y-2.5 pt-2">
             <button
               type="button"
               onClick={handleDownloadReceipt}
-              className="w-full flex-1 flex items-center justify-center gap-2 h-12 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm shadow-lg shadow-primary-600/25 transition-all duration-150 active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2.5 h-12 rounded-2xl bg-gradient-to-r from-primary-600 via-indigo-600 to-primary-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-primary-600/30 dark:shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] group"
             >
-              <Download size={17} />
-              <span>Download Receipt</span>
+              <Download size={18} className="transition-transform duration-200 group-hover:-translate-y-0.5" />
+              <span className="tracking-wide">Download Receipt</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto h-12 px-6 rounded-xl border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 font-semibold text-sm transition-colors"
+              className="w-full flex items-center justify-center h-11 rounded-2xl border border-secondary-200/80 dark:border-secondary-700/60 bg-secondary-50 dark:bg-secondary-800/60 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700 font-semibold text-xs transition-colors"
             >
               Done
             </button>
@@ -190,7 +190,7 @@ For support, contact support@hirely.ai
 }
 
 PaymentReceiptModal.propTypes = {
-  isOpen: PropTypes.bool.isOpen,
+  isOpen: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
   receiptData: PropTypes.object
 };
