@@ -28,9 +28,9 @@ const ChatBot = ({ variant = 'default' }) => {
 
   const isHomePage = activePath === '/' || activePath === '/home' || variant === 'home';
   const isDashboardPage = !isHomePage;
-  
+
   const [uiState, setUiState] = useState(
-    isDashboardPage || (typeof window !== 'undefined' && window.innerWidth < 768) ? 'button' : 'greeting'
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'button' : 'greeting'
   );
   const [showHistory, setShowHistory] = useState(false);
   const [contextMeta, setContextMeta] = useState(DEFAULT_CONTEXT);
@@ -190,29 +190,27 @@ const ChatBot = ({ variant = 'default' }) => {
     .replace(/^Hi,\s*(I'm|I am)\s*Hirely[!.?]*\s*/i, '')
     .replace(/^Hi,\s*/i, '');
 
-  // Larger chatbot window size ONLY on Home dashboard
-  const chatPanelSize = isHomePage
-    ? 'w-[calc(100vw-1.5rem)] sm:w-[540px] md:w-[580px] h-[min(720px,calc(100dvh-4rem))]'
-    : 'w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))]';
-    
+  // Uniform chatbot modal panel size across all pages
+  const chatPanelSize = 'w-[calc(100vw-1.5rem)] sm:w-[420px] h-[min(590px,calc(100dvh-5rem))]';
+
   const greetingSize = isHomePage
-    ? 'w-[145px] h-[240px] sm:w-[175px] sm:h-[285px]'
+    ? 'w-[125px] h-[210px] sm:w-[145px] sm:h-[245px]'
     : 'w-[110px] h-[185px] sm:w-[130px] sm:h-[220px]';
 
   // Circle sizes
-  const launcherOuterSize = isDashboardPage
-    ? 'w-[64px] h-[64px] sm:w-[72px] sm:h-[72px]'
-    : 'w-[54px] h-[54px] sm:w-[64px] sm:h-[64px]';
-    
-  const launcherInnerSize = isDashboardPage
+  const launcherOuterSize = isHomePage
     ? 'w-[58px] h-[58px] sm:w-[66px] sm:h-[66px]'
-    : 'w-[48px] h-[48px] sm:w-[58px] sm:h-[58px]';
+    : 'w-[64px] h-[64px] sm:w-[74px] sm:h-[74px]';
+
+  const launcherInnerSize = isHomePage
+    ? 'w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]'
+    : 'w-[58px] h-[58px] sm:w-[68px] sm:h-[68px]';
 
   // "Ask Hirely" label ONLY on Home dashboard
   const showLauncherLabel = isHomePage;
 
   return (
-    <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end justify-end" style={{ overflow: 'visible' }}>
       <AnimatePresence mode="wait">
         {uiState === 'greeting' && (
           <motion.div
@@ -241,8 +239,8 @@ const ChatBot = ({ variant = 'default' }) => {
               />
             </div>
             {showLauncherLabel && (
-              <div className="bg-white/70 dark:bg-slate-900/80 backdrop-blur-md px-5 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-white/60 dark:border-slate-700/60 flex items-center gap-2 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300">
-                <span className="font-extrabold text-indigo-950 dark:text-indigo-100 text-sm sm:text-base tracking-wide">Ask Hirely</span>
+              <div className="bg-white/75 dark:bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] border border-white/60 dark:border-slate-700/60 flex items-center gap-2 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300">
+                <span className="font-bold text-indigo-950 dark:text-indigo-100 text-xs sm:text-sm tracking-wide">Ask Hirely</span>
               </div>
             )}
           </motion.div>
@@ -260,15 +258,15 @@ const ChatBot = ({ variant = 'default' }) => {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             style={{ transformOrigin: 'bottom right' }}
             onClick={() => setUiState('chat')}
-            className="flex items-center gap-1.5 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
             aria-label="Open Hirely assistant"
           >
             {showLauncherLabel && (
-              <span className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-slate-700/50 opacity-90 group-hover:opacity-100 transition-opacity">
-                <span className="font-semibold text-indigo-900 dark:text-indigo-100 text-[11px] tracking-wide">Ask Hirely</span>
+              <span className="bg-white/75 dark:bg-slate-900/80 backdrop-blur-md px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] border border-white/60 dark:border-slate-700/60 group-hover:bg-white dark:group-hover:bg-slate-800 transition-all duration-300 flex items-center justify-center">
+                <span className="font-bold text-indigo-950 dark:text-indigo-100 text-xs sm:text-sm tracking-wide whitespace-nowrap">Ask Hirely</span>
               </span>
             )}
-            <span className={`relative ${launcherOuterSize} rounded-full shadow-md flex items-center justify-center overflow-hidden`}>
+            <span className={`relative ${launcherOuterSize} rounded-full shadow-md flex items-center justify-center overflow-hidden shrink-0`}>
               <span className="absolute w-[150%] h-[150%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_30%,#818cf8_60%,#4f46e5_85%,#312e81_100%)] animate-[spin_2s_linear_infinite]" />
               <span className={`relative ${launcherInnerSize} rounded-full border-[2px] border-white bg-indigo-50 overflow-hidden z-10`}>
                 <img src="/assets/chatbot-media/Avatar02.jpeg" alt="" className="w-full h-full object-cover object-center" />
@@ -374,13 +372,12 @@ const ChatBot = ({ variant = 'default' }) => {
                     const isError = msg.responseType === 'error';
                     return (
                       <div key={`${msg.sentAt}-${i}`} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[85%] px-5 py-3.5 shadow-sm text-[14.5px] leading-relaxed ${
-                          isUser
+                        <div className={`max-w-[85%] px-5 py-3.5 shadow-sm text-[14.5px] leading-relaxed ${isUser
                             ? 'bg-gradient-to-br from-indigo-500/90 to-purple-600/90 backdrop-blur-md text-white border border-white/20 shadow-md rounded-[24px] rounded-br-sm'
                             : isError
                               ? 'bg-red-50/80 dark:bg-red-950/30 text-red-800 dark:text-red-100 rounded-[24px] rounded-bl-sm border border-red-200/80 dark:border-red-800/60 shadow-sm'
                               : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-gray-800 dark:text-slate-200 rounded-[24px] rounded-bl-sm border border-white/60 dark:border-slate-700/60 shadow-sm'
-                        }`}>
+                          }`}>
                           {isUser ? (
                             <div className="whitespace-pre-wrap">{msg.content}</div>
                           ) : (

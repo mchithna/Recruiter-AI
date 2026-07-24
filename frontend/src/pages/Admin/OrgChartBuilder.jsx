@@ -302,9 +302,9 @@ const OrgChartBuilder = () => {
         </div>
       </div>
 
-      {/* Subscription Paywall Modal */}
+      {/* Subscription Paywall Overlay (scoped strictly to Org Chart tab) */}
       {!isSubscribed && company && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-secondary-950/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-white/40 dark:bg-secondary-950/60 backdrop-blur-sm rounded-2xl animate-in fade-in duration-300 min-h-[500px]">
           <div className="relative max-w-lg w-full rounded-3xl border border-white/20 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl text-center space-y-6">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-lg shadow-amber-500/10">
               <LockKeyhole size={32} />

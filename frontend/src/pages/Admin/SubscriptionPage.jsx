@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, CheckCircle2, Zap, Sparkles } from 'lucide-react';
+import { CreditCard, CheckCircle2, ShieldCheck, Zap, Sparkles, Power } from 'lucide-react';
 import api from '../../api';
 import { useToast } from '../../lib/ToastContext';
 import { Badge, Button, Card, CardContent, Spinner } from '../../components/ui';
@@ -38,24 +38,37 @@ export default function SubscriptionPage() {
     fetchCompany();
   }, []);
 
-  const handleManualActivation = async () => {
+  const isActive = company?.subscriptionStatus?.toLowerCase() === 'active';
+
+  const handleToggleSubscription = async () => {
     try {
       setActivating(true);
-      const res = await api.post('/company/subscription/activate', {
-        isManualTest: true,
-        paymentMethod: 'SandboxManual',
-      });
-      setCompany(res.data);
-      toast({
-        title: 'Subscription Activated! 🎉',
-        description: 'Your account is active. Org Chart and all features are now fully unlocked.',
-        variant: 'success',
-        duration: 6000,
-      });
+      if (isActive) {
+        const res = await api.post('/company/subscription/deactivate');
+        setCompany(res.data);
+        toast({
+          title: 'Subscription Deactivated',
+          description: 'Account has been set to inactive.',
+          variant: 'info',
+          duration: 5000,
+        });
+      } else {
+        const res = await api.post('/company/subscription/activate', {
+          isManualTest: true,
+          paymentMethod: 'SandboxManual',
+        });
+        setCompany(res.data);
+        toast({
+          title: 'Subscription Activated! 🎉',
+          description: 'Your account is active. Org Chart and all features are now fully unlocked.',
+          variant: 'success',
+          duration: 6000,
+        });
+      }
     } catch {
       toast({
-        title: 'Activation Failed',
-        description: 'Could not activate subscription. Please try again.',
+        title: 'Action Failed',
+        description: 'Could not update subscription status. Please try again.',
         variant: 'danger',
       });
     } finally {
@@ -76,8 +89,6 @@ export default function SubscriptionPage() {
       </div>
     );
   }
-
-  const isActive = company?.subscriptionStatus?.toLowerCase() === 'active';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 pb-16 px-1 sm:px-0">
@@ -202,7 +213,6 @@ export default function SubscriptionPage() {
         {/* Payment & Sandbox Options */}
         <div className="md:col-span-5 space-y-6">
           <Card className="border-secondary-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
-<<<<<<< HEAD
             <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-5">
               <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-secondary-900 dark:text-white">
                 <CreditCard size={18} className="text-primary-600 dark:text-primary-400 shrink-0" />
@@ -251,50 +261,29 @@ export default function SubscriptionPage() {
                   <div className="w-full border-t border-secondary-200 dark:border-slate-800" />
                 </div>
                 <span className="relative bg-white dark:bg-slate-900 px-3 text-[10px] sm:text-[11px] uppercase tracking-wider text-secondary-400 font-bold">
-=======
-            <CardContent className="p-5 sm:p-6 space-y-5">
-              <div className="flex items-center gap-2.5 text-sm font-bold text-secondary-900 dark:text-white">
-                <CreditCard size={18} className="text-primary-600 dark:text-primary-400 shrink-0" />
-                <span>Pay via PayPal Sandbox</span>
-              </div>
-
-              {/* PayPal Sandbox Widget */}
-              <div className="rounded-2xl border border-secondary-100 bg-secondary-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-                <PayPalCheckoutButton onSuccess={fetchCompany} />
-              </div>
-
-              <div className="relative flex items-center justify-center my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-secondary-200 dark:border-slate-800" />
-                </div>
-                <span className="relative bg-white dark:bg-slate-900 px-3 text-[11px] uppercase tracking-wider text-secondary-400 font-bold">
->>>>>>> 0fdd261 (Merge pull request #42 from mchithna/deployment)
                   OR TEST MODE
                 </span>
               </div>
 
-              {/* Manual Sandbox Test Activation Button */}
+              {/* Toggle Activate / Deactivate Button */}
               <Button
                 type="button"
                 variant="secondary"
                 size="md"
                 isLoading={activating}
-                onClick={handleManualActivation}
-                leftIcon={<Sparkles size={16} className="text-amber-500 shrink-0" />}
-<<<<<<< HEAD
-                className="w-full justify-center text-xs sm:text-sm font-bold bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border border-amber-500/30 dark:text-amber-300 h-11"
+                onClick={handleToggleSubscription}
+                leftIcon={isActive ? <Power size={16} className="text-red-500 shrink-0" /> : <Sparkles size={16} className="text-amber-500 shrink-0" />}
+                className={[
+                  'w-full justify-center text-xs sm:text-sm font-bold h-11 transition-all duration-200',
+                  isActive
+                    ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/30 dark:text-red-400'
+                    : 'bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border border-amber-500/30 dark:text-amber-300',
+                ].join(' ')}
               >
-                Instant Activate (Sandbox Test)
+                {isActive ? 'Deactivate Account (Sandbox Test)' : 'Instant Activate (Sandbox Test)'}
               </Button>
               <p className="text-center text-[10px] sm:text-[11px] leading-relaxed text-secondary-400 dark:text-secondary-500 px-1">
-=======
-                className="w-full justify-center text-sm font-bold bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border border-amber-500/30 dark:text-amber-300 h-11"
-              >
-                Instant Activate (Sandbox Test)
-              </Button>
-              <p className="text-center text-[11px] leading-relaxed text-secondary-400 dark:text-secondary-500 px-2">
->>>>>>> 0fdd261 (Merge pull request #42 from mchithna/deployment)
-                Quick test shortcut for instant evaluation without typing PayPal credentials.
+                Quick test shortcut to toggle account subscription state.
               </p>
             </CardContent>
           </Card>
@@ -317,5 +306,3 @@ export default function SubscriptionPage() {
     </div>
   );
 }
-
-

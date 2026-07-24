@@ -181,6 +181,61 @@ public class CompanyController : ControllerBase
 
         return Ok(newValue);
     }
+
+    [HttpPost("subscription/deactivate")]
+    public async Task<ActionResult<CompanyDto>> DeactivateSubscription()
+    {
+        var companyId = GetCompanyId();
+        var company = await _unitOfWork.Companies.GetByIdAsync(companyId);
+
+        if (company == null)
+        {
+            return NotFound("Company not found.");
+        }
+
+        var oldValue = new CompanyDto
+        {
+            Id = company.Id,
+            Name = company.Name,
+            Industry = company.Industry,
+            WebsiteUrl = company.WebsiteUrl,
+            LogoUrl = company.LogoUrl,
+            Address = company.Address,
+            SubscriptionStatus = company.SubscriptionStatus,
+            CreatedAt = company.CreatedAt,
+            UpdatedAt = company.UpdatedAt
+        };
+
+        company.SubscriptionStatus = "Inactive";
+        company.UpdatedAt = DateTime.UtcNow;
+
+        _unitOfWork.Companies.Update(company);
+        await _unitOfWork.SaveChangesAsync();
+
+        var newValue = new CompanyDto
+        {
+            Id = company.Id,
+            Name = company.Name,
+            Industry = company.Industry,
+            WebsiteUrl = company.WebsiteUrl,
+            LogoUrl = company.LogoUrl,
+            Address = company.Address,
+            SubscriptionStatus = company.SubscriptionStatus,
+            CreatedAt = company.CreatedAt,
+            UpdatedAt = company.UpdatedAt
+        };
+
+        await _auditLogger.LogAsync(
+            userId: GetAppUserId(),
+            action: "SUBSCRIPTION_DEACTIVATED",
+            entityType: "Company",
+            entityId: company.Id,
+            oldValue: oldValue,
+            newValue: newValue
+        );
+
+        return Ok(newValue);
+    }
 }
 
 public class ActivateSubscriptionRequest
