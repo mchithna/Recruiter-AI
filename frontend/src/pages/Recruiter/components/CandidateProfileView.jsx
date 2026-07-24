@@ -66,7 +66,6 @@ export function CandidateProfileView({ candidateProfile }) {
           leftIcon={<Download size={14} strokeWidth={1.75} />}
           disabled={!resumeUrl}
           onClick={openResume}
-          className="w-full sm:w-auto justify-center"
         >
           Resume
         </Button>

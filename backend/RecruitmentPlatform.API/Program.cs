@@ -109,6 +109,8 @@ builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewS
     client.Timeout = TimeSpan.FromSeconds(25);
 });
 builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
+builder.Services.AddScoped<IPracticeQuestionBankService, PracticeQuestionBankService>();
+builder.Services.AddScoped<IPracticeQuestionGeneratorService, PracticeQuestionGeneratorService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

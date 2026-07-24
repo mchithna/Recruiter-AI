@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button, Badge } from '../components/ui';
 import { PayPalCheckoutButton } from '../components/payments/PayPalCheckoutButton';
-import { CreditCardModal } from '../components/payments/CreditCardModal';
-import { PaymentReceiptModal } from '../components/payments/PaymentReceiptModal';
-import { CheckCircle, ArrowRight, Sparkles, CreditCard } from 'lucide-react';
+import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 const SALES_EMAIL_LINK = [
   'mailto:hello@hirely.ai',
@@ -74,9 +71,6 @@ const PLANS = [
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-  const [receiptData, setReceiptData] = useState(null);
 
   const handlePlanAction = (planName) => {
     if (planName === 'Enterprise') {
@@ -85,11 +79,6 @@ export default function Pricing() {
     }
 
     navigate('/register/company');
-  };
-
-  const handleCardPaymentSuccess = (receipt) => {
-    setReceiptData(receipt);
-    setIsReceiptModalOpen(true);
   };
 
   return (
@@ -153,33 +142,11 @@ export default function Pricing() {
                   </Button>
 
                   {name === 'Professional' && (
-                    <div className="mt-4 pt-3 border-t border-secondary-100 dark:border-secondary-800/80 space-y-2.5">
-                      <p className="text-center text-xs font-semibold text-secondary-500 dark:text-secondary-400">
-                        Or pay with Credit Card / PayPal
+                    <div className="mt-4 pt-3 border-t border-secondary-100 dark:border-secondary-800/80">
+                      <p className="mb-2 text-center text-xs font-semibold text-secondary-500 dark:text-secondary-400">
+                        Or pay via PayPal Sandbox
                       </p>
-                      
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => setIsCardModalOpen(true)}
-                        leftIcon={<CreditCard size={16} className="text-primary-600 dark:text-primary-400" />}
-                        className="w-full justify-center rounded-xl font-bold border border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-900 dark:text-white h-11 text-xs shadow-sm"
-                      >
-                        Pay with Credit or Debit Card
-                      </Button>
-
-                      <PayPalCheckoutButton onSuccess={() => {
-                        handleCardPaymentSuccess({
-                          transactionId: `HIR-PAY-${Math.floor(10000000 + Math.random() * 90000000)}`,
-                          date: new Date().toLocaleString(),
-                          accountHolderName: 'Hirely Member',
-                          cardType: 'PayPal Account',
-                          cardNumber: '4036',
-                          zipCode: '90210',
-                          amount: '$49.00 USD',
-                          planName: 'Hirely Professional Plan (1 Month)'
-                        });
-                      }} />
+                      <PayPalCheckoutButton />
                     </div>
                   )}
                 </div>
@@ -190,20 +157,6 @@ export default function Pricing() {
       </main>
 
       <Footer />
-
-      {/* Credit Card Form Modal */}
-      <CreditCardModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        onSuccess={handleCardPaymentSuccess}
-      />
-
-      {/* Payment Success Receipt Modal */}
-      <PaymentReceiptModal
-        isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
-        receiptData={receiptData}
-      />
     </div>
   );
 }

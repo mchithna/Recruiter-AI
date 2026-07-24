@@ -42,6 +42,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<PracticeQuestion> PracticeQuestions => Set<PracticeQuestion>();
+    public DbSet<PracticeSession> PracticeSessions => Set<PracticeSession>();
+    public DbSet<PracticeSessionQuestion> PracticeSessionQuestions => Set<PracticeSessionQuestion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1676,6 +1679,199 @@ public class ApplicationDbContext : DbContext
                 .WithMany(e => e.AuditLogs)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Section 7: Practice Feature
+        modelBuilder.Entity<PracticeQuestion>(entity =>
+        {
+            entity.ToTable("practice_questions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.SkillId)
+                .HasColumnName("skill_id")
+                .IsRequired();
+
+            entity.Property(e => e.Difficulty)
+                .HasColumnName("difficulty")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.QuestionText)
+                .HasColumnName("question_text")
+                .HasColumnType("text")
+                .IsRequired();
+
+            entity.Property(e => e.OptionA)
+                .HasColumnName("option_a")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.OptionB)
+                .HasColumnName("option_b")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.OptionC)
+                .HasColumnName("option_c")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.OptionD)
+                .HasColumnName("option_d")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.CorrectOption)
+                .HasColumnName("correct_option")
+                .HasColumnType("char(1)")
+                .IsRequired();
+
+            entity.Property(e => e.ExplanationText)
+                .HasColumnName("explanation_text")
+                .HasColumnType("text")
+                .IsRequired();
+
+            entity.Property(e => e.ReportCount)
+                .HasColumnName("report_count")
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.IsActive)
+                .HasColumnName("is_active")
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.Skill)
+                .WithMany()
+                .HasForeignKey(e => e.SkillId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PracticeSession>(entity =>
+        {
+            entity.ToTable("practice_sessions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.CandidateId)
+                .HasColumnName("candidate_id")
+                .IsRequired();
+
+            entity.Property(e => e.SourceType)
+                .HasColumnName("source_type")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.SourceInterviewId)
+                .HasColumnName("source_interview_id");
+
+            entity.Property(e => e.SourceApplicationId)
+                .HasColumnName("source_application_id");
+
+            entity.Property(e => e.SourceSkillId)
+                .HasColumnName("source_skill_id");
+
+            entity.Property(e => e.Difficulty)
+                .HasColumnName("difficulty")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.QuestionCount)
+                .HasColumnName("question_count")
+                .HasDefaultValue(12);
+
+            entity.Property(e => e.Score)
+                .HasColumnName("score");
+
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(50)
+                .IsRequired()
+                .HasDefaultValue("InProgress");
+
+            entity.Property(e => e.StartedAt)
+                .HasColumnName("started_at")
+                .IsRequired()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.CompletedAt)
+                .HasColumnName("completed_at");
+
+            entity.HasOne(e => e.Candidate)
+                .WithMany() 
+                .HasForeignKey(e => e.CandidateId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.SourceApplication)
+                .WithMany()
+                .HasForeignKey(e => e.SourceApplicationId)
+                .OnDelete(DeleteBehavior.SetNull);
+                
+            entity.HasOne(e => e.SourceSkill)
+                .WithMany()
+                .HasForeignKey(e => e.SourceSkillId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PracticeSessionQuestion>(entity =>
+        {
+            entity.ToTable("practice_session_questions");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.PracticeSessionId)
+                .HasColumnName("practice_session_id")
+                .IsRequired();
+
+            entity.Property(e => e.PracticeQuestionId)
+                .HasColumnName("practice_question_id")
+                .IsRequired();
+
+            entity.Property(e => e.QuestionOrder)
+                .HasColumnName("question_order")
+                .IsRequired();
+
+            entity.Property(e => e.CandidateAnswer)
+                .HasColumnName("candidate_answer")
+                .HasColumnType("char(1)");
+
+            entity.Property(e => e.IsCorrect)
+                .HasColumnName("is_correct");
+
+            entity.Property(e => e.AnsweredAt)
+                .HasColumnName("answered_at");
+
+            entity.HasIndex(e => new { e.PracticeSessionId, e.PracticeQuestionId })
+                .IsUnique();
+
+            entity.HasIndex(e => new { e.PracticeSessionId, e.QuestionOrder })
+                .IsUnique();
+
+            entity.HasOne(e => e.PracticeSession)
+                .WithMany(e => e.PracticeSessionQuestions)
+                .HasForeignKey(e => e.PracticeSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.PracticeQuestion)
+                .WithMany(e => e.PracticeSessionQuestions)
+                .HasForeignKey(e => e.PracticeQuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

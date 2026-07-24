@@ -29,14 +29,10 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
   const handleInputChange = (field, value) => {
     let formattedValue = value;
 
-    // Formatting rules
     if (field === 'cardNumber') {
-      // Remove non-digit characters
       const digits = value.replace(/\D/g, '').slice(0, 16);
-      // Group by 4s
       formattedValue = digits.replace(/(\d{4})(?=\d)/g, '$1 ');
     } else if (field === 'expiredDate') {
-      // Clean non-digits
       const digits = value.replace(/\D/g, '').slice(0, 4);
       if (digits.length >= 3) {
         formattedValue = `${digits.slice(0, 2)} / ${digits.slice(2)}`;
@@ -89,12 +85,10 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // Simulate processing delay for realistic UX
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const orderId = `PAYPAL-CARD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-      // Automatically activate subscription if logged in
       try {
         const apiModule = await import('../../api');
         await apiModule.default.post('/company/subscription/activate', {
@@ -154,9 +148,7 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-md my-auto overflow-hidden rounded-3xl bg-white dark:bg-secondary-900 shadow-2xl border border-secondary-200/80 dark:border-secondary-700/80"
       >
-        {/* Modal Header */}
         <div className="relative bg-gradient-to-r from-primary-700 via-indigo-700 to-primary-600 p-5 sm:p-6 text-white overflow-hidden">
-          {/* Subtle background glow decorative elements */}
           <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
           <button
@@ -168,7 +160,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             <X size={18} />
           </button>
 
-          {/* Hirely Logo & Title Row */}
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 shadow-md">
               <img src="/logo.png" alt="Hirely Logo" className="h-7 w-7 object-contain drop-shadow" />
@@ -184,7 +175,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Order Summary Box */}
           <div className="mt-3 flex items-center justify-between rounded-xl bg-white/10 backdrop-blur-md p-3 border border-white/15">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-amber-300 shrink-0" />
@@ -197,9 +187,7 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-          {/* Card Type Dropdown */}
           <div>
             <label className="block text-xs font-bold text-secondary-800 dark:text-secondary-200 mb-1.5">
               Select Card Type <span className="text-danger-500">*</span>
@@ -222,7 +210,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Account Holder Name */}
           <div>
             <label className="block text-xs font-bold text-secondary-800 dark:text-secondary-200 mb-1.5">
               Account Holder Name <span className="text-danger-500">*</span>
@@ -246,7 +233,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Card Number */}
           <div>
             <label className="block text-xs font-bold text-secondary-800 dark:text-secondary-200 mb-1.5">
               Card Number <span className="text-danger-500">*</span>
@@ -273,7 +259,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             </p>
           </div>
 
-          {/* Expiration Date & CVV Row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-secondary-800 dark:text-secondary-200 mb-1.5">
@@ -322,7 +307,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Billing Zip Code */}
           <div>
             <label className="block text-xs font-bold text-secondary-800 dark:text-secondary-200 mb-1.5">
               Billing Zip Code <span className="text-danger-500">*</span>
@@ -346,7 +330,6 @@ export function CreditCardModal({ isOpen, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
@@ -380,3 +363,5 @@ CreditCardModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func
 };
+
+export default CreditCardModal;

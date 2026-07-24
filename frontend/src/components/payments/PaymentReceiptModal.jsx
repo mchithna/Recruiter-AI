@@ -92,7 +92,6 @@ For support, contact support@hirely.ai
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-secondary-900 shadow-2xl border border-secondary-200 dark:border-secondary-700/80 my-auto"
       >
-        {/* Top Decorative Banner */}
         <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 p-6 text-white text-center relative">
           <button
             type="button"
@@ -112,10 +111,8 @@ For support, contact support@hirely.ai
           </p>
         </div>
 
-        {/* Receipt Body */}
         <div className="p-6 space-y-6">
           <div className="rounded-2xl border border-secondary-200/80 bg-secondary-50/70 dark:border-secondary-800 dark:bg-secondary-950/60 p-5 space-y-4 text-sm">
-            {/* Header branding */}
             <div className="flex items-center justify-between border-b border-secondary-200/60 dark:border-secondary-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <img src="/logo.png" alt="Hirely Logo" className="h-8 w-8 object-contain" />
@@ -128,7 +125,6 @@ For support, contact support@hirely.ai
               </span>
             </div>
 
-            {/* Receipt Summary Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-secondary-400 dark:text-secondary-500">Receipt No:</span>
@@ -156,14 +152,12 @@ For support, contact support@hirely.ai
               </div>
             </div>
 
-            {/* Total Amount Row */}
             <div className="pt-3 border-t border-secondary-200/60 dark:border-secondary-800 flex items-center justify-between">
               <span className="font-bold text-secondary-700 dark:text-secondary-300">Total Paid</span>
               <span className="text-xl font-black text-secondary-900 dark:text-white">{amount}</span>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-2.5 pt-2">
             <button
               type="button"
@@ -194,3 +188,5 @@ PaymentReceiptModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   receiptData: PropTypes.object
 };
+
+export default PaymentReceiptModal;

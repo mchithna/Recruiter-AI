@@ -44,10 +44,18 @@ public class UnitOfWork : IUnitOfWork
 
     private IRepository<AuditLog>? _auditLogs;
     private IRepository<Notification>? _notifications;
+    private IRepository<PracticeQuestion>? _practiceQuestions;
+    private IRepository<PracticeSession>? _practiceSessions;
+    private IRepository<PracticeSessionQuestion>? _practiceSessionQuestions;
+    private IRepository<Skill>? _skills;
 
     public IRepository<UserInvitation> UserInvitations => _userInvitations ??= new Repository<UserInvitation>(_context);
     public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
     public IRepository<Notification> Notifications => _notifications ??= new Repository<Notification>(_context);
+    public IRepository<PracticeQuestion> PracticeQuestions => _practiceQuestions ??= new Repository<PracticeQuestion>(_context);
+    public IRepository<PracticeSession> PracticeSessions => _practiceSessions ??= new Repository<PracticeSession>(_context);
+    public IRepository<PracticeSessionQuestion> PracticeSessionQuestions => _practiceSessionQuestions ??= new Repository<PracticeSessionQuestion>(_context);
+    public IRepository<Skill> Skills => _skills ??= new Repository<Skill>(_context);
 
     public Task<int> SaveChangesAsync()
     {
