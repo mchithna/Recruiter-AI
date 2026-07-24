@@ -238,7 +238,7 @@ const OrgChartBuilder = () => {
         </div>
 
         {hasChildren && (
-          <div className="relative ml-6 mt-3 space-y-3 pl-6">
+          <div className="relative ml-2.5 sm:ml-6 mt-3 space-y-3 pl-2.5 sm:pl-6">
             {node.children.map((child, index) => (
               <DepartmentNode
                 key={child.id}
@@ -267,7 +267,7 @@ const OrgChartBuilder = () => {
               Build your company's organization chart and manage departments.
             </p>
           </div>
-          <Button variant="primary" onClick={() => handleOpenAdd(null)} leftIcon={<Plus size={16} />}>
+          <Button variant="primary" className="w-full sm:w-auto" onClick={() => handleOpenAdd(null)} leftIcon={<Plus size={16} />}>
             Add Top-Level Department
           </Button>
         </div>

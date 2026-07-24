@@ -106,7 +106,7 @@ const CompanyProfile = () => {
   return (
     <div className="min-w-full max-w-none space-y-6">
       <div>
-        <h3 className="text-h3 font-bold text-secondary-900 dark:text-white flex items-center gap-3">
+        <h3 className="text-h3 font-bold text-secondary-900 dark:text-white flex flex-wrap items-center gap-3">
           Company Profile
           <Badge variant={formData.subscriptionStatus === 'Active' ? 'success' : 'warning'}>
             {formData.subscriptionStatus}
