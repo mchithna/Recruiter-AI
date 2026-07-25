@@ -96,28 +96,38 @@ public class OffersController : ControllerBase
             return NotFound(new { message = "Application not found." });
         }
 
-        var existingOffer = await _context.Offers
-            .AnyAsync(o => o.ApplicationId == request.ApplicationId, cancellationToken);
+        var offer = await _context.Offers
+            .FirstOrDefaultAsync(o => o.ApplicationId == request.ApplicationId, cancellationToken);
 
-        if (existingOffer)
+        if (offer != null)
         {
-            return BadRequest(new { message = "An offer has already been initiated for this application." });
+            offer.OfferedSalary = request.OfferedSalary;
+            offer.SalaryCurrency = request.SalaryCurrency;
+            offer.ProposedStartDate = request.ProposedStartDate;
+            offer.OfferExpiryDate = request.OfferExpiryDate;
+            offer.Notes = request.Notes;
+            offer.UpdatedAt = DateTime.UtcNow;
+            _context.Offers.Update(offer);
         }
-
-        var offer = new Offer
+        else
         {
-            ApplicationId = request.ApplicationId,
-            InitiatedBy = userId,
-            OfferedSalary = request.OfferedSalary,
-            SalaryCurrency = request.SalaryCurrency,
-            ProposedStartDate = request.ProposedStartDate,
-            OfferExpiryDate = request.OfferExpiryDate,
-            Status = "Pending",
-            Notes = request.Notes,
-            ManagedBy = userId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            offer = new Offer
+            {
+                ApplicationId = request.ApplicationId,
+                InitiatedBy = userId,
+                OfferedSalary = request.OfferedSalary,
+                SalaryCurrency = request.SalaryCurrency,
+                ProposedStartDate = request.ProposedStartDate,
+                OfferExpiryDate = request.OfferExpiryDate,
+                Status = "Pending",
+                Notes = request.Notes,
+                ManagedBy = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Offers.Add(offer);
+        }
 
         if (!application.Status.Equals("Offer Extended", StringComparison.OrdinalIgnoreCase))
         {
@@ -135,7 +145,6 @@ public class OffersController : ControllerBase
             }
         }
 
-        _context.Offers.Add(offer);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new OfferDto

@@ -74,7 +74,7 @@ const GuestLayout = () => {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-12 animate-slide-up">
+        <div className="flex-1 flex items-center justify-center px-6 pb-8 pt-28 sm:p-12 animate-slide-up">
           <div className="w-full max-w-md relative z-10">
             {/* Soft background glow on mobile */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary-500/10 dark:bg-primary-500/5 rounded-full blur-[80px] -z-10 lg:hidden" />

@@ -71,14 +71,14 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
           )}
         </div>
 
-        <form className="mt-auto flex items-end gap-3 border-t border-secondary-100 pt-3.5 dark:border-white/10" onSubmit={onSendMessage}>
+        <form className="mt-auto flex flex-col sm:flex-row items-stretch sm:items-end gap-2.5 border-t border-secondary-100 pt-3.5 dark:border-white/10" onSubmit={onSendMessage}>
           <textarea
             value={draftMessage}
             onChange={onDraftChange}
             onKeyDown={handleKeyDown}
             rows={2}
-            placeholder={`Type a message to ${application.candidateName}... (Press Enter to send, Shift+Enter for new line)`}
-            className="flex-1 min-h-[72px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
+            placeholder={`Type a message to ${application.candidateName}...`}
+            className="flex-1 min-h-[64px] max-h-[140px] resize-none rounded-xl border border-secondary-200 bg-white p-3 text-body-sm text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-secondary-900 dark:text-white dark:placeholder:text-secondary-500"
           />
           <Button
             type="submit"
@@ -86,7 +86,7 @@ export function MessagingThread({ application, messages, draftMessage, onDraftCh
             size="md"
             leftIcon={<Send size={15} strokeWidth={1.75} />}
             disabled={!draftMessage.trim()}
-            className="min-w-24 shrink-0 rounded-xl px-5 h-12"
+            className="w-full sm:w-auto sm:min-w-24 shrink-0 rounded-xl px-5 h-11 sm:h-12"
           >
             Send
           </Button>

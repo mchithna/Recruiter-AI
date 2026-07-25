@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Input, Button } from '../components/ui';
 
@@ -19,6 +20,7 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,9 +86,9 @@ export default function Login() {
   }
 
   return (
-    <div className="w-full bg-white/40 dark:bg-secondary-900/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 rounded-[2.5rem] p-8 sm:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-brand font-black text-secondary-900 dark:text-white mb-2 tracking-wide">Welcome Back</h1>
+    <div className="w-full bg-white/40 dark:bg-secondary-900/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
+      <div className="text-center mb-7 sm:mb-8">
+        <h1 className="text-3xl sm:text-4xl font-brand font-black text-secondary-900 dark:text-white mb-2 tracking-wide">Welcome Back</h1>
         <p className="text-secondary-600 dark:text-secondary-400">Sign in to your account to continue</p>
       </div>
 
@@ -130,11 +132,22 @@ export default function Login() {
         <div className="space-y-1">
           <Input
             label="Password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={isSubmitting || isGoogleLoading}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                disabled={isSubmitting || isGoogleLoading}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-secondary-500 transition-colors hover:bg-secondary-100 hover:text-secondary-800 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            }
             placeholder="••••••••"
           />
           <div className="flex justify-end">
@@ -161,12 +174,12 @@ export default function Login() {
         <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
           Don't have an account yet?
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link to="/register/candidate" className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors border-b border-transparent hover:border-primary-600 dark:hover:border-primary-400 pb-0.5">
+        <div className="flex items-center justify-center gap-3 sm:gap-4">
+          <Link to="/register/candidate" className="whitespace-nowrap text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors border-b border-transparent hover:border-primary-600 dark:hover:border-primary-400 pb-0.5">
             I'm a Candidate
           </Link>
           <div className="w-1 h-1 rounded-full bg-secondary-300 dark:bg-secondary-700"></div>
-          <Link to="/register/company" className="text-sm font-semibold text-ai-600 dark:text-ai-400 hover:text-ai-700 dark:hover:text-ai-300 transition-colors border-b border-transparent hover:border-ai-600 dark:hover:border-ai-400 pb-0.5">
+          <Link to="/register/company" className="whitespace-nowrap text-sm font-semibold text-ai-600 dark:text-ai-400 hover:text-ai-700 dark:hover:text-ai-300 transition-colors border-b border-transparent hover:border-ai-600 dark:hover:border-ai-400 pb-0.5">
             I'm an Employer
           </Link>
         </div>

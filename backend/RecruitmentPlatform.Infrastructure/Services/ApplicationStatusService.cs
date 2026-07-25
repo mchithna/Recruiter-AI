@@ -18,10 +18,12 @@ public sealed class ApplicationStatusService : IApplicationStatusService
     };
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationFactory _notificationFactory;
 
-    public ApplicationStatusService(IUnitOfWork unitOfWork)
+    public ApplicationStatusService(IUnitOfWork unitOfWork, INotificationFactory notificationFactory)
     {
         _unitOfWork = unitOfWork;
+        _notificationFactory = notificationFactory;
     }
 
     public async Task<Application> ChangeStatusAsync(int applicationId, string newStatus, int changedByUserId, string? notes = null)
@@ -58,6 +60,41 @@ public sealed class ApplicationStatusService : IApplicationStatusService
 
         await _unitOfWork.ApplicationStatusHistories.AddAsync(history);
         await _unitOfWork.SaveChangesAsync();
+
+        // Dispatch Notification to Candidate via Composite Channel
+        try
+        {
+            var notificationService = _notificationFactory.Create("All");
+            var job = await _unitOfWork.Jobs.GetByIdAsync(application.JobId);
+            var jobTitle = job?.Title ?? "your application";
+
+            if (requestedStatus.Equals("Offer Extended", StringComparison.OrdinalIgnoreCase))
+            {
+                await notificationService.SendAsync(
+                    recipientId: application.CandidateId,
+                    type: "OfferIssued",
+                    title: $"🎉 Job Offer Received: {jobTitle}",
+                    body: $"Congratulations! You have received a formal job offer for {jobTitle}. Please review the details.",
+                    relatedEntityType: "Offer",
+                    relatedEntityId: application.Id
+                );
+            }
+            else
+            {
+                await notificationService.SendAsync(
+                    recipientId: application.CandidateId,
+                    type: "ApplicationStatusUpdated",
+                    title: $"Application Update: {jobTitle}",
+                    body: $"Your application for {jobTitle} has been updated to {requestedStatus}.",
+                    relatedEntityType: "Application",
+                    relatedEntityId: application.Id
+                );
+            }
+        }
+        catch
+        {
+            // Swallow notification dispatch failures to keep core status update atomic
+        }
 
         return application;
     }

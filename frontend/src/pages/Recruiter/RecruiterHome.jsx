@@ -365,27 +365,30 @@ export default function RecruiterHome() {
               <Link
                 key={application.id}
                 to={`/recruiter/applications/${application.id}`}
-                className="group flex items-center justify-between gap-4 p-4 transition-all duration-base hover:bg-white/70 dark:hover:bg-white/5"
+                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 transition-all duration-base hover:bg-white/70 dark:hover:bg-white/5"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <Avatar name={application.candidateName} size="md" />
-                  <div className="min-w-0">
+                  <Avatar name={application.candidateName} size="md" className="shrink-0" />
+                  <div className="min-w-0 flex-1">
                     <h3 className="truncate text-body-lg font-semibold text-secondary-900 transition-colors group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
                       {application.candidateName}
                     </h3>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-body-sm text-secondary-500 dark:text-secondary-300">
-                      <span>{application.jobTitle}</span>
+                      <span className="font-medium text-secondary-700 dark:text-secondary-200">{application.jobTitle}</span>
+                      <span>•</span>
                       <span>Applied {formatDate(application.appliedAt)}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <Badge variant="ai" size="sm">{application.aiMatchScore}%</Badge>
-                  <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
+                <div className="flex shrink-0 items-center justify-between sm:justify-end gap-2.5 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-secondary-100/70 dark:border-white/5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="ai" size="sm">{application.aiMatchScore}% match</Badge>
+                    <StatusBadge status={application.status?.toLowerCase().replace(/ /g, '_')} />
+                  </div>
                   <ChevronRight
                     size={20}
                     strokeWidth={1.75}
-                    className="text-secondary-400 transition-transform group-hover:translate-x-1 group-hover:text-primary-600"
+                    className="text-secondary-400 transition-transform group-hover:translate-x-1 group-hover:text-primary-600 shrink-0"
                   />
                 </div>
               </Link>

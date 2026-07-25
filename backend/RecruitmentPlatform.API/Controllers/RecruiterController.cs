@@ -16,11 +16,13 @@ public class RecruiterController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IApplicationStatusService _applicationStatusService;
+    private readonly INotificationFactory _notificationFactory;
 
-    public RecruiterController(ApplicationDbContext context, IApplicationStatusService applicationStatusService)
+    public RecruiterController(ApplicationDbContext context, IApplicationStatusService applicationStatusService, INotificationFactory notificationFactory)
     {
         _context = context;
         _applicationStatusService = applicationStatusService;
+        _notificationFactory = notificationFactory;
     }
 
     [HttpGet("dashboard")]
@@ -471,6 +473,26 @@ public class RecruiterController : ControllerBase
             .Where(u => u.Id == userId)
             .Select(u => new { u.FirstName, u.LastName })
             .FirstOrDefaultAsync(cancellationToken);
+
+        try
+        {
+            var senderName = sender != null ? $"{sender.FirstName} {sender.LastName}".Trim() : "Recruiter";
+            var snippet = body.Length > 80 ? body.Substring(0, 80) + "..." : body;
+
+            var inApp = _notificationFactory.Create("InApp");
+            await inApp.SendAsync(
+                recipientId: application.CandidateId,
+                type: "NewMessageReceived",
+                title: $"New Message from {senderName}",
+                body: $"\"{snippet}\"",
+                relatedEntityType: "Application",
+                relatedEntityId: application.Id
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Notification Error] Recruiter SendMessage notification failed: {ex}");
+        }
 
         return Ok(new RecruiterApplicationMessageDto
         {

@@ -84,15 +84,17 @@ export default function CandidateHome() {
           </p>
           
           <div className="flex flex-col gap-4 text-left">
-            <Link to="/candidate/documents" className={`flex items-center p-5 rounded-2xl border transition-all hover:-translate-y-1 ${onboardingState.hasResume ? 'bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800' : 'bg-white border-secondary-200 shadow-sm dark:bg-secondary-900 dark:border-secondary-800 hover:border-primary-300 dark:hover:border-primary-700'}`}>
-              <div className={`mr-4 flex h-12 w-12 items-center justify-center rounded-full ${onboardingState.hasResume ? 'bg-success-100 text-success-600 dark:bg-success-800/30 dark:text-success-400' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'}`}>
-                <FileText size={24} />
+            <Link to="/candidate/documents" className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl border transition-all hover:-translate-y-1 ${onboardingState.hasResume ? 'bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800' : 'bg-white border-secondary-200 shadow-sm dark:bg-secondary-900 dark:border-secondary-800 hover:border-primary-300 dark:hover:border-primary-700'}`}>
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full ${onboardingState.hasResume ? 'bg-success-100 text-success-600 dark:bg-success-800/30 dark:text-success-400' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'}`}>
+                  <FileText size={22} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-h4 text-secondary-900 dark:text-white mb-0.5">Upload a Resume</h3>
+                  <p className="text-body-sm text-secondary-500 dark:text-secondary-400">Add a primary resume so we can parse your details.</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-h4 text-secondary-900 dark:text-white mb-1">Upload a Resume</h3>
-                <p className="text-body-sm text-secondary-500 dark:text-secondary-400">Add a primary resume so we can parse your details.</p>
-              </div>
-              <div>
+              <div className="shrink-0 flex justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-secondary-100 dark:border-white/5">
                 {onboardingState.hasResume ? (
                   <span className="text-sm font-semibold text-success-600 dark:text-success-400">Completed</span>
                 ) : (
@@ -101,15 +103,17 @@ export default function CandidateHome() {
               </div>
             </Link>
 
-            <Link to="/candidate/profile" className={`flex items-center p-5 rounded-2xl border transition-all hover:-translate-y-1 ${onboardingState.hasProfile ? 'bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800' : 'bg-white border-secondary-200 shadow-sm dark:bg-secondary-900 dark:border-secondary-800 hover:border-primary-300 dark:hover:border-primary-700'}`}>
-              <div className={`mr-4 flex h-12 w-12 items-center justify-center rounded-full ${onboardingState.hasProfile ? 'bg-success-100 text-success-600 dark:bg-success-800/30 dark:text-success-400' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'}`}>
-                <UserCircle size={24} />
+            <Link to="/candidate/profile" className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl border transition-all hover:-translate-y-1 ${onboardingState.hasProfile ? 'bg-success-50 border-success-200 dark:bg-success-900/10 dark:border-success-800' : 'bg-white border-secondary-200 shadow-sm dark:bg-secondary-900 dark:border-secondary-800 hover:border-primary-300 dark:hover:border-primary-700'}`}>
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full ${onboardingState.hasProfile ? 'bg-success-100 text-success-600 dark:bg-success-800/30 dark:text-success-400' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'}`}>
+                  <UserCircle size={22} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-h4 text-secondary-900 dark:text-white mb-0.5">Fill out your Profile</h3>
+                  <p className="text-body-sm text-secondary-500 dark:text-secondary-400">Add at least one skill and an experience/education entry.</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-h4 text-secondary-900 dark:text-white mb-1">Fill out your Profile</h3>
-                <p className="text-body-sm text-secondary-500 dark:text-secondary-400">Add at least one skill and an experience/education entry.</p>
-              </div>
-              <div>
+              <div className="shrink-0 flex justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-secondary-100 dark:border-white/5">
                 {onboardingState.hasProfile ? (
                   <span className="text-sm font-semibold text-success-600 dark:text-success-400">Completed</span>
                 ) : (

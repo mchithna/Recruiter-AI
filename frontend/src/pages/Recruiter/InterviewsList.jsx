@@ -677,7 +677,7 @@ export default function InterviewsList() {
           setIsEditMode(false);
         }}
         title={isEditMode ? `Edit Interview: ${selectedInterview?.candidateName}` : `Interview Details: ${selectedInterview?.candidateName}`}
-        size="lg"
+        size="xl"
       >
         {selectedInterview && (
           <div>
@@ -698,25 +698,25 @@ export default function InterviewsList() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="rounded-xl bg-secondary-50 dark:bg-secondary-800/50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-1 flex items-center gap-1.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-600 dark:text-secondary-300 mb-1 flex items-center gap-1.5">
                       <CalendarClock size={14} /> Scheduled Date & Time
                     </p>
                     <p className="text-body-sm font-semibold text-secondary-900 dark:text-white">
                       {formatScheduledTime(selectedInterview.scheduledTime)}
                     </p>
-                    <p className="text-xs text-secondary-500 mt-0.5">
+                    <p className="text-xs text-secondary-600 dark:text-secondary-300 mt-0.5">
                       Duration: {selectedInterview.durationMinutes} mins
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-secondary-50 dark:bg-secondary-800/50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-1 flex items-center gap-1.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-600 dark:text-secondary-300 mb-1 flex items-center gap-1.5">
                       <UserCheck size={14} /> Interviewer
                     </p>
                     <p className="text-body-sm font-semibold text-secondary-900 dark:text-white">
                       {selectedInterview.interviewerName}
                     </p>
-                    <p className="text-xs text-secondary-500 mt-0.5">
+                    <p className="text-xs text-secondary-600 dark:text-secondary-300 mt-0.5">
                       Type: {selectedInterview.interviewType}
                     </p>
                   </div>
@@ -740,45 +740,47 @@ export default function InterviewsList() {
 
                 {selectedInterview.notes && (
                   <div className="rounded-xl bg-secondary-50 dark:bg-secondary-800/50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-secondary-600 dark:text-secondary-300 mb-1">
                       Notes
                     </p>
-                    <p className="text-body-sm text-secondary-700 dark:text-secondary-300 whitespace-pre-wrap">
+                    <p className="text-body-sm text-secondary-700 dark:text-secondary-200 whitespace-pre-wrap">
                       {selectedInterview.notes}
                     </p>
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-secondary-100 dark:border-white/10">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-5 border-t border-secondary-100 dark:border-white/10">
                   <Button
                     variant="outline"
                     size="md"
-                    leftIcon={<ExternalLink size={16} />}
+                    leftIcon={<ExternalLink size={15} />}
                     onClick={() => {
                       setIsViewModalOpen(false);
                       navigate(`/recruiter/applications/${selectedInterview.applicationId}`);
                     }}
-                    className="w-full sm:w-auto shrink-0"
+                    className="w-full sm:w-auto justify-center"
                   >
-                    View Candidate Application
+                    View Application
                   </Button>
-                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
+                  <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-stretch sm:justify-end">
                     <Button
                       variant="ai"
                       size="md"
-                      leftIcon={<Sparkles size={16} />}
+                      leftIcon={<Sparkles size={15} />}
                       onClick={() => {
                         setIsViewModalOpen(false);
                         navigate(`/recruiter/interviews/${selectedInterview.id}/live-copilot`);
                       }}
+                      className="flex-1 sm:flex-none justify-center"
                     >
                       Live Copilot
                     </Button>
                     <Button
                       variant="primary"
                       size="md"
-                      leftIcon={<Edit size={16} />}
+                      leftIcon={<Edit size={15} />}
                       onClick={() => setIsEditMode(true)}
+                      className="flex-1 sm:flex-none justify-center"
                     >
                       Edit Details
                     </Button>

@@ -86,14 +86,14 @@ const Analytics = () => {
               Monitor your recruitment pipeline and performance.
             </p>
           </div>
-          <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-[minmax(16rem,1.25fr)_minmax(13.5rem,1fr)_minmax(13.5rem,1fr)] lg:max-w-[46rem]">
-            <Button type="button" variant="outline" onClick={() => runAi('summary')} disabled={!!aiLoading} leftIcon={aiLoading === 'summary' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 w-full justify-center gap-2 px-3 text-body-sm whitespace-nowrap">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full lg:w-auto">
+            <Button type="button" variant="outline" onClick={() => runAi('summary')} disabled={!!aiLoading} leftIcon={aiLoading === 'summary' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 flex-1 justify-center gap-2 px-3 text-body-sm">
               Generate Analytics Summary
             </Button>
-            <Button type="button" variant="outline" onClick={() => runAi('insights')} disabled={!!aiLoading} leftIcon={aiLoading === 'insights' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 w-full justify-center gap-2 px-3 text-body-sm whitespace-nowrap">
+            <Button type="button" variant="outline" onClick={() => runAi('insights')} disabled={!!aiLoading} leftIcon={aiLoading === 'insights' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 flex-1 justify-center gap-2 px-3 text-body-sm">
               View AI Insights
             </Button>
-            <Button type="button" onClick={() => runAi('activity')} disabled={!!aiLoading} leftIcon={aiLoading === 'activity' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 w-full justify-center gap-2 px-3 text-body-sm whitespace-nowrap">
+            <Button type="button" onClick={() => runAi('activity')} disabled={!!aiLoading} leftIcon={aiLoading === 'activity' ? <Spinner size="sm" /> : <Sparkles size={16} />} className="h-10 flex-1 justify-center gap-2 px-3 text-body-sm">
               Summarize Activity
             </Button>
           </div>

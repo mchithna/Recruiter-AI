@@ -189,17 +189,13 @@ export function Interviews() {
                 key={interview.id}
                 interview={interview}
                 action={{
-                  label: isCompleted ? 'View Session Notes' : 'Start & Launch Copilot',
-                  icon: isCompleted ? <FileText size={14} /> : <Sparkles size={14} />,
+                  label: 'View Session Notes',
+                  icon: <FileText size={14} />,
                   onClick: (event) => {
                     event.stopPropagation();
-                    if (isCompleted) {
-                      navigate(`/hiring-manager/interviews/${interview.id}`);
-                    } else {
-                      navigate(`/hiring-manager/interviews/${interview.id}/live-copilot`);
-                    }
+                    navigate(`/hiring-manager/interviews/${interview.id}`);
                   },
-                  variant: isCompleted ? 'secondary' : 'ai',
+                  variant: 'ai',
                 }}
               />
             );

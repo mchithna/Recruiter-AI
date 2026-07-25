@@ -68,20 +68,17 @@ export function InterviewCard({ interview, action, onStartCopilot }) {
     e.preventDefault();
     e.stopPropagation();
     if (action?.onClick) { action.onClick(e); return; }
-    if (isCompleted) { navigate(`/hiring-manager/interviews/${id}`); return; }
-    if (meetingLink) window.open(meetingLink, '_blank');
-    if (onStartCopilot) onStartCopilot(interview);
-    else navigate(`/hiring-manager/interviews/${id}/live-copilot`);
+    navigate(`/hiring-manager/interviews/${id}`);
   };
 
-  const actionLabel  = action?.label   || (isCompleted ? 'View Session Notes' : 'Start & Launch Copilot');
-  const actionVariant = action?.variant || (isCompleted ? 'secondary' : 'ai');
-  const actionIcon   = action?.icon    || (isCompleted ? <FileText size={14} /> : <Sparkles size={14} />);
+  const actionLabel   = action?.label   || 'View Session Notes';
+  const actionVariant = action?.variant || 'ai';
+  const actionIcon    = action?.icon    || <FileText size={14} />;
 
   return (
     <div className="group relative flex h-full min-h-[300px] flex-col overflow-hidden rounded-2xl border border-secondary-200/50 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-secondary-900/80">
       {/* Coloured top stripe */}
-      <div className={`h-1 w-full bg-gradient-to-r ${isCompleted ? 'from-success-400 via-emerald-400 to-teal-400' : 'from-primary-500 via-ai-500 to-indigo-500'}`} />
+      <div className="h-1 w-full bg-gradient-to-r from-primary-500 via-ai-500 to-indigo-500" />
 
       {/* Header area */}
       <div className="relative px-5 pb-3 pt-4">
