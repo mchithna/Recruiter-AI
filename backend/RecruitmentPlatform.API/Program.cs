@@ -9,7 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RecruitmentPlatform.API.Chat;
 using RecruitmentPlatform.API.Authentication;
-using RecruitmentPlatform.API.Payments;
 
 using RecruitmentPlatform.Core.Interfaces;
 using RecruitmentPlatform.Infrastructure.Data;
@@ -63,17 +62,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IApplicationStatusService, ApplicationStatusService>();
-builder.Services.AddScoped<InAppNotificationService>();
 builder.Services.AddScoped<EmailNotificationService>();
-builder.Services.AddScoped<CompositeNotificationService>();
 builder.Services.AddScoped<SmsNotificationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<INotificationFactory, NotificationFactory>();
-builder.Services.AddHttpClient<PayPalService>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
 builder.Services.AddSingleton<IChatAssistantConfigProvider, ChatAssistantConfigProvider>();
 builder.Services.AddScoped<IChatContextResolver, ChatContextResolver>();
 builder.Services.AddScoped<IChatPermissionValidator, ChatPermissionValidator>();
@@ -109,8 +102,6 @@ builder.Services.AddHttpClient<IGeminiLiveInterviewService, GeminiLiveInterviewS
     client.Timeout = TimeSpan.FromSeconds(25);
 });
 builder.Services.AddScoped<ILiveInterviewService, LiveInterviewService>();
-builder.Services.AddScoped<IPracticeQuestionBankService, PracticeQuestionBankService>();
-builder.Services.AddScoped<IPracticeQuestionGeneratorService, PracticeQuestionGeneratorService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

@@ -16,7 +16,6 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import CompanyProfile from './pages/Admin/CompanyProfile';
 import OrgChartBuilder from './pages/Admin/OrgChartBuilder';
-import SubscriptionPage from './pages/Admin/SubscriptionPage';
 import Analytics from './pages/Admin/Analytics';
 import ActivityLog from './pages/Admin/ActivityLog';
 import RecruiterRoutes, { RecruiterIndexRedirect } from './pages/Recruiter/RecruiterRoutes';
@@ -47,10 +46,6 @@ import JobDetail from './pages/candidate/JobDetail';
 import Applications from './pages/candidate/Applications';
 import CandidateApplicationDetail from './pages/candidate/ApplicationDetail';
 import CandidateMeetings from './pages/candidate/Meetings';
-import NotificationsPage from './pages/NotificationsPage';
-import PracticeHome from './pages/candidate/Practice/PracticeHome';
-import PracticeSession from './pages/candidate/Practice/PracticeSession';
-import PracticeResult from './pages/candidate/Practice/PracticeResult';
 
 const Unauthorized = () => (
   <div className="flex flex-col items-center justify-center h-full">
@@ -62,9 +57,14 @@ const Unauthorized = () => (
 const PublicChatBotMount = () => {
   const location = useLocation();
   const path = location.pathname || '/';
-  const chatbotPages = ['/', '/features', '/pricing', '/about', '/contact'];
+  const isDashboardPath =
+    path.startsWith('/candidate')
+    || path.startsWith('/recruiter')
+    || path.startsWith('/admin')
+    || path.startsWith('/hiring-manager')
+    || path.startsWith('/dashboard');
 
-  return chatbotPages.includes(path) ? <ChatBot variant="home" /> : null;
+  return isDashboardPath ? null : <ChatBot />;
 };
 
 function App() {
@@ -103,7 +103,6 @@ function App() {
                   <Route path="interviews/:interviewId/evaluate" element={<HiringManagerEvaluate />} />
                   <Route path="applications/:applicationId/offer" element={<HiringManagerOffer />} />
                   <Route path="offers" element={<HiringManagerOffers />} />
-                  <Route path="notifications" element={<NotificationsPage />} />
                 </Route>
               </Route>
 
@@ -117,20 +116,14 @@ function App() {
                 <Route path="/candidate/applications" element={<Applications />} />
                 <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationDetail />} />
                 <Route path="/candidate/meetings" element={<CandidateMeetings />} />
-                <Route path="/candidate/practice" element={<PracticeHome />} />
-                <Route path="/candidate/practice/session/:sessionId" element={<PracticeSession />} />
-                <Route path="/candidate/practice/result/:sessionId" element={<PracticeResult />} />
-                <Route path="/candidate/notifications" element={<NotificationsPage />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
                 <Route path="/admin" element={<Navigate to="/admin/company" replace />} />
                 <Route path="/admin/company" element={<CompanyProfile />} />
                 <Route path="/admin/org-chart" element={<OrgChartBuilder />} />
-                <Route path="/admin/subscription" element={<SubscriptionPage />} />
                 <Route path="/admin/analytics" element={<Analytics />} />
                 <Route path="/admin/activity" element={<ActivityLog />} />
-                <Route path="/admin/notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
 
@@ -147,7 +140,6 @@ function App() {
                 <Route path="interviews/:interviewId" element={<HiringManagerInterviewDetail />} />
                 <Route path="interviews/:interviewId/live-copilot" element={<LiveInterviewCopilot />} />
                 <Route path="messages" element={<MessagesList />} />
-                <Route path="notifications" element={<NotificationsPage />} />
               </Route>
             </Route>
           </Route>

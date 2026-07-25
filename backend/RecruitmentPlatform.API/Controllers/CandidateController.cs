@@ -5,8 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using RecruitmentPlatform.Core.Entities;
 using RecruitmentPlatform.Infrastructure.Data;
 
-using RecruitmentPlatform.Core.Interfaces;
-
 namespace RecruitmentPlatform.API.Controllers;
 
 [ApiController]
@@ -16,13 +14,11 @@ public class CandidateController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly INotificationFactory _notificationFactory;
 
-    public CandidateController(ApplicationDbContext context, IServiceScopeFactory scopeFactory, INotificationFactory notificationFactory)
+    public CandidateController(ApplicationDbContext context, IServiceScopeFactory scopeFactory)
     {
         _context = context;
         _scopeFactory = scopeFactory;
-        _notificationFactory = notificationFactory;
     }
 
     [HttpGet("profile")]
@@ -357,30 +353,6 @@ public class CandidateController : ControllerBase
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        try
-        {
-            var recruiterId = await ResolveRecruiterRecipientIdAsync(job, cancellationToken);
-            if (recruiterId.HasValue)
-            {
-                var candidateUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-                var candidateName = candidateUser != null ? $"{candidateUser.FirstName} {candidateUser.LastName}".Trim() : "Candidate";
-
-                var inApp = _notificationFactory.Create("InApp");
-                await inApp.SendAsync(
-                    recipientId: recruiterId.Value,
-                    type: "NewJobApplicationSubmitted",
-                    title: $"New Applicant: {candidateName}",
-                    body: $"{candidateName} submitted an application for {job.Title}.",
-                    relatedEntityType: "Application",
-                    relatedEntityId: app.Id
-                );
-            }
-        }
-        catch
-        {
-            // Non-blocking catch
-        }
-
         await ProcessAiMatchingAsync(app.Id);
 
         var finalApp = await _context.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == app.Id, cancellationToken);
@@ -487,28 +459,6 @@ public class CandidateController : ControllerBase
             app.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
-
-            try
-            {
-                var notifFactory = scope.ServiceProvider.GetService<INotificationFactory>();
-                if (notifFactory != null)
-                {
-                    var candidateName = app.Candidate != null ? $"{app.Candidate.FirstName} {app.Candidate.LastName}".Trim() : "Candidate";
-                    var inApp = notifFactory.Create("InApp");
-                    await inApp.SendAsync(
-                        recipientId: app.Job.RecruiterId,
-                        type: "AiScreeningCompleted",
-                        title: $"AI Screening Complete: {candidateName}",
-                        body: $"AI analysis finished for {candidateName} on {app.Job.Title} (Match: {matchScore}%).",
-                        relatedEntityType: "Application",
-                        relatedEntityId: app.Id
-                    );
-                }
-            }
-            catch
-            {
-                // Non-blocking catch
-            }
         }
         catch (Exception ex)
         {
@@ -653,28 +603,6 @@ public class CandidateController : ControllerBase
         };
         _context.CommunicationMessages.Add(message);
         await _context.SaveChangesAsync(cancellationToken);
-
-        try
-        {
-            var senderUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-            var senderName = senderUser != null ? $"{senderUser.FirstName} {senderUser.LastName}".Trim() : "Candidate";
-            var snippet = body.Length > 80 ? body.Substring(0, 80) + "..." : body;
-
-            var inApp = _notificationFactory.Create("InApp");
-            await inApp.SendAsync(
-                recipientId: recruiterId.Value,
-                type: "NewCandidateMessage",
-                title: $"Message from Candidate: {senderName}",
-                body: $"\"{snippet}\"",
-                relatedEntityType: "Application",
-                relatedEntityId: applicationId
-            );
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Notification Error] Candidate SendMessage notification failed: {ex}");
-        }
-
         return Ok(new { message.Id, message.ApplicationId, SenderName = "You", message.Body, message.SentAt, IsMine = true });
     }
 
@@ -682,20 +610,22 @@ public class CandidateController : ControllerBase
     {
         var companyId = job.Department.CompanyId;
 
-        if (job.RecruiterId > 0)
-        {
-            var assignedUser = await _context.Users
-                .AsNoTracking()
-                .Where(u => u.Id == job.RecruiterId && u.IsActive && u.CompanyId == companyId)
-                .Select(u => (int?)u.Id)
-                .FirstOrDefaultAsync(cancellationToken);
+        var jobRecruiter = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == job.RecruiterId
+                && u.IsActive
+                && u.CompanyId == companyId
+                && u.Role.Name == "Recruiter")
+            .Select(u => (int?)u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-            if (assignedUser.HasValue) return assignedUser;
-        }
+        if (jobRecruiter != null) return jobRecruiter;
 
         return await _context.Users
             .AsNoTracking()
-            .Where(u => u.IsActive && u.CompanyId == companyId && u.Role.Name != "Candidate")
+            .Where(u => u.IsActive
+                && u.CompanyId == companyId
+                && u.Role.Name == "Recruiter")
             .OrderByDescending(u => u.DepartmentId == job.DepartmentId)
             .ThenBy(u => u.Id)
             .Select(u => (int?)u.Id)

@@ -1,15 +1,15 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Bell,
   Briefcase,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   Home,
   LogOut,
   Menu,
   MessageSquare,
+  Moon,
+  Sun,
   Building2,
   Network,
   BarChart2,
@@ -17,15 +17,15 @@ import {
   FileText,
   FileCheck,
   User,
+  UserCheck,
   Video,
-  X,
-  Target
+  X
 } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
-import { Avatar, Button, ThemeToggle } from '../components/ui';
+import { useEffect, useState } from 'react';
+import { Avatar, Button, Tooltip } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import ChatBot from '../components/chat/ChatBot';
-import NotificationBell from '../components/notifications/NotificationBell';
 
 const navItemsByRole = {
   Recruiter: [
@@ -33,15 +33,12 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/recruiter/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/recruiter/interviews', icon: Calendar },
     { name: 'Messages', path: '/recruiter/messages', icon: MessageSquare },
-    { name: 'Notifications', path: '/recruiter/notifications', icon: Bell },
   ],
   Admin: [
     { name: 'Company Profile', path: '/admin/company', icon: Building2 },
     { name: 'Org Chart', path: '/admin/org-chart', icon: Network },
-    { name: 'Subscription', path: '/admin/subscription', icon: CreditCard },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
     { name: 'Activity Log', path: '/admin/activity', icon: ClipboardList },
-    { name: 'Notifications', path: '/admin/notifications', icon: Bell },
   ],
   Candidate: [
     { name: 'Home', path: '/candidate/home', icon: Home },
@@ -50,15 +47,12 @@ const navItemsByRole = {
     { name: 'Jobs', path: '/candidate/jobs', icon: Briefcase },
     { name: 'Applications', path: '/candidate/applications', icon: ClipboardList },
     { name: 'Meetings', path: '/candidate/meetings', icon: Video },
-    { name: 'Practice', path: '/candidate/practice', icon: Target },
-    { name: 'Notifications', path: '/candidate/notifications', icon: Bell },
   ],
   HiringManager: [
     { name: 'Home', path: '/hiring-manager/home', icon: Home },
     { name: 'Jobs', path: '/hiring-manager/jobs', icon: Briefcase },
     { name: 'Interviews', path: '/hiring-manager/interviews', icon: Calendar },
     { name: 'Offers', path: '/hiring-manager/offers', icon: FileCheck },
-    { name: 'Notifications', path: '/hiring-manager/notifications', icon: Bell },
   ],
   Guest: [
     { name: 'Overview', path: '/dashboard', icon: Home },
@@ -67,31 +61,14 @@ const navItemsByRole = {
 
 export default function DashboardLayout() {
   const { signOut, profile } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const prevPathRef = useRef(location.pathname);
-  const savedCollapseState = useRef(false);
-  const isLiveCopilotRoute = location.pathname.includes('/live-copilot');
-
   useEffect(() => {
     setMobileOpen(false);
-
-    const isNowCopilot = location.pathname.includes('/live-copilot');
-    const wasCopilot = prevPathRef.current.includes('/live-copilot');
-
-    if (isNowCopilot && !wasCopilot) {
-      setIsCollapsed((current) => {
-        savedCollapseState.current = current;
-        return true;
-      });
-    } else if (!isNowCopilot && wasCopilot) {
-      setIsCollapsed(savedCollapseState.current);
-    }
-
-    prevPathRef.current = location.pathname;
   }, [location.pathname]);
 
   const handleSignOut = async () => {
@@ -136,15 +113,11 @@ export default function DashboardLayout() {
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-multiply dark:opacity-40 dark:mix-blend-screen"
           />
-          <div className={['relative flex min-w-0 flex-1 items-center gap-3', isCollapsed ? 'justify-center' : ''].join(' ')}>
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900/95 border border-indigo-500/40 shadow-[0_0_18px_rgba(99,102,241,0.4)] dark:bg-slate-900/90 dark:border-indigo-400/50 overflow-hidden">
-              <img
-                src="/logo.png"
-                alt="Hirely Logo"
-                className="h-8 w-8 object-contain filter brightness-130 contrast-125 drop-shadow-[0_0_10px_rgba(168,85,247,0.9)] transform scale-[2.0]"
-              />
+          <div className="relative flex min-w-0 flex-1 items-center gap-3">
+            <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-ai-600 text-h4 text-white shadow-glow-primary">
+              H
             </div>
-            <div className={['min-w-0 transition-opacity duration-200', isCollapsed ? 'hidden' : ''].join(' ')}>
+            <div className={['min-w-0 transition-opacity duration-200', isCollapsed ? 'md:hidden' : ''].join(' ')}>
               <h2 className="text-h3 text-secondary-900 dark:text-white">Hirely</h2>
               <p className="text-body-sm text-secondary-500 dark:text-secondary-400">
                 {role} command center
@@ -171,7 +144,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isCollapsed ? 'md:justify-center md:px-2' : '',
                   isActive
@@ -179,12 +152,6 @@ export default function DashboardLayout() {
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
-                {isActive && (
-                  <span
-                    className="absolute top-1.5 left-1.5 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] ring-2 ring-white dark:ring-secondary-900 z-10"
-                    aria-label="Active Tab"
-                  />
-                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
@@ -201,43 +168,41 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        <div className={['hidden border-t border-secondary-100 dark:border-white/10 md:block transition-all duration-300', isCollapsed ? 'p-2' : 'p-4'].join(' ')}>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className={[
-              'w-full justify-center items-center font-bold transition-all duration-200',
-              'bg-slate-900 text-white hover:bg-slate-800 border border-slate-800 shadow-md',
-              'dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:border-white/15 dark:shadow-sm',
-              isCollapsed ? '!px-0 !justify-center' : ''
-            ].join(' ')}
-            leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-            onClick={() => setIsCollapsed((value) => !value)}
-            disabled={isLiveCopilotRoute}
-          >
-            {isCollapsed ? null : 'Collapse'}
-          </Button>
+        <div className="hidden border-t border-secondary-100 p-4 dark:border-white/10 md:block">
+          <Tooltip content={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            <Button
+              type="button"
+              variant="glass"
+              size="sm"
+              className="w-full justify-center"
+              leftIcon={isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              onClick={() => setIsCollapsed((value) => !value)}
+            >
+              <span className={isCollapsed ? 'md:hidden' : ''}>
+                {isCollapsed ? 'Expand' : 'Collapse'}
+              </span>
+            </Button>
+          </Tooltip>
         </div>
       </aside>
 
       <main className="relative z-10 flex h-screen flex-1 flex-col overflow-hidden">
-        <header className="relative z-50 flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
+        <header className="flex h-auto min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/60 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-2xl dark:border-white/10 dark:bg-secondary-950/45 sm:h-20 sm:px-6 sm:py-0 lg:px-8">
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
               <button
                 type="button"
                 aria-label="Open sidebar"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-secondary-700 shadow-sm dark:bg-white/10 dark:text-white md:hidden"
                 onClick={() => setMobileOpen(true)}
               >
-                <Menu size={16} strokeWidth={2} />
+                <Menu size={14} strokeWidth={2} />
               </button>
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
+              <div className="min-w-0">
+                <p className="text-[8px] font-bold uppercase leading-none tracking-wide text-secondary-400 sm:text-caption">
                   {role} dashboard
                 </p>
-                <h1 className="mt-0.5 truncate text-xs font-bold leading-tight text-secondary-900 dark:text-white sm:text-h3 sm:mt-1">
+                <h1 className="mt-1 truncate text-[11px] font-bold leading-none text-secondary-900 dark:text-white sm:text-h3">
                   Welcome, {profile?.firstName || role}!
                 </h1>
               </div>
@@ -245,40 +210,46 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            <NotificationBell />
-            <ThemeToggle />
-            <button
+            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              <Button
+                type="button"
+                variant="glass"
+                size="sm"
+                className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
+                leftIcon={
+                  theme === 'dark'
+                    ? <Sun size={13} strokeWidth={2} />
+                    : <Moon size={13} strokeWidth={2} />
+                }
+                onClick={toggleTheme}
+              >
+                <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+              </Button>
+            </Tooltip>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 rounded-lg px-0 [&>span:first-child]:m-0 [&>span:nth-child(2)]:hidden sm:h-8 sm:w-auto sm:rounded-button sm:px-3 sm:[&>span:nth-child(2)]:inline-flex"
+              leftIcon={<LogOut size={13} strokeWidth={2} />}
               onClick={handleSignOut}
-              className="group relative flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95"
-              aria-label="Sign Out"
-              title="Sign Out"
-              style={{
-                background: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.08) 100%)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(239,68,68,0.12)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-              }}
             >
-              <span
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
-              />
-              <LogOut size={14} strokeWidth={2} className="text-red-500 dark:text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.6)]" />
-            </button>
-            <button
-              type="button"
-              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 shrink-0"
-              onClick={() => navigate(profilePath)}
-              aria-label="Open profile"
-            >
-              <Avatar name={profileName} src={profile?.profilePictureUrl} size="sm" />
-            </button>
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+            <Tooltip content="Open profile">
+              <button
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-400 sm:h-8 sm:w-8"
+                onClick={() => navigate(profilePath)}
+                aria-label="Open profile"
+              >
+                <Avatar name={profileName} src={profile?.profilePictureUrl} size="sm" />
+              </button>
+            </Tooltip>
           </div>
         </header>
 
-        <div className="relative flex-1 overflow-y-auto px-3 pb-24 pt-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:pr-12">
+        <div className="relative flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:pr-12">
           <Outlet />
         </div>
       </main>

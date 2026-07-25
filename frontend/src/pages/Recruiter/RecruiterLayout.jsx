@@ -43,11 +43,9 @@ export default function RecruiterLayout() {
             className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-multiply dark:opacity-40 dark:mix-blend-screen"
           />
           <div className="relative">
-            <img
-              src="/logo.png"
-              alt="Hirely Logo"
-              className="h-11 w-11 object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]"
-            />
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-ai-600 text-h4 text-white shadow-glow-primary">
+              H
+            </div>
             <h2 className="mt-4 text-h2 text-secondary-900 dark:text-white">Hirely</h2>
             <p className="mt-1 text-body-sm text-secondary-500 dark:text-secondary-400">
               Recruiter command center
@@ -68,19 +66,13 @@ export default function RecruiterLayout() {
                 key={item.name}
                 to={item.path}
                 className={[
-                  'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
+                  'group flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-semibold',
                   'transition-all duration-base hover:-translate-y-0.5',
                   isActive
                     ? 'bg-white text-primary-700 shadow-glow-primary dark:bg-white/10 dark:text-primary-300'
                     : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700 dark:text-secondary-300 dark:hover:bg-white/10 dark:hover:text-white',
                 ].join(' ')}
               >
-                {isActive && (
-                  <span
-                    className="absolute top-1.5 left-1.5 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] ring-2 ring-white dark:ring-secondary-900 z-10"
-                    aria-label="Active Tab"
-                  />
-                )}
                 <span
                   className={[
                     'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',

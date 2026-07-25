@@ -28,13 +28,9 @@ public sealed class ChatContextResolver : IChatContextResolver
 
     public ChatResolvedContext Resolve(string? path, ClaimsPrincipal user, string? requestedContextKey = null)
     {
-        var userId = TryReadIntClaim(user, "app_user_id") ?? TryReadIntClaim(user, ClaimTypes.NameIdentifier) ?? TryReadIntClaim(user, "sub");
+        var userId = TryReadIntClaim(user, "app_user_id");
         var isAuthenticated = user.Identity?.IsAuthenticated == true || userId.HasValue;
-        var rawRole = user.FindFirst(ClaimTypes.Role)?.Value
-            ?? user.FindFirst("role")?.Value
-            ?? user.FindFirst("app_role")?.Value
-            ?? user.FindFirst("user_role")?.Value;
-        var role = NormalizeRole(rawRole);
+        var role = NormalizeRole(user.FindFirst(ClaimTypes.Role)?.Value);
         var companyId = TryReadIntClaim(user, "company_id");
         var departmentId = TryReadIntClaim(user, "department_id");
         var routeContext = ResolveContextKeyFromPath(path, role);

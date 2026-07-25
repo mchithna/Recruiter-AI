@@ -4,14 +4,14 @@ namespace RecruitmentPlatform.Infrastructure.Services;
 
 public class SmsNotificationService : INotificationService
 {
-    public Task SendAsync(int recipientId, string type, string title, string body, string? relatedEntityType = null, int? relatedEntityId = null)
+    public Task SendAsync(int userId, string message)
     {
-        Console.WriteLine($"SMS notification to user {recipientId}: [{type}] {title} - {body}");
+        Console.WriteLine($"SMS notification to user {userId}: {message}");
         return Task.CompletedTask;
     }
 
     public Task SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
-        return Task.CompletedTask;
+        throw new NotImplementedException();
     }
 }
